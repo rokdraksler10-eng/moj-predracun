@@ -11,6 +11,7 @@ function app() {
     
     // UI State
     loading: false,
+    showSplash: true,
     showWelcome: false,
     
     // User favorites (persisted in localStorage)
@@ -227,6 +228,11 @@ function app() {
           }, 300);
         }
       }
+      
+      // Hide splash screen after initialization
+      setTimeout(() => {
+        this.showSplash = false;
+      }, 1000);
     },
     
     // Load favorites from localStorage

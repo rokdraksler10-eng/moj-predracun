@@ -1,0 +1,60 @@
+<!-- Splash Screen for PWA -->
+<div id="splash-screen" style="
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  transition: opacity 0.5s ease;
+">
+  <svg viewBox="0 0 32 32" width="80" height="80" style="margin-bottom: 1.5rem;">
+    <rect width="32" height="32" rx="6" fill="white"/>
+    <path d="M16 6 L8 14 L8 26 L13 26 L13 18 L19 18 L19 26 L24 26 L24 14 Z" fill="#2563eb"/>
+  </svg>
+  <h1 style="
+    color: white;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+  ">Moj Predračun</h1>
+  <p style="
+    color: rgba(255,255,255,0.8);
+    font-size: 1rem;
+    margin-top: 0.5rem;
+  ">Gradbeni kalkulator</p>
+  <div style="
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: splash-spin 1s linear infinite;
+    margin-top: 2rem;
+  "></div>
+</div>
+
+<style>
+  @keyframes splash-spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+
+<script>
+  // Hide splash screen when app is ready
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const splash = document.getElementById('splash-screen');
+      if (splash) {
+        splash.style.opacity = '0';
+        setTimeout(() => splash.remove(), 500);
+      }
+    }, 1000);
+  });
+</script>
