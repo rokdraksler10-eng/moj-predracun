@@ -142,7 +142,26 @@ db.exec(`
 
 // Sample Data
 db.exec(`
-  -- No default work items - user adds their own
+  -- Demo Work Items (Realistic Construction Prices)
+  INSERT OR IGNORE INTO work_items (name, category, unit, base_price, difficulty_easy_factor, difficulty_medium_factor, difficulty_hard_factor, description) VALUES
+  ('Polaganje keramičnih ploščic', 'Keramika', 'm²', 28, 0.85, 1.0, 1.35, 'Polaganje ploščic na tla ali stene'),
+  ('Polaganje velkoformatnih ploščic', 'Keramika', 'm²', 38, 0.85, 1.0, 1.4, 'Polaganje XXL ploščic (nad 60x60cm)'),
+  ('Hidroizolacija - tekoča', 'Izolacije', 'm²', 15, 0.9, 1.0, 1.3, 'Nanašanje tekoče hidroizolacije'),
+  ('Hidroizolacija - bitumenska', 'Izolacije', 'm²', 18, 0.9, 1.0, 1.3, 'Bitumenska trakova in premazi'),
+  ('Montaža sadrokartona - stene', 'Suhomontaža', 'm²', 22, 0.88, 1.0, 1.35, 'Montaža GK sten (dvojna plošča)'),
+  ('Montaža sadrokartona - strop', 'Suhomontaža', 'm²', 26, 0.88, 1.0, 1.4, 'Montaža spuščenega stropa'),
+  ('Svetilne niše v GK', 'Suhomontaža', 'kos', 45, 0.9, 1.0, 1.3, 'Izkrojene niše za svetila'),
+  ('Notranje slikanje - 2x', 'Pleskarija', 'm²', 12, 0.9, 1.0, 1.25, 'Dva sloja barve (temeljno + fasadna)'),
+  ('Notranje slikanje - kvalitetno', 'Pleskarija', 'm²', 18, 0.9, 1.0, 1.25, 'Kvalitetno pleskarstvo s kitom'),
+  ('Parket - polaganje', 'Talne obloge', 'm²', 32, 0.9, 1.0, 1.35, 'Polaganje masivnega parketa'),
+  ('Laminat - polaganje', 'Talne obloge', 'm²', 14, 0.9, 1.0, 1.3, 'Polaganje laminata'),
+  ('Vinyl - polaganje', 'Talne obloge', 'm²', 16, 0.9, 1.0, 1.3, 'Polaganje vinilnih talnih oblog'),
+  ('Elektro inštalacije - točke', 'Elektro', 'kos', 85, 0.9, 1.0, 1.35, 'Nova elektro točka (doza + vtičnica)'),
+  ('Elektro inštalacije - razdelilna omara', 'Elektro', 'kos', 350, 0.95, 1.0, 1.25, 'Montaža razdelilne omarice'),
+  ('Vodovod - priklop točke', 'Vodovod', 'kos', 120, 0.9, 1.0, 1.35, 'Priklop pipe (grelnik, pomivalno...)'),
+  ('Odtoki - priklop', 'Vodovod', 'kos', 95, 0.9, 1.0, 1.35, 'Priklop odtoka (umivalnik, wc...)'),
+  ('Demontaža starih ploščic', 'Demontaža', 'm²', 12, 1.0, 1.0, 1.2, 'Odstranjevanje starih ploščic'),
+  ('Odvažanje gradbenega materiala', 'Transport', 't', 85, 1.0, 1.0, 1.0, 'Odvažanje in odlaganje materiala');
   
   -- Sample Materials
   INSERT OR IGNORE INTO materials (name, category, unit, unit_price, description) VALUES

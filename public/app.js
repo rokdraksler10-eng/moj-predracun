@@ -9,6 +9,10 @@ function app() {
     company: {},
     categories: [],
     
+    // UI State
+    loading: false,
+    showWelcome: false,
+    
     // User favorites (persisted in localStorage)
     favoriteItems: [],
     
@@ -215,10 +219,13 @@ function app() {
         this.saveCustomItems();
         this.saveMaterials();
         
-        // Show welcome message
-        setTimeout(() => {
-          alert('👋 Dobrodošli v Moj Predračun!\n\nDodali smo vam nekaj vzorčnih postavk in materialov, da vidite kako aplikacija deluje.\n\nTe lahko urejate, brišete ali dodajate svoje.');
-        }, 500);
+        // Show welcome modal (only if not shown before)
+        const welcomeShown = localStorage.getItem('gradbeniApp_welcomeShown');
+        if (!welcomeShown) {
+          setTimeout(() => {
+            this.showWelcome = true;
+          }, 300);
+        }
       }
     },
     
@@ -241,6 +248,13 @@ function app() {
       } catch (e) {
         console.error('Error saving favorites:', e);
       }
+    },
+    
+    // Close welcome modal
+    closeWelcome() {
+      this.showWelcome = false;
+      // Mark welcome as shown
+      localStorage.setItem('gradbeniApp_welcomeShown', 'true');
     },
     
     // Toggle favorite status
@@ -583,13 +597,27 @@ function app() {
         if (result.id) {
           this.currentQuote.id = result.id;
           this.loadQuotes(); // Refresh list
-          alert('✅ Predračun shranjen!');
+          if (window.showToast) {
+            window.showToast('✅ Predračun uspešno shranjen!', 'success');
+          } else {
+            alert('✅ Predračun shranjen!');
+          }
         } else {
-          alert('❌ Napaka pri shranjevanju: ' + (result.error || 'Neznana napaka'));
+          const errorMsg = '❌ Napaka pri shranjevanju: ' + (result.error || 'Neznana napaka');
+          if (window.showToast) {
+            window.showToast(errorMsg, 'error');
+          } else {
+            alert(errorMsg);
+          }
         }
       } catch (error) {
         console.error('Error saving quote:', error);
-        alert('❌ Napaka pri shranjevanju: ' + error.message);
+        const errorMsg = '❌ Napaka pri shranjevanju: ' + error.message;
+        if (window.showToast) {
+          window.showToast(errorMsg, 'error');
+        } else {
+          alert(errorMsg);
+        }
       } finally {
         this.saving = false;
       }
@@ -616,13 +644,25 @@ function app() {
         });
         
         if (res.ok) {
-          alert('Nastavitve shranjene!');
+          if (window.showToast) {
+            window.showToast('✅ Nastavitve shranjene!', 'success');
+          } else {
+            alert('Nastavitve shranjene!');
+          }
         } else {
-          alert('Napaka pri shranjevanju');
+          if (window.showToast) {
+            window.showToast('❌ Napaka pri shranjevanju', 'error');
+          } else {
+            alert('Napaka pri shranjevanju');
+          }
         }
       } catch (error) {
         console.error('Error saving company:', error);
-        alert('Napaka pri shranjevanju');
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri shranjevanju', 'error');
+        } else {
+          alert('Napaka pri shranjevanju');
+        }
       }
     },
     

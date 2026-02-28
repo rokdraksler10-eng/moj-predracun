@@ -1548,6 +1548,91 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
+/* ===== Welcome Modal ===== */
+.welcome-modal .modal-content {
+  max-width: 480px;
+  text-align: center;
+  padding: 0;
+  overflow: hidden;
+}
+
+.welcome-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 2rem;
+}
+
+.welcome-logo {
+  margin-bottom: 1rem;
+}
+
+.welcome-header h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-subtitle {
+  opacity: 0.9;
+  font-size: 1rem;
+}
+
+.welcome-body {
+  padding: 2rem;
+}
+
+.welcome-features {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  text-align: left;
+}
+
+.feature-icon {
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.feature strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  color: var(--text);
+}
+
+.feature p {
+  font-size: 0.875rem;
+  color: var(--text-light);
+  margin: 0;
+}
+
+.welcome-demo {
+  background: var(--bg-soft);
+  padding: 1rem;
+  border-radius: var(--radius);
+  font-size: 0.9375rem;
+}
+
+.welcome-demo p {
+  margin: 0.5rem 0;
+  color: var(--text);
+}
+
+.welcome-footer {
+  padding: 0 2rem 2rem;
+}
+
+.welcome-footer .btn-large {
+  width: 100%;
+  justify-content: center;
+}
+
 /* PDF Section */
 .pdf-section {
   background: #f8fafc;

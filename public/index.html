@@ -32,6 +32,8 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
   <!-- Feather Icons -->
   <script src="https://unpkg.com/feather-icons"></script>
+  <!-- Toast Notifications -->
+  <script src="toast.js"></script>
   
   <!-- Register Service Worker -->
   <script>
@@ -919,6 +921,56 @@
       lastTouchEnd = now;
     }, false);
   </script>
+  <!-- Welcome Modal -->
+  <div x-show="showWelcome" class="modal welcome-modal" x-transition.opacity>
+    <div class="modal-content welcome-content">
+      <div class="welcome-header">
+        <div class="welcome-logo">
+          <svg viewBox="0 0 32 32" width="64" height="64">
+            <rect width="32" height="32" rx="6" fill="#2563eb"/>
+            <path d="M16 6 L8 14 L8 26 L13 26 L13 18 L19 18 L19 26 L24 26 L24 14 Z" fill="white"/>
+          </svg>
+        </div>
+        <h2>Dobrodošli v Moj Predračun!</h2>
+        <p class="welcome-subtitle">Profesionalni gradbeni kalkulator</p>
+      </div>
+      <div class="welcome-body">
+        <div class="welcome-features">
+          <div class="feature">
+            <span class="feature-icon">🧮</span>
+            <div>
+              <strong>Kalkulator</strong>
+              <p>Hitro izračunaj površine in dodaj v predračun</p>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">📄</span>
+            <div>
+              <strong>PDF Izvoz</strong>
+              <p>Dva dokumenta: za stranko in za mojstra</p>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">📱</span>
+            <div>
+              <strong>Mobilno prijazno</strong>
+              <p>Deluje na telefonu, tablici in računalniku</p>
+            </div>
+          </div>
+        </div>
+        <div class="welcome-demo">
+          <p>🎁 <strong>Dodali smo vam vzorčne postavke</strong> (polaganje ploščic, pleskarstvo, elektro...)</p>
+          <p>Urejajte jih, brišite ali dodajajte svoje!</p>
+        </div>
+      </div>
+      <div class="welcome-footer">
+        <button class="btn-primary btn-large" @click="closeWelcome()">
+          Začni uporabljati →
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
   <script src="calc-quote-simple.js"></script>
   <script>feather.replace();</script>
