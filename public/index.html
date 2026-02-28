@@ -126,6 +126,20 @@
           </button>
         </div>
         
+        <!-- Search & Filter -->
+        <div class="search-filter-bar" x-show="quotes.length > 0">
+          <div class="search-box">
+            <i data-feather="search"></i>
+            <input type="text" x-model="searchQuery" placeholder="Išči po projektu, stranki..." @input="filterQuotes()">
+          </div>
+          <select x-model="filterStatus" @change="filterQuotes()" class="filter-select">
+            <option value="">Vsi statusi</option>
+            <option value="draft">V pripravi</option>
+            <option value="sent">Poslano</option>
+            <option value="accepted">Sprejeto</option>
+          </select>
+        </div>
+        
         <!-- Quick Actions -->
         <div class="quick-actions" x-show="quotes.length > 0">
           <h3>⚡ Hitre akcije</h3>
@@ -156,21 +170,21 @@
         <!-- Stats Summary -->
         <div class="stats-summary" x-show="quotes.length > 0">
           <div class="stat-item">
-            <span class="stat-value" x-text="quotes.length"></span>
-            <span class="stat-label">Predračunov</span>
+            <span class="stat-value" x-text="(filteredQuotes.length > 0 && (searchQuery || filterStatus)) ? filteredQuotes.length : quotes.length"></span>
+            <span class="stat-label" x-text="(filteredQuotes.length > 0 && (searchQuery || filterStatus)) ? 'Prikazanih' : 'Predračunov'"></span>
           </div>
           <div class="stat-item">
             <span class="stat-value" x-text="quotes.filter(q => q.status === 'draft').length"></span>
             <span class="stat-label">V pripravi</span>
           </div>
           <div class="stat-item">
-            <span class="stat-value" x-text="formatPrice(quotes.reduce((sum, q) => sum + (q.total || 0), 0))"></span>
+            <span class="stat-value" x-text="formatPrice((filteredQuotes.length > 0 && (searchQuery || filterStatus)) ? filteredQuotes.reduce((sum, q) => sum + (q.total || 0), 0) : quotes.reduce((sum, q) => sum + (q.total || 0), 0))"></span>
             <span class="stat-label">Skupna vrednost</span>
           </div>
         </div>
         
         <div class="quotes-grid">
-          <template x-for="quote in quotes" :key="quote.id">
+          <template x-for="quote in (filteredQuotes.length > 0 || searchQuery || filterStatus ? filteredQuotes : quotes)" :key="quote.id">
             <div class="quote-card-simple" @click="loadQuote(quote.id)">
               <div class="quote-main">
                 <h3 x-text="quote.project_name || 'Brez naziva'"></h3>
@@ -182,7 +196,7 @@
               </div>
             </div>
           </template>
-          <div x-show="quotes.length === 0" class="empty-state welcome-empty">
+          <div x-show="(filteredQuotes.length === 0 && (searchQuery || filterStatus)) || quotes.length === 0" class="empty-state welcome-empty">
             <div class="empty-illustration">🏗️</div>
             <h3>Začni s prvim predračunom</h3>
             <p>Ustvari profesionalen gradbeni predračun v samo nekaj klikih.</p>

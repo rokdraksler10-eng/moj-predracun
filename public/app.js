@@ -13,6 +13,9 @@ function app() {
     loading: false,
     showSplash: true,
     showWelcome: false,
+    searchQuery: '',
+    filterStatus: '',
+    filteredQuotes: [],
     
     // User favorites (persisted in localStorage)
     favoriteItems: [],
@@ -105,6 +108,7 @@ function app() {
     async init() {
       this.loadFavorites();
       await this.loadData();
+      await this.loadQuotes(); // Load all quotes
       this.loadCustomItems(); // Load user-added items
       this.loadMaterials(); // Load saved materials
       this.loadCalculatorData(); // Load calculator data
@@ -116,7 +120,7 @@ function app() {
       this.filteredItems = this.getSortedItems();
       this.filteredMaterials = [...this.materials];
       feather.replace();
-      console.log('App initialized with', this.workItems.length, 'items,', this.materials.length, 'materials and', this.categories.length, 'categories');
+      console.log('App initialized with', this.workItems.length, 'items,', this.materials.length, 'materials,', this.quotes.length, 'quotes and', this.categories.length, 'categories');
     },
     
     // Add demo data for first-time users
@@ -261,6 +265,39 @@ function app() {
       this.showWelcome = false;
       // Mark welcome as shown
       localStorage.setItem('gradbeniApp_welcomeShown', 'true');
+    },
+    
+    // Load all quotes
+    async loadQuotes() {
+      try {
+        const res = await fetch('/api/quotes');
+        this.quotes = await res.json();
+        this.filterQuotes(); // Initialize filtered quotes
+      } catch (error) {
+        console.error('Error loading quotes:', error);
+      }
+    },
+    
+    // Filter quotes based on search and status
+    filterQuotes() {
+      let filtered = this.quotes;
+      
+      // Filter by search query
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase();
+        filtered = filtered.filter(q => 
+          (q.project_name || '').toLowerCase().includes(query) ||
+          (q.client_name || '').toLowerCase().includes(query) ||
+          (q.project_address || '').toLowerCase().includes(query)
+        );
+      }
+      
+      // Filter by status
+      if (this.filterStatus) {
+        filtered = filtered.filter(q => q.status === this.filterStatus);
+      }
+      
+      this.filteredQuotes = filtered;
     },
     
     // Toggle favorite status
