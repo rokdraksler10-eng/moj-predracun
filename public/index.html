@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moj Predračun</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <!-- Feather Icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body x-data="app()" x-init="init()">
+  
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-brand">
+      <i data-feather="tool"></i>
+      <span>Moj Predračun</span>
+    </div>
+    <div class="nav-links">
+      <button @click="page = 'quotes'" :class="{ active: page === 'quotes' }">
+        <i data-feather="file-text"></i> Predračuni
+      </button>
+      <button @click="page = 'items'" :class="{ active: page === 'items' }">
+        <i data-feather="list"></i> Postavke
+      </button>
+      <button @click="page = 'materials'" :class="{ active: page === 'materials' }">
+        <i data-feather="box"></i> Materiali
+      </button>
+      <button @click="page = 'calculator'" :class="{ active: page === 'calculator' }">
+        <i data-feather="calculator"></i> Kalkulator
+      </button>
+      <button @click="page = 'settings'" :class="{ active: page === 'settings' }">
+        <i data-feather="settings"></i> Nastavitve
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main">
+    
+    <!-- QUOTES PAGE - SIMPLIFIED -->
+    <div x-show="page === 'quotes'" class="page">
+      
+      <!-- LIST VIEW -->
+      <div x-show="!currentQuote">
+        <div class="page-header-simple">
+          <h1>Predračuni</h1>
+          <button class="btn-primary" @click="newQuote()">
+            <i data-feather="plus"></i> Nov
+          </button>
+        </div>
+        
+        <div class="quotes-grid">
+          <template x-for="quote in quotes" :key="quote.id">
+            <div class="quote-card-simple" @click="loadQuote(quote.id)">
+              <div class="quote-main">
+                <h3 x-text="quote.project_name || 'Brez naziva'"></h3>
+                <p x-text="quote.client_name || 'Brez stranke'"></p>
+              </div>
+              <div class="quote-meta">
+                <span class="quote-price" x-text="formatPrice(quote.total)"></span>
+                <span class="quote-date" x-text="formatDateShort(quote.created_at)"></span>
+              </div>
+            </div>
+          </template>
+          <div x-show="quotes.length === 0" class="empty-state">
+            <i data-feather="inbox"></i>
+            <p>Ni predračunov. Ustvari prvega!</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- EDIT VIEW -->
+      <div x-show="currentQuote" class="quote-edit">
+        <!-- Header -->
+        <div class="edit-header">
+          <button class="btn-back" @click="currentQuote = null">← Nazaj</button>
+          <h2 x-text="currentQuote?.id ? 'Uredi' : 'Nov predračun'"></h2>
+        </div>
+        
+        <!-- Basic Info -->
+        <div class="info-card">
+          <input type="text" x-model="currentQuote.project_name" placeholder="Naziv projekta (npr. Kopalnica)" class="input-large">
+          <div class="info-row">
+            <input type="text" x-model="currentQuote.client_name" placeholder="Stranka">
+            <input type="text" x-model="currentQuote.project_address" placeholder="Naslov">
+          </div>
+        </div>
+        
+        <!-- Add Item - Simple -->
+        <div class="add-item-card">
+          <h4>➕ Dodaj postavko</h4>
+          <select x-model="selectedItem" class="input-full">
+            <option value="">Izberi delo...</option>
+            <template x-for="item in workItems" :key="item.id">
+              <option :value="item.id" x-text="item.name + ' (' + item.base_price + '€/' + item.unit + ')'"></option>
+            </template>
+          </select>
+          <div class="add-item-row">
+            <input type="number" x-model="newItemQuantity" placeholder="m²" class="input-number">
+            <select x-model="newItemDifficulty">
+              <option value="easy">Lahko</option>
+              <option value="medium" selected>Srednje</option>
+              <option value="hard">Težko</option>
+            </select>
+            <button class="btn-add" @click="addItemToQuote()" :disabled="!selectedItem">Dodaj</button>
+          </div>
+        </div>
+        
+        <!-- Items List -->
+        <div class="items-list" x-show="currentQuote.items?.length > 0">
+          <h4>📋 Postavke</h4>
+          <template x-for="(item, index) in currentQuote.items" :key="index">
+            <div class="item-row-simple">
+              <div class="item-info">
+                <strong x-text="getWorkItemName(item.work_item_id)"></strong>
+                <span x-text="item.quantity + ' m² × ' + item.price_per_unit.toFixed(2) + '€'"></span>
+              </div>
+              <div class="item-actions">
+                <span class="item-total" x-text="item.subtotal.toFixed(2) + '€'"></span>
+                <button class="btn-delete" @click="removeItem(index)">✕</button>
+              </div>
+            </div>
+          </template>
+        </div>
+        
+        <!-- Total -->
+        <div class="total-card" x-show="currentQuote.items?.length > 0">
+          <div class="total-line">
+            <span>Skupaj brez DDV:</span>
+            <span x-text="formatPrice(currentQuote.subtotal || 0)"></span>
+          </div>
+          <div class="total-line">
+            <span>DDV (22%):</span>
+            <span x-text="formatPrice(currentQuote.tax_amount || 0)"></span>
+          </div>
+          <div class="total-line grand">
+            <span>SKUPAJ:</span>
+            <span x-text="formatPrice(currentQuote.total || 0)"></span>
+          </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="action-bar">
+          <button class="btn-primary btn-large" @click="saveQuote()" :disabled="saving">
+            💾 Shrani predračun
+          </button>
+        </div>
+        
+        <!-- PDF Downloads - Separate Section -->
+        <div class="pdf-section" x-show="currentQuote.id">
+          <h4>📥 Prenesi dokumente</h4>
+          <div class="pdf-buttons-row">
+            <button class="btn-pdf-client" @click="generatePDF('client')">
+              📄 PDF ZA STRANKO
+              <span class="pdf-desc">Cenik s cenami, DDV, skupaj</span>
+            </button>
+            <button class="btn-pdf-internal" @click="generatePDF('internal')">
+              📋 PDF ZA MOJSTRO
+              <span class="pdf-desc">Kaj delati, koliko materiala</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ADD ITEM MENU -->
+    <div x-show="showAddItemMenu" class="modal" @click.self="closeAddItemModals()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Dodaj novo postavko</h3>
+          <button class="btn-icon" @click="closeAddItemModals()">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="add-item-options">
+            <button @click="showCreateForm()" class="option-btn">
+              <span class="option-icon">✏️</span>
+              <span class="option-title">Naredi sam</span>
+              <span class="option-desc">Ustvari svojo postavko z lastno ceno</span>
+            </button>
+            <button @click="showMarketDatabase()" class="option-btn">
+              <span class="option-icon">📊</span>
+              <span class="option-title">Izberi iz baze</span>
+              <span class="option-desc">Prikaže tržne cene v Sloveniji (+10%)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- EDIT ITEM FORM -->
+    <div x-show="showEditItemForm" class="modal" @click.self="closeAddItemModals()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Uredi postavko</h3>
+          <button class="btn-icon" @click="closeAddItemModals()">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Naziv postavke *</label>
+            <input type="text" x-model="editItemForm.name" placeholder="npr. Polaganje marmorja">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Kategorija *</label>
+              <select x-model="editItemForm.category">
+                <option value="">-- Izberi --</option>
+                <option value="Keramika">Keramika</option>
+                <option value="Suhomontaža">Suhomontaža</option>
+                <option value="Pleskarija">Pleskarija</option>
+                <option value="Elektro">Elektro</option>
+                <option value="Vodovod">Vodovod</option>
+                <option value="Talne obloge">Talne obloge</option>
+                <option value="Izolacije">Izolacije</option>
+                <option value="Okna in vrata">Okna in vrata</option>
+                <option value="Ostalo">Ostalo</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Enota</label>
+              <select x-model="editItemForm.unit">
+                <option value="m²">m² (kvadratni meter)</option>
+                <option value="m">m (meter)</option>
+                <option value="kos">kos (kos)</option>
+                <option value="točka">točka</option>
+                <option value="ura">ura</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Cena (€ / enota)</label>
+            <input type="number" x-model="editItemForm.base_price" step="0.01" min="0" placeholder="npr. 25.50">
+          </div>
+          <div class="form-group">
+            <label>Opis (opcijsko)</label>
+            <textarea x-model="editItemForm.description" rows="2" placeholder="Kratek opis dela..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeAddItemModals()">Prekliči</button>
+          <button class="btn-primary" @click="saveEditedItem()">Shrani spremembe</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- CREATE ITEM FORM -->
+    <div x-show="showCreateItemForm" class="modal" @click.self="closeAddItemModals()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Ustvari svojo postavko</h3>
+          <button class="btn-icon" @click="closeAddItemModals()">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Naziv postavke *</label>
+            <input type="text" x-model="newItemForm.name" placeholder="npr. Polaganje marmorja">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Kategorija *</label>
+              <select x-model="newItemForm.category">
+                <option value="">-- Izberi --</option>
+                <option value="Keramika">Keramika</option>
+                <option value="Suhomontaža">Suhomontaža</option>
+                <option value="Pleskarija">Pleskarija</option>
+                <option value="Elektro">Elektro</option>
+                <option value="Vodovod">Vodovod</option>
+                <option value="Talne obloge">Talne obloge</option>
+                <option value="Izolacije">Izolacije</option>
+                <option value="Okna in vrata">Okna in vrata</option>
+                <option value="Ostalo">Ostalo</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Enota</label>
+              <select x-model="newItemForm.unit">
+                <option value="m²">m² (kvadratni meter)</option>
+                <option value="m">m (meter)</option>
+                <option value="kos">kos (kos)</option>
+                <option value="točka">točka</option>
+                <option value="ura">ura</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Cena (€ / enota)</label>
+            <input type="number" x-model="newItemForm.base_price" step="0.01" min="0" placeholder="npr. 25.50">
+          </div>
+          <div class="form-group">
+            <label>Opis (opcijsko)</label>
+            <textarea x-model="newItemForm.description" rows="2" placeholder="Kratek opis dela..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeAddItemModals()">Prekliči</button>
+          <button class="btn-primary" @click="createCustomItem()">Shrani postavko</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- MARKET ITEMS DATABASE -->
+    <div x-show="showMarketItems" class="modal modal-large" @click.self="closeAddItemModals()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h3>Tržne cene Slovenija 2024 (+10%)</h3>
+            <p class="modal-subtitle">Cene so posodobljene in vključujejo 10% rezervo</p>
+          </div>
+          <button class="btn-icon" @click="closeAddItemModals()">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="market-categories">
+            <template x-for="category in Object.keys(getMarketItemsGrouped())" :key="category">
+              <div class="market-category">
+                <h4 x-text="category"></h4>
+                <div class="market-items-list">
+                  <template x-for="item in getMarketItemsGrouped()[category]" :key="item.id">
+                    <div class="market-item">
+                      <div class="market-item-info">
+                        <span class="market-item-name" x-text="item.name"></span>
+                        <span class="market-item-desc" x-text="item.description"></span>
+                      </div>
+                      <div class="market-item-price">
+                        <span x-text="item.base_price + ' €/' + item.unit"></span>
+                        <button @click="addMarketItem(item)" class="btn-add-small">
+                          <i data-feather="plus"></i> Dodaj
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeAddItemModals()">Zapri</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- WORK ITEMS PAGE -->
+    <div x-show="page === 'items'" class="page">
+      <div class="page-header">
+        <h1>Postavke</h1>
+        <button class="btn-primary" @click="openAddItemMenu()">
+          <i data-feather="plus"></i> Dodaj postavko
+        </button>
+      </div>
+      
+      <!-- Search Bar -->
+      <div class="search-bar">
+        <i data-feather="search"></i>
+        <input type="text" x-model="searchQuery" placeholder="Išči postavke..." @input="filterItemsBySearch()">
+        <button x-show="searchQuery" @click="searchQuery = ''; filterItemsBySearch()" class="clear-search">✕</button>
+      </div>
+      
+      <div class="header-info">
+        <span x-text="filteredItems.length + ' postavk' + (searchQuery ? ' najdenih' : '')"></span>
+        <span>⭐ Označene na vrhu vsake kategorije</span>
+      </div>
+      
+      <div class="categories-list">
+        <template x-for="(items, category) in getGroupedItems()" :key="category">
+          <div class="category-section">
+            <h2 class="category-header" x-text="category"></h2>
+            <div class="items-grid">
+              <template x-for="item in items" :key="item.id">
+                <div class="item-card" :class="{ 'favorite-item': isFavorite(item.id), 'custom-item': canEditItem(item.id) }">
+                  <div class="item-header">
+                    <div class="item-actions">
+                      <span class="item-price" x-text="item.base_price + ' €/' + item.unit"></span>
+                      <button @click="toggleFavorite(item.id)" class="favorite-btn" :class="{ 'is-fav': isFavorite(item.id) }" title="Dodaj med priljubljene">
+                        <span x-text="isFavorite(item.id) ? '★' : '☆'"></span>
+                      </button>
+                    </div>
+                  </div>
+                  <h3 x-text="item.name"></h3>
+                  <p x-text="item.description" class="item-desc"></p>
+                  <div class="item-factors">
+                    <span class="factor easy" title="Lahko">L: -20%</span>
+                    <span class="factor medium active" title="Srednje">M: 0%</span>
+                    <span class="factor hard" title="Težko">T: +30%</span>
+                  </div>
+                  <!-- Edit/Delete buttons for custom items -->
+                  <div class="item-admin" x-show="canEditItem(item.id)">
+                    <button @click="openEditItem(item)" class="btn-edit" title="Uredi">
+                      <i data-feather="edit-2"></i> Uredi
+                    </button>
+                    <button @click="deleteItem(item.id)" class="btn-delete" title="Izbriši">
+                      <i data-feather="trash-2"></i> Briši
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+    
+    <!-- MATERIALS PAGE -->
+    <div x-show="page === 'materials'" class="page">
+      <div class="page-header">
+        <h1>Materiali</h1>
+        <button class="btn-primary" @click="openAddMaterial()">
+          <i data-feather="plus"></i> Dodaj material
+        </button>
+      </div>
+      
+      <!-- Search Bar -->
+      <div class="search-bar">
+        <i data-feather="search"></i>
+        <input type="text" x-model="materialSearchQuery" placeholder="Išči materiale..." @input="filterMaterialsBySearch()">
+        <button x-show="materialSearchQuery" @click="materialSearchQuery = ''; filterMaterialsBySearch()" class="clear-search">✕</button>
+      </div>
+      
+      <div class="header-info">
+        <span x-text="filteredMaterials.length + ' materialov' + (materialSearchQuery ? ' najdenih' : '')"></span>
+      </div>
+      
+      <div class="materials-categories">
+        <template x-for="(mats, category) in getMaterialsGrouped()" :key="category">
+          <div class="material-category-section">
+            <h2 class="material-category-header" x-text="category || 'Brez kategorije'"></h2>
+            <div class="materials-grid">
+              <template x-for="material in mats" :key="material.id">
+                <div class="material-card">
+                  <div class="material-header">
+                    <div class="material-actions-large">
+                      <button @click="editMaterial(material)" class="btn-action edit" title="Uredi material">
+                        <i data-feather="edit-2"></i>
+                        <span>Uredi</span>
+                      </button>
+                      <button @click="deleteMaterial(material.id)" class="btn-action delete" title="Izbriši material">
+                        <i data-feather="trash-2"></i>
+                        <span>Briši</span>
+                      </button>
+                    </div>
+                  </div>
+                  <h3 x-text="material.name"></h3>
+                  <p x-text="material.description" class="material-desc" x-show="material.description"></p>
+                  <div class="material-price">
+                    <span x-text="material.unit_price + ' €/' + material.unit"></span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+      
+      <div x-show="materials.length === 0" class="empty-state">
+        <i data-feather="box"></i>
+        <p>Ni materialov. Dodaj prvega!</p>
+      </div>
+    </div>
+    
+    <!-- ADD/EDIT MATERIAL MODAL -->
+    <div x-show="showMaterialModal" class="modal" @click.self="closeMaterialModal()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 x-text="editingMaterial ? 'Uredi material' : 'Dodaj material'"></h3>
+          <button class="btn-icon" @click="closeMaterialModal()">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Naziv materiala *</label>
+            <input type="text" x-model="materialForm.name" placeholder="npr. Lepilo za ploščice">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Kategorija</label>
+              <select x-model="materialForm.category">
+                <option value="">-- Izberi --</option>
+                <option value="Keramika">Keramika</option>
+                <option value="Suhomontaža">Suhomontaža</option>
+                <option value="Pleskarija">Pleskarija</option>
+                <option value="Elektro">Elektro</option>
+                <option value="Vodovod">Vodovod</option>
+                <option value="Talne obloge">Talne obloge</option>
+                <option value="Izolacije">Izolacije</option>
+                <option value="Ostalo">Ostalo</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Enota</label>
+              <select x-model="materialForm.unit">
+                <option value="kg">kg (kilogram)</option>
+                <option value="kos">kos (kos)</option>
+                <option value="m²">m² (kvadratni meter)</option>
+                <option value="m">m (meter)</option>
+                <option value="L">L (liter)</option>
+                <option value="kom">kom (komplet)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Cena (€ / enota)</label>
+            <input type="number" x-model="materialForm.unit_price" step="0.01" min="0" placeholder="npr. 12.50">
+          </div>
+          <div class="form-group">
+            <label>Opis (opcijsko)</label>
+            <textarea x-model="materialForm.description" rows="2" placeholder="Kratek opis..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeMaterialModal()">Prekliči</button>
+          <button class="btn-primary" @click="saveMaterial()">Shrani</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- CALCULATOR PAGE -->
+    <div x-show="page === 'calculator'" class="page">
+      <div class="page-header">
+        <h1>🧮 Terenski Kalkulator</h1>
+      </div>
+      
+      <div class="calculator-container">
+        <!-- Measurements Section -->
+        <div class="calc-section">
+          <h3>📏 Meritve</h3>
+          <div class="add-measurement">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Tip površine</label>
+                <select x-model="newMeasurement.type" @change="updateMeasurementLabels()">
+                  <option value="floor">🏠 Tla (tlaki)</option>
+                  <option value="ceiling">⬆️ Strop</option>
+                  <option value="wall">🧱 Stena</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Prostor / Opis</label>
+                <input type="text" x-model="newMeasurement.name" placeholder="npr. Dnevna soba">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group small">
+                <label x-text="newMeasurement.type === 'wall' ? 'Širina (m)' : 'Dolžina (m)'">Dolžina (m)</label>
+                <input type="number" x-model="newMeasurement.length" step="0.01" placeholder="0">
+              </div>
+              <div class="form-group small">
+                <label x-text="newMeasurement.type === 'wall' ? 'Višina (m)' : 'Širina (m)'">Širina (m)</label>
+                <input type="number" x-model="newMeasurement.width" step="0.01" placeholder="0">
+              </div>
+              <div class="form-group small">
+                <label>Količina</label>
+                <input type="number" x-model="newMeasurement.quantity" step="1" placeholder="1" min="1">
+              </div>
+            </div>
+            <div class="measurement-preview" x-show="newMeasurement.length && newMeasurement.width">
+              <span>Površina: <strong x-text="(newMeasurement.length * newMeasurement.width * (newMeasurement.quantity || 1)).toFixed(2)"></strong> m²</span>
+            </div>
+            <button class="btn-primary" @click="addMeasurement()">
+              <i data-feather="plus"></i> Dodaj meritev
+            </button>
+          </div>
+          
+          <div class="measurements-list" x-show="measurements.length > 0">
+            <div class="list-header">
+              <span>Prostor</span>
+              <span class="text-center">Mere</span>
+              <span class="text-center">Kol.</span>
+              <span class="text-right">m²</span>
+              <span></span>
+            </div>
+            <template x-for="(m, index) in measurements" :key="index">
+              <div class="measurement-item">
+                <div class="measurement-main">
+                  <span class="measurement-type-icon" x-text="m.type === 'floor' ? '🏠' : (m.type === 'ceiling' ? '⬆️' : '🧱')"></span>
+                  <div class="measurement-details">
+                    <strong x-text="m.name || 'Brez naziva'"></strong>
+                    <span x-text="m.area.toFixed(2) + ' m² (' + m.length + '×' + m.width + ')'"></span>
+                  </div>
+                </div>
+                
+                <!-- Inline form for adding to quote -->
+                <div class="inline-quote-form">
+                  <select x-model="m.selectedWorkItem" @change="updateMeasurementPrice(index)">
+                    <option value="">Izberi delo...</option>
+                    <template x-for="item in workItems" :key="item.id">
+                      <option :value="item.id" x-text="item.name + ' (' + item.base_price + '€/' + item.unit + ')'"></option>
+                    </template>
+                  </select>
+                  <select x-model="m.difficulty" @change="updateMeasurementPrice(index)" style="width: 90px;">
+                    <option value="easy">Lahko</option>
+                    <option value="medium">Srednje</option>
+                    <option value="hard">Težko</option>
+                  </select>
+                  <span class="price-preview" x-text="m.calculatedPrice ? m.calculatedPrice.toFixed(2) + '€' : '-'"></span>
+                  <button type="button" class="btn-add" @click.prevent="addMeasurementToQuote(index)" :disabled="!m.selectedWorkItem || m.addedToQuote" :class="{ 'added': m.addedToQuote }">
+                    <span x-show="!m.addedToQuote">➕ Dodaj</span>
+                    <span x-show="m.addedToQuote">✓ Dodano</span>
+                  </button>
+                  <button class="btn-delete" @click="removeMeasurement(index)">✕</button>
+                </div>
+                
+                <div class="added-to-quote-banner" x-show="m.addedToQuote">
+                  <span>✓ V predračunu: <strong x-text="m.quoteItemName"></strong> — <span x-text="m.calculatedPrice.toFixed(2) + '€'"></span></span>
+                </div>
+              </div>
+            </template>
+            
+            <div class="total-area">
+              <span>SKUPAJ:</span>
+              <strong x-text="totalArea.toFixed(2) + ' m²'"></strong>
+            </div>
+          </div>
+          
+          <div x-show="measurements.length === 0" class="empty-state small">
+            <p>Dodaj prvo meritev</p>
+          </div>
+        </div>
+        
+        <!-- Notes Section -->
+        <div class="calc-section">
+          <h3>📝 Beležka</h3>
+          <div class="form-group">
+            <textarea x-model="calculatorNotes" rows="8" placeholder="Zapiši opombe, mere, posebnosti...&#10;&#10;Primer:&#10;- Stara keramika odstranjena&#10;- Podlaga neenakomerna&#10;- Potrebno izravnavo&#10;- Dostop omejen"></textarea>
+          </div>
+          <div class="notes-actions">
+            <button class="btn-secondary" @click="clearCalculator()">
+              <i data-feather="trash-2"></i> Počisti vse
+            </button>
+            <button class="btn-primary" @click="saveCalculatorNotes()">
+              <i data-feather="save"></i> Shrani
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- CALCULATOR TO QUOTE MODAL -->
+    <div x-show="showCalculatorQuoteModal" class="modal modal-large" @click.self="closeCalculatorQuoteModal()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h3>📊 Dodaj postavke v predračun</h3>
+            <p class="modal-subtitle" x-text="calculatorQuoteItems.length + ' postavk bo dodanih v predračun'"></p>
+          </div>
+          <button class="btn-icon" @click="closeCalculatorQuoteModal()">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Preview of items to be added -->
+          <div class="calc-quote-preview" x-show="calculatorQuoteItems.length > 0">
+            <h4>Seznam postavk</h4>
+            <div class="calc-quote-items-list">
+              <template x-for="(item, index) in calculatorQuoteItems" :key="index">
+                <div class="calc-quote-item-row">
+                  <div class="calc-quote-item-info">
+                    <span class="calc-quote-measurement" x-text="item.measurementName"></span>
+                    <span class="calc-quote-area" x-text="item.area.toFixed(2) + ' m²'"></span>
+                  </div>
+                  <div class="calc-quote-item-details">
+                    <select x-model="item.workItemId" @change="updateCalcQuoteItemPrice(index)" class="calc-quote-select">
+                      <option value="">-- Izberi delo --</option>
+                      <template x-for="wi in workItems" :key="wi.id">
+                        <option :value="wi.id" x-text="wi.name + ' (' + wi.base_price + '€/' + wi.unit + ')'"></option>
+                      </template>
+                    </select>
+                    <select x-model="item.difficulty" @change="updateCalcQuoteItemPrice(index)" class="calc-quote-difficulty">
+                      <option value="easy">Lahko (-20%)</option>
+                      <option value="medium" selected>Srednje</option>
+                      <option value="hard">Težko (+30%)</option>
+                    </select>
+                  </div>
+                  <div class="calc-quote-item-price">
+                    <span x-text="formatPrice(item.pricePerUnit) + '/m²'"></span>
+                    <strong x-text="formatPrice(item.subtotal)"></strong>
+                  </div>
+                  <button class="btn-delete-row" @click="removeCalcQuoteItem(index)" title="Odstrani postavko">✕</button>
+                </div>
+              </template>
+            </div>
+            
+            <!-- Add another item button -->
+            <div class="calc-quote-add-more">
+              <button class="btn-secondary" @click="addAnotherCalcQuoteItem()">
+                <i data-feather="plus"></i> Dodaj še eno delo za zadnjo meritev
+              </button>
+            </div>
+          </div>
+          
+          <!-- No items yet -->
+          <div x-show="calculatorQuoteItems.length === 0" class="empty-state small">
+            <p>Klikni "Dodaj postavko" pri meritvi, da jo dodaš v predračun.</p>
+          </div>
+          
+          <!-- Quote preview totals -->
+          <div class="calc-quote-totals" x-show="calculatorQuoteItems.length > 0">
+            <div class="total-row">
+              <span>Skupaj postavk:</span>
+              <span x-text="calculatorQuoteItems.length"></span>
+            </div>
+            <div class="total-row">
+              <span>Skupna površina:</span>
+              <span x-text="calculatorQuoteTotalArea.toFixed(2) + ' m²'"></span>
+            </div>
+            <div class="total-row grand-total">
+              <span>Predvideni znesek:</span>
+              <span x-text="formatPrice(calculatorQuoteTotal)"></span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeCalculatorQuoteModal()">Prekliči</button>
+          <button class="btn-primary" @click="createQuoteFromCalculatorItems()" :disabled="calculatorQuoteItems.length === 0 || !allCalcQuoteItemsValid()">
+            <i data-feather="file-text"></i> Ustvari predračun
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ADD SINGLE ITEM TO QUOTE MODAL -->
+    <div x-show="showAddSingleItemModal" class="modal" @click.self="closeAddSingleItemModal()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Dodaj postavko za meritev</h3>
+          <button class="btn-icon" @click="closeAddSingleItemModal()">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="selected-measurement-info">
+            <span class="measurement-label" x-text="selectedMeasurementForItem?.name"></span>
+            <span class="measurement-area" x-text="(selectedMeasurementForItem?.area || 0).toFixed(2) + ' m²'"></span>
+          </div>
+          
+          <div class="form-group">
+            <label>Kategorija</label>
+            <select x-model="singleItemCategory" @change="filterItemsForSingleModal()">
+              <option value="">Vse kategorije</option>
+              <template x-for="cat in categories" :key="cat">
+                <option :value="cat" x-text="cat"></option>
+              </template>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Delo *</label>
+            <select x-model="singleItemWorkItemId" @change="calculateSingleItemPreview()">
+              <option value="">-- Izberi delo --</option>
+              <template x-for="item in filteredItemsForSingleModal" :key="item.id">
+                <option :value="item.id" x-text="item.name + ' (' + item.base_price + '€/' + item.unit + ')'"></option>
+              </template>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Težavnost</label>
+            <select x-model="singleItemDifficulty" @change="calculateSingleItemPreview()">
+              <option value="easy">Lahko (-20%)</option>
+              <option value="medium" selected>Srednje</option>
+              <option value="hard">Težko (+30%)</option>
+            </select>
+          </div>
+          
+          <div class="single-item-preview" x-show="singleItemWorkItemId">
+            <div class="preview-row">
+              <span>Cena/m²:</span>
+              <span x-text="formatPrice(singleItemPricePerUnit)"></span>
+            </div>
+            <div class="preview-row">
+              <span>Količina:</span>
+              <span x-text="(selectedMeasurementForItem?.area || 0).toFixed(2) + ' m²'"></span>
+            </div>
+            <div class="preview-row total">
+              <span>Znesek:</span>
+              <strong x-text="formatPrice(singleItemSubtotal)"></strong>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="closeAddSingleItemModal()">Prekliči</button>
+          <button class="btn-primary" @click="addSingleItemToQuote()" :disabled="!singleItemWorkItemId">
+            <i data-feather="plus"></i> Dodaj v predračun
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- SETTINGS PAGE -->
+    <div x-show="page === 'settings'" class="page">
+      <div class="page-header">
+        <h1>Nastavitve podjetja</h1>
+      </div>
+      
+      <div class="settings-form">
+        <div class="form-section">
+          <h3>Osnovni podatki</h3>
+          <div class="form-group">
+            <label>Naziv podjetja</label>
+            <input type="text" x-model="company.name">
+          </div>
+          <div class="form-group">
+            <label>Naslov</label>
+            <textarea x-model="company.address" rows="2"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Telefon</label>
+              <input type="text" x-model="company.phone">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" x-model="company.email">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Davčna številka</label>
+              <input type="text" x-model="company.tax_id">
+            </div>
+            <div class="form-group">
+              <label>Transakcijski račun</label>
+              <input type="text" x-model="company.bank_account">
+            </div>
+          </div>
+        </div>
+        
+        <button class="btn-primary" @click="saveCompany()">
+          <i data-feather="save"></i> Shrani nastavitve
+        </button>
+      </div>
+    </div>
+    
+  </main>
+
+  <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Service Worker registered'))
+        .catch(err => console.log('Service Worker registration failed'));
+    }
+    
+    // Prevent zoom on double-tap for mobile
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', (e) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+  </script>
+  <script src="app.js"></script>
+  <script src="calc-quote-simple.js"></script>
+  <script>feather.replace();</script>
+</body>
+</html>

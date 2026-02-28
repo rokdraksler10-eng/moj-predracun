@@ -1,0 +1,19 @@
+{
+  "name": "moj-predracun",
+  "version": "1.0.0",
+  "description": "PWA aplikacija za gradbene predračune",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "init-db": "node scripts/init-db.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "pdfkit": "^0.14.0"
+  }
+}
