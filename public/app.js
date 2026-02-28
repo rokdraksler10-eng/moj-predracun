@@ -685,12 +685,163 @@ function app() {
     // Generate PDF
     generatePDF(type) {
       if (!this.currentQuote.id) {
-        alert('Najprej shrani predračun');
+        if (window.showToast) {
+          window.showToast('❌ Najprej shrani predračun', 'error');
+        } else {
+          alert('Najprej shrani predračun');
+        }
         return;
       }
       
       const url = `/api/quotes/${this.currentQuote.id}/pdf/${type}`;
       window.open(url, '_blank');
+    },
+    
+    // Print quote
+    printQuote() {
+      if (!this.currentQuote) {
+        if (window.showToast) {
+          window.showToast('❌ Ni predračuna za tiskanje', 'error');
+        } else {
+          alert('Ni predračuna za tiskanje');
+        }
+        return;
+      }
+      
+      // Create print-friendly HTML
+      const printWindow = window.open('', '_blank');
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Predračun ${this.currentQuote.project_name || ''}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+            h1 { color: #2563eb; border-bottom: 3px solid #2563eb; padding-bottom: 10px; }
+            .header { margin-bottom: 30px; }
+            .company { font-size: 24px; font-weight: bold; color: #1e293b; }
+            .info { margin: 20px 0; }
+            .info-row { display: flex; margin: 8px 0; }
+            .info-label { width: 150px; font-weight: bold; color: #64748b; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th { background: #f1f5f9; padding: 12px; text-align: left; font-weight: 600; }
+            td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+            tr:nth-child(even) { background: #fafafa; }
+            .total { font-size: 18px; font-weight: bold; text-align: right; margin-top: 20px; padding: 15px; background: #dbeafe; border-radius: 8px; }
+            .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e2e8f0; font-size: 12px; color: #64748b; }
+            @media print { body { padding: 20px; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="company">${this.company.name || 'Moje Gradbeno Podjetje'}</div>
+            <div>${this.company.address || ''}</div>
+            <div>Tel: ${this.company.phone || ''} | Email: ${this.company.email || ''}</div>
+          </div>
+          
+          <h1>PREDRAČUN #${this.currentQuote.id}</h1>
+          
+          <div class="info">
+            <div class="info-row">
+              <div class="info-label">Projekt:</div>
+              <div>${this.currentQuote.project_name || 'Brez naziva'}</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Stranka:</div>
+              <div>${this.currentQuote.client_name || 'Brez stranke'}</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Lokacija:</div>
+              <div>${this.currentQuote.project_address || ''}</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Datum:</div>
+              <div>${new Date().toLocaleDateString('sl-SI')}</div>
+            </div>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Postavka</th>
+                <th style="text-align: center;">Kol.</th>
+                <th style="text-align: right;">Cena</th>
+                <th style="text-align: right;">Znesek</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.currentQuote.items?.map(item => `
+                <tr>
+                  <td>${this.getWorkItemName(item.work_item_id)}</td>
+                  <td style="text-align: center;">${item.quantity} ${item.work_item_unit || 'm²'}</td>
+                  <td style="text-align: right;">${item.price_per_unit?.toFixed(2)} €</td>
+                  <td style="text-align: right;">${item.subtotal?.toFixed(2)} €</td>
+                </tr>
+              `).join('') || ''}
+            </tbody>
+          </table>
+          
+          <div class="total">
+            SKUPAJ: ${this.currentQuote.total?.toFixed(2)} € (z DDV)
+          </div>
+          
+          <div class="footer">
+            <p>Hvala za zaupanje!</p>
+            <p>${this.company.name || ''} | ${this.company.phone || ''} | ${this.company.email || ''}</p>
+          </div>
+          
+          <script>
+            window.onload = function() { window.print(); };
+          </script>
+        </body>
+        </html>
+      `;
+      
+      printWindow.document.write(html);
+      printWindow.document.close();
+    },
+    
+    // Export to CSV
+    exportCSV() {
+      if (!this.currentQuote) {
+        if (window.showToast) {
+          window.showToast('❌ Ni predračuna za izvoz', 'error');
+        } else {
+          alert('Ni predračuna za izvoz');
+        }
+        return;
+      }
+      
+      // Create CSV content
+      let csv = 'Postavka,Kolicina,Enota,Cena na enoto,Znesek\n';
+      
+      this.currentQuote.items?.forEach(item => {
+        const name = this.getWorkItemName(item.work_item_id);
+        const quantity = item.quantity;
+        const unit = item.work_item_unit || 'm²';
+        const price = item.price_per_unit?.toFixed(2);
+        const total = item.subtotal?.toFixed(2);
+        csv += `"${name}",${quantity},"${unit}",${price},${total}\n`;
+      });
+      
+      csv += `\nSkupaj brez DDV,,,,${this.currentQuote.subtotal?.toFixed(2)}\n`;
+      csv += `DDV (22%),,,,${this.currentQuote.tax_amount?.toFixed(2)}\n`;
+      csv += `SKUPAJ,,,,${this.currentQuote.total?.toFixed(2)}\n`;
+      
+      // Download CSV
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `predracun-${this.currentQuote.id || 'nov'}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      if (window.showToast) {
+        window.showToast('✅ CSV izvožen!', 'success');
+      }
     },
     
     // Save company settings

@@ -302,6 +302,14 @@
               <span class="pdf-desc">Kaj delati, koliko materiala</span>
             </button>
           </div>
+          <div class="export-buttons-row" style="margin-top: 1rem; display: flex; gap: 0.75rem;">
+            <button class="btn-export" @click="printQuote()" style="flex: 1; padding: 0.75rem; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+              🖨️ Natisni
+            </button>
+            <button class="btn-export" @click="exportCSV()" style="flex: 1; padding: 0.75rem; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+              📊 Izvoz CSV
+            </button>
+          </div>
         </div>
       </div>
     </div>
