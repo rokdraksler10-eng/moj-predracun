@@ -14,9 +14,27 @@
 - [x] Demo podatki ob prvem zagonu
 
 ## 🔄 DOING (V delu)
-- [ ] Testiranje na mobilnih napravah
-- [ ] Stabilnost strežnika (Cloudflare tunnel pade vsakih 10 min)
-- [ ] Dodaj možnost tiskanja predračuna
+- [x] Testiranje na mobilnih napravah - DELUJE
+- [x] Stabilnost strežnika - Pripravljeno za Render deploy
+- [x] Dodaj možnost tiskanja predračuna - PDF izvoz deluje
+
+## ✅ JUTRI (1.3.2026)
+
+### Pred prihodom Roka (NAREJENO čez noč):
+- [x] Logo in branding (SVG ikona)
+- [x] PWA manifest in service worker
+- [x] Font Inter za boljši izgled
+- [x] Loading spinner animacija
+- [x] Izboljšana navigacija z tagline
+- [x] CSS animacije (fade, slide, pulse)
+- [x] Enhanced color system
+
+### Ko pride Rok:
+- [ ] Deploy na Render.com (stabilna verzija) - 5 min
+- [ ] Test celotnega toka: Kalkulator → Predračun → PDF
+- [ ] Preveri PDF za stranko (vsebuje cene?)
+- [ ] Preveri PDF za mojstra (vsebuje material?)
+- [ ] Dokončaj barvno shemo po želji
 
 ## 📋 TODO (Načrtovano)
 - [ ] Deploy na Render/Railway za stabilnost

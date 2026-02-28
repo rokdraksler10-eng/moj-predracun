@@ -2,45 +2,99 @@
 <html lang="sl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moj Predračun</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Moj Predračun | Profesionalni gradbeni predračuni</title>
+  <meta name="description" content="Hitro in enostavno ustvarjaj profesionalne gradbene predračune na terenu">
+  
+  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2563eb">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="/icon-192.png">
+  <meta name="apple-mobile-web-app-title" content="Moj Predračun">
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="mask-icon" href="/favicon.svg" color="#2563eb">
+  
+  <!-- Preconnect -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://unpkg.com">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
   <!-- Alpine.js -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
   <!-- Feather Icons -->
   <script src="https://unpkg.com/feather-icons"></script>
+  
+  <!-- Register Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => console.log('SW registered'))
+          .catch((error) => console.log('SW registration failed'));
+      });
+    }
+  </script>
 </head>
 <body x-data="app()" x-init="init()">
   
   <!-- Navigation -->
   <nav class="nav">
-    <div class="nav-brand">
-      <i data-feather="tool"></i>
-      <span>Moj Predračun</span>
+    <div class="nav-brand" @click="page = 'quotes'">
+      <div class="logo-icon">
+        <svg viewBox="0 0 32 32" width="28" height="28">
+          <rect width="32" height="32" rx="6" fill="currentColor"/>
+          <path d="M16 6 L8 14 L8 26 L13 26 L13 18 L19 18 L19 26 L24 26 L24 14 Z" fill="white"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">Moj Predračun</span>
+        <span class="brand-tagline">Gradbeni kalkulator</span>
+      </div>
     </div>
     <div class="nav-links">
-      <button @click="page = 'quotes'" :class="{ active: page === 'quotes' }">
-        <i data-feather="file-text"></i> Predračuni
+      <button @click="page = 'quotes'" :class="{ active: page === 'quotes' }" title="Predračuni">
+        <i data-feather="file-text"></i>
+        <span>Predračuni</span>
       </button>
-      <button @click="page = 'items'" :class="{ active: page === 'items' }">
-        <i data-feather="list"></i> Postavke
+      <button @click="page = 'items'" :class="{ active: page === 'items' }" title="Postavke">
+        <i data-feather="list"></i>
+        <span>Postavke</span>
       </button>
-      <button @click="page = 'materials'" :class="{ active: page === 'materials' }">
-        <i data-feather="box"></i> Materiali
+      <button @click="page = 'materials'" :class="{ active: page === 'materials' }" title="Materiali">
+        <i data-feather="box"></i>
+        <span>Materiali</span>
       </button>
-      <button @click="page = 'calculator'" :class="{ active: page === 'calculator' }">
-        <i data-feather="calculator"></i> Kalkulator
+      <button @click="page = 'calculator'" :class="{ active: page === 'calculator' }" title="Kalkulator">
+        <i data-feather="calculator"></i>
+        <span>Kalkulator</span>
       </button>
-      <button @click="page = 'settings'" :class="{ active: page === 'settings' }">
-        <i data-feather="settings"></i> Nastavitve
+      <button @click="page = 'settings'" :class="{ active: page === 'settings' }" title="Nastavitve">
+        <i data-feather="settings"></i>
+        <span>Nastavitve</span>
       </button>
     </div>
   </nav>
+  
+  <!-- Loading Overlay -->
+  <div x-show="loading" class="loading-overlay" x-transition.opacity>
+    <div class="loading-spinner">
+      <svg viewBox="0 0 50 50" class="spinner">
+        <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="80" stroke-dashoffset="60">
+          <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+      <span>Nalagam...</span>
+    </div>
+  </div>
 
   <!-- Main Content -->
   <main class="main">

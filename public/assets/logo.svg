@@ -1,0 +1,15 @@
+<!-- Logo Moj Predračun -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="95" fill="#2563eb"/>
+  
+  <!-- House/Building Icon -->
+  <path d="M100 40 L60 80 L60 140 L85 140 L85 110 L115 110 L115 140 L140 140 L140 80 Z" fill="white"/>
+  
+  <!-- Calculator/Document overlay -->
+  <rect x="125" y="125" width="45" height="45" rx="5" fill="#1e40af"/>
+  <rect x="130" y="132" width="35" height="4" fill="white"/>
+  <rect x="130" y="140" width="25" height="4" fill="white"/>
+  <rect x="130" y="148" width="30" height="4" fill="white"/>
+  <rect x="130" y="156" width="20" height="4" fill="#fbbf24"/>
+</svg>
