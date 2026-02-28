@@ -113,6 +113,49 @@
           </button>
         </div>
         
+        <!-- Quick Actions -->
+        <div class="quick-actions" x-show="quotes.length > 0">
+          <h3>⚡ Hitre akcije</h3>
+          <div class="quick-actions-grid">
+            <button class="quick-action-btn" @click="page = 'calculator'">
+              <span class="quick-action-icon">🧮</span>
+              <span class="quick-action-text">Kalkulator</span>
+              <span class="quick-action-desc">Hitro izračunaj in dodaj v predračun</span>
+            </button>
+            <button class="quick-action-btn" @click="newQuote()">
+              <span class="quick-action-icon">📄</span>
+              <span class="quick-action-text">Nov predračun</span>
+              <span class="quick-action-desc">Začni s praznim predračunom</span>
+            </button>
+            <button class="quick-action-btn" @click="page = 'items'">
+              <span class="quick-action-icon">📋</span>
+              <span class="quick-action-text">Uredi postavke</span>
+              <span class="quick-action-desc">Dodaj ali uredi cene del</span>
+            </button>
+            <button class="quick-action-btn" @click="page = 'settings'">
+              <span class="quick-action-icon">⚙️</span>
+              <span class="quick-action-text">Nastavitve</span>
+              <span class="quick-action-desc">Podatki podjetja in logo</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Stats Summary -->
+        <div class="stats-summary" x-show="quotes.length > 0">
+          <div class="stat-item">
+            <span class="stat-value" x-text="quotes.length"></span>
+            <span class="stat-label">Predračunov</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" x-text="quotes.filter(q => q.status === 'draft').length"></span>
+            <span class="stat-label">V pripravi</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" x-text="formatPrice(quotes.reduce((sum, q) => sum + (q.total || 0), 0))"></span>
+            <span class="stat-label">Skupna vrednost</span>
+          </div>
+        </div>
+        
         <div class="quotes-grid">
           <template x-for="quote in quotes" :key="quote.id">
             <div class="quote-card-simple" @click="loadQuote(quote.id)">
@@ -126,9 +169,18 @@
               </div>
             </div>
           </template>
-          <div x-show="quotes.length === 0" class="empty-state">
-            <i data-feather="inbox"></i>
-            <p>Ni predračunov. Ustvari prvega!</p>
+          <div x-show="quotes.length === 0" class="empty-state welcome-empty">
+            <div class="empty-illustration">🏗️</div>
+            <h3>Začni s prvim predračunom</h3>
+            <p>Ustvari profesionalen gradbeni predračun v samo nekaj klikih.</p>
+            <button class="btn-primary btn-large" @click="newQuote()">
+              <i data-feather="plus"></i> Ustvari predračun
+            </button>
+            <div class="empty-actions">
+              <button class="btn-text" @click="page = 'calculator'">
+                🧮 Ali pojdi v Kalkulator
+              </button>
+            </div>
           </div>
         </div>
       </div>
