@@ -571,32 +571,48 @@ function app() {
         
         // If client_name is provided but no client_id, create client first
         if (this.currentQuote.client_name && !clientId) {
-          const clientRes = await fetch('/api/clients', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: this.currentQuote.client_name,
-              address: this.currentQuote.project_address || ''
-            })
-          });
-          const clientResult = await clientRes.json();
-          if (clientResult.id) {
-            clientId = clientResult.id;
-            this.currentQuote.client_id = clientId;
+          try {
+            const clientRes = await fetch('/api/clients', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: this.currentQuote.client_name,
+                address: this.currentQuote.project_address || ''
+              })
+            });
+            if (!clientRes.ok) {
+              throw new Error('Napaka pri ustvarjanju stranke');
+            }
+            const clientResult = await clientRes.json();
+            if (clientResult.id) {
+              clientId = clientResult.id;
+              this.currentQuote.client_id = clientId;
+            }
+          } catch (clientError) {
+            console.error('Client creation error:', clientError);
+            // Continue without client - database allows NULL
           }
         }
         
-        // Prepare data for API
+        // Prepare data for API - ensure items is an array
         const quoteData = {
           ...this.currentQuote,
-          client_id: clientId
+          client_id: clientId,
+          items: this.currentQuote.items || []
         };
+        
+        console.log('Saving quote:', quoteData); // Debug log
         
         const res = await fetch('/api/quotes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(quoteData)
         });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || 'Server error');
+        }
         
         const result = await res.json();
         

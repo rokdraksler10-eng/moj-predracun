@@ -178,43 +178,49 @@ app.get('/api/quotes/:id', (req, res) => {
 
 app.post('/api/quotes', (req, res) => {
   try {
-    const { client_id, project_name, project_address, valid_until, items } = req.body;
+    const { client_id, project_name, project_address, valid_until, items, subtotal, tax_rate, tax_amount, total, labor_total, material_total } = req.body;
     
-    // Calculate totals
-    let subtotal = 0;
-    let material_total = 0;
-    let labor_total = 0;
+    // Use provided totals or calculate from items
+    let finalSubtotal = subtotal || 0;
+    let finalLaborTotal = labor_total || 0;
+    let finalMaterialTotal = material_total || 0;
+    let finalTaxRate = tax_rate || 22;
+    let finalTaxAmount = tax_amount || 0;
+    let finalTotal = total || 0;
     
-    items.forEach(item => {
-      const laborCost = item.quantity * item.price_per_unit;
-      const materialCost = item.materials?.reduce((sum, m) => sum + (m.quantity * m.unit_price), 0) || 0;
-      labor_total += laborCost;
-      material_total += materialCost;
-      subtotal += laborCost + materialCost;
-    });
-    
-    const tax_rate = 22; // DDV
-    const tax_amount = subtotal * (tax_rate / 100);
-    const total = subtotal + tax_amount;
+    // If no totals provided, calculate from items
+    if (!subtotal && items && items.length > 0) {
+      finalSubtotal = 0;
+      finalLaborTotal = 0;
+      items.forEach(item => {
+        const itemSubtotal = (item.quantity || 0) * (item.price_per_unit || 0);
+        finalLaborTotal += itemSubtotal;
+        finalSubtotal += itemSubtotal;
+      });
+      finalTaxAmount = finalSubtotal * (finalTaxRate / 100);
+      finalTotal = finalSubtotal + finalTaxAmount;
+    }
     
     // Insert quote
     const quoteStmt = db.prepare(`
       INSERT INTO quotes (client_id, project_name, project_address, valid_until, subtotal, tax_rate, tax_amount, total, labor_total, material_total)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    const quoteResult = quoteStmt.run(client_id, project_name, project_address, valid_until, subtotal, tax_rate, tax_amount, total, labor_total, material_total);
+    const quoteResult = quoteStmt.run(client_id, project_name, project_address, valid_until || new Date().toISOString().split('T')[0], finalSubtotal, finalTaxRate, finalTaxAmount, finalTotal, finalLaborTotal, finalMaterialTotal);
     const quote_id = quoteResult.lastInsertRowid;
     
     // Insert items
-    const itemStmt = db.prepare(`
-      INSERT INTO quote_items (quote_id, work_item_id, quantity, price_per_unit, difficulty, notes, subtotal)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    
-    items.forEach(item => {
-      const itemSubtotal = item.quantity * item.price_per_unit;
-      itemStmt.run(quote_id, item.work_item_id, item.quantity, item.price_per_unit, item.difficulty, item.notes, itemSubtotal);
-    });
+    if (items && items.length > 0) {
+      const itemStmt = db.prepare(`
+        INSERT INTO quote_items (quote_id, work_item_id, quantity, price_per_unit, difficulty, notes, subtotal)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      
+      items.forEach(item => {
+        const itemSubtotal = (item.quantity || 0) * (item.price_per_unit || 0);
+        itemStmt.run(quote_id, item.work_item_id, item.quantity || 0, item.price_per_unit || 0, item.difficulty || 'medium', item.notes || '', itemSubtotal);
+      });
+    }
     
     res.json({ id: quote_id, total });
   } catch (error) {
