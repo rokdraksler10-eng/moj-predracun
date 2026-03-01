@@ -16,6 +16,7 @@ function app() {
     searchQuery: '',
     filterStatus: '',
     filteredQuotes: [],
+    darkMode: false,
     
     // User favorites (persisted in localStorage)
     favoriteItems: [],
@@ -107,6 +108,7 @@ function app() {
     // Init
     async init() {
       this.loadFavorites();
+      this.loadDarkMode(); // Load dark mode preference
       await this.loadData();
       await this.loadQuotes(); // Load all quotes
       this.loadCustomItems(); // Load user-added items
@@ -265,6 +267,35 @@ function app() {
       this.showWelcome = false;
       // Mark welcome as shown
       localStorage.setItem('gradbeniApp_welcomeShown', 'true');
+    },
+    
+    // Toggle dark mode
+    toggleDarkMode() {
+      this.darkMode = !this.darkMode;
+      this.applyDarkMode();
+      localStorage.setItem('gradbeniApp_darkMode', this.darkMode ? 'true' : 'false');
+    },
+    
+    // Apply dark mode to document
+    applyDarkMode() {
+      if (this.darkMode) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+    },
+    
+    // Load dark mode preference
+    loadDarkMode() {
+      try {
+        const saved = localStorage.getItem('gradbeniApp_darkMode');
+        if (saved === 'true') {
+          this.darkMode = true;
+          this.applyDarkMode();
+        }
+      } catch (e) {
+        console.error('Error loading dark mode:', e);
+      }
     },
     
     // Load all quotes

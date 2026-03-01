@@ -83,6 +83,9 @@
         <i data-feather="settings"></i>
         <span>Nastavitve</span>
       </button>
+      <button @click="toggleDarkMode()" class="dark-mode-toggle" :title="darkMode ? 'Svetli način' : 'Temni način'">
+        <span x-text="darkMode ? '☀️' : '🌙'"></span>
+      </button>
     </div>
   </nav>
   
