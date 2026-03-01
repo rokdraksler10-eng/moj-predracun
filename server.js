@@ -59,8 +59,18 @@ app.post('/api/company', (req, res) => {
 // Work Items (Postavke del)
 app.get('/api/work-items', (req, res) => {
   try {
-    const items = db.prepare('SELECT * FROM work_items ORDER BY category, name').all();
-    res.json(items);
+    const allItems = db.prepare('SELECT * FROM work_items ORDER BY category, name').all();
+    
+    // Filter duplicates by name (keep first occurrence)
+    const seenNames = new Set();
+    const uniqueItems = allItems.filter(item => {
+      if (seenNames.has(item.name)) return false;
+      seenNames.add(item.name);
+      return true;
+    });
+    
+    console.log(`API: Returning ${uniqueItems.length} unique items (filtered from ${allItems.length})`);
+    res.json(uniqueItems);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -83,8 +93,18 @@ app.post('/api/work-items', (req, res) => {
 // Materials
 app.get('/api/materials', (req, res) => {
   try {
-    const materials = db.prepare('SELECT * FROM materials ORDER BY category, name').all();
-    res.json(materials);
+    const allMaterials = db.prepare('SELECT * FROM materials ORDER BY category, name').all();
+    
+    // Filter duplicates by name (keep first occurrence)
+    const seenNames = new Set();
+    const uniqueMaterials = allMaterials.filter(mat => {
+      if (seenNames.has(mat.name)) return false;
+      seenNames.add(mat.name);
+      return true;
+    });
+    
+    console.log(`API: Returning ${uniqueMaterials.length} unique materials (filtered from ${allMaterials.length})`);
+    res.json(uniqueMaterials);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
