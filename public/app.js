@@ -1445,8 +1445,6 @@ function app() {
       
       // Refresh categories
       this.extractCategories();
-      
-      alert('Postavka izbrisana!');
     },
     
     // ===== MATERIALS MANAGEMENT =====
@@ -1526,13 +1524,12 @@ function app() {
       const material = this.materials.find(m => m.id === materialId);
       if (!material) return;
       
-      if (!confirm(`Ali res želiš izbrisati material "${material.name}"?`)) {
+      if (this.confirmDelete && !confirm(`Ali res želiš izbrisati material "${material.name}"?`)) {
         return;
       }
       
       this.materials = this.materials.filter(m => m.id !== materialId);
       this.saveMaterials();
-      alert('Material izbrisan!');
     },
     
     // Close material modal
@@ -1663,9 +1660,6 @@ function app() {
     
     // Clear calculator
     clearCalculator() {
-      if (!confirm('Ali res želiš počistiti vse meritve in opombe?')) {
-        return;
-      }
       this.measurements = [];
       this.calculatorNotes = '';
       this.totalArea = 0;
