@@ -107,7 +107,9 @@ function app() {
     syncSuccess: null,
     
     // User preferences
-    confirmDelete: true, // Potrdi pred izbrisom (true/false)
+    confirmDelete: localStorage.getItem('gradbeniApp_confirmDelete') !== null 
+      ? localStorage.getItem('gradbeniApp_confirmDelete') === 'true' 
+      : true, // Potrdi pred izbrisom (true/false)
     singleItemCategory: '',
     singleItemWorkItemId: '',
     singleItemDifficulty: 'medium',
@@ -131,6 +133,12 @@ function app() {
       this.extractCategories(); // Extract after loading items
       this.filteredItems = this.getSortedItems();
       this.filteredMaterials = [...this.materials];
+      
+      // Watch for confirmDelete changes and save to localStorage
+      this.$watch('confirmDelete', (value) => {
+        localStorage.setItem('gradbeniApp_confirmDelete', value ? 'true' : 'false');
+      });
+      
       feather.replace();
       console.log('App initialized with', this.workItems.length, 'items,', this.materials.length, 'materials,', this.quotes.length, 'quotes and', this.categories.length, 'categories');
     },
@@ -284,6 +292,12 @@ function app() {
       this.darkMode = !this.darkMode;
       this.applyDarkMode();
       localStorage.setItem('gradbeniApp_darkMode', this.darkMode ? 'true' : 'false');
+    },
+    
+    // Toggle confirm delete setting
+    toggleConfirmDelete() {
+      this.confirmDelete = !this.confirmDelete;
+      localStorage.setItem('gradbeniApp_confirmDelete', this.confirmDelete ? 'true' : 'false');
     },
     
     // Apply dark mode to document

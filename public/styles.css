@@ -205,6 +205,14 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   border-radius: var(--radius);
+  white-space: nowrap;
+}
+
+.nav-links button svg,
+.nav-links button i {
+  min-width: 18px;
+  min-height: 18px;
+  flex-shrink: 0;
   cursor: pointer;
   transition: all var(--transition);
   position: relative;
@@ -476,6 +484,9 @@ button svg {
   font-size: 0.875rem;
   background: var(--card-bg);
   transition: all 0.2s;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-group input:focus,
@@ -949,6 +960,11 @@ button svg {
 .btn-delete {
   background: #fee2e2;
   color: var(--danger);
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
 }
 
 .btn-delete:hover {
