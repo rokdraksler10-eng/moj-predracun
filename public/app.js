@@ -2080,6 +2080,8 @@ function app() {
       this.saveCalculatorData();
       
       // Show message with count of items in quote
+      const itemCount = this.currentQuote.items.length;
+      const totalPrice = this.currentQuote.total || m.calculatedPrice;
     }
   };
 }
