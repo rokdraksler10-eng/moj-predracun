@@ -109,7 +109,7 @@ function app() {
     // User preferences
     confirmDelete: localStorage.getItem('gradbeniApp_confirmDelete') !== null 
       ? localStorage.getItem('gradbeniApp_confirmDelete') === 'true' 
-      : true, // Potrdi pred izbrisom (true/false)
+      : false, // Privzeto brez potrditve (false = ne sprašuj
     singleItemCategory: '',
     singleItemWorkItemId: '',
     singleItemDifficulty: 'medium',
@@ -126,6 +126,9 @@ function app() {
       this.loadCustomItems(); // Load user-added items
       this.loadMaterials(); // Load saved materials
       this.loadCalculatorData(); // Load calculator data
+      
+      // Clear old confirmDelete setting to apply new default (false)
+      localStorage.removeItem('gradbeniApp_confirmDelete');
       
       // Add demo data if first time user (no items at all)
       this.addDemoDataIfNeeded();
