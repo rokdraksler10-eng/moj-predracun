@@ -127,11 +127,8 @@ function app() {
       this.loadMaterials(); // Load saved materials
       this.loadCalculatorData(); // Load calculator data
       
-      // Clear old confirmDelete setting to apply new default (false)
-      localStorage.removeItem('gradbeniApp_confirmDelete');
-      
-      // Add demo data if first time user (no items at all)
-      this.addDemoDataIfNeeded();
+      // Set confirmDelete to false (no alerts on delete)
+      localStorage.setItem('gradbeniApp_confirmDelete', 'false');
       
       this.extractCategories(); // Extract after loading items
       this.filteredItems = this.getSortedItems();
@@ -1195,9 +1192,6 @@ function app() {
         });
         
         this.calculateTotals();
-        alert('Postavka ustvarjena in dodana v predračun!');
-      } else {
-        alert('Postavka uspešno dodana!');
       }
     },
     
@@ -1234,8 +1228,6 @@ function app() {
       
       // Save to localStorage
       this.saveCustomItems();
-      
-      alert(`Postavka "${item.name}" dodana!`);
     },
     
     // Save all items to localStorage
@@ -1358,7 +1350,6 @@ function app() {
       this.newItemDifficulty = 'medium';
       this.newItemNotes = '';
       
-      alert(`Postavka "${marketItem.name}" dodana v predračun!`);
     },
     
     // Check if item can be edited/deleted (all items are editable)
@@ -1417,7 +1408,6 @@ function app() {
       this.showEditItemForm = false;
       this.editingItemId = null;
       
-      alert('Postavka posodobljena!');
     },
     
     // Delete item
@@ -1496,7 +1486,6 @@ function app() {
             unit_price: parseFloat(this.materialForm.unit_price) || 0,
             description: this.materialForm.description
           };
-          alert('Material posodobljen!');
         }
       } else {
         // Add new
@@ -1509,7 +1498,6 @@ function app() {
           description: this.materialForm.description
         };
         this.materials.push(newMaterial);
-        alert('Material dodan!');
       }
       
       // Save to localStorage
@@ -1627,7 +1615,6 @@ function app() {
     // Save calculator data
     saveCalculatorNotes() {
       this.saveCalculatorData();
-      alert('Shranjeno!');
     },
     
     // Save calculator to localStorage
@@ -1698,8 +1685,6 @@ function app() {
       
       // Switch to quotes page
       this.page = 'quotes';
-      
-      alert(`Ustvarjen nov predračun s skupno površino ${this.totalArea.toFixed(2)}m².\n\nDodaj postavke in cene.`);
     },
     
     // ===== SEARCH =====
@@ -2004,8 +1989,6 @@ function app() {
       this.newItemNotes = '';
       this.extractCategories();
       this.filterItemsForQuote();
-      
-      alert(`Predračun ustvarjen z ${this.currentQuote.items.length} postavkami!\nSkupni znesek: ${this.formatPrice(total)}`);
     },
     
     // ===== SIMPLIFIED CALCULATOR → QUOTE =====
@@ -2097,9 +2080,6 @@ function app() {
       this.saveCalculatorData();
       
       // Show message with count of items in quote
-      const itemCount = this.currentQuote.items.length;
-      const totalPrice = this.currentQuote.total || m.calculatedPrice;
-      alert(`✓ ${workItem.name} dodano!\nPostavk v predračunu: ${itemCount}\nSkupaj: ${totalPrice.toFixed(2)}€`);
     }
   };
 }
