@@ -119,28 +119,46 @@ function app() {
     
     // Init
     async init() {
-      this.loadFavorites();
-      this.loadDarkMode(); // Load dark mode preference
-      await this.loadData();
-      await this.loadQuotes(); // Load all quotes
-      this.loadCustomItems(); // Load user-added items
-      this.loadMaterials(); // Load saved materials
-      this.loadCalculatorData(); // Load calculator data
-      
-      // Set confirmDelete to false (no alerts on delete)
-      localStorage.setItem('gradbeniApp_confirmDelete', 'false');
-      
-      this.extractCategories(); // Extract after loading items
-      this.filteredItems = this.getSortedItems();
-      this.filteredMaterials = [...this.materials];
-      
-      // Watch for confirmDelete changes and save to localStorage
-      this.$watch('confirmDelete', (value) => {
-        localStorage.setItem('gradbeniApp_confirmDelete', value ? 'true' : 'false');
-      });
-      
-      feather.replace();
-      console.log('App initialized with', this.workItems.length, 'items,', this.materials.length, 'materials,', this.quotes.length, 'quotes and', this.categories.length, 'categories');
+      try {
+        console.log('Starting app initialization...');
+        
+        this.loadFavorites();
+        this.loadDarkMode(); // Load dark mode preference
+        
+        console.log('Loading data from API...');
+        await this.loadData();
+        
+        console.log('Loading quotes...');
+        await this.loadQuotes(); // Load all quotes
+        
+        console.log('Loading custom items and materials...');
+        this.loadCustomItems(); // Load user-added items
+        this.loadMaterials(); // Load saved materials
+        this.loadCalculatorData(); // Load calculator data
+        
+        // Set confirmDelete to false (no alerts on delete)
+        localStorage.setItem('gradbeniApp_confirmDelete', 'false');
+        
+        this.extractCategories(); // Extract after loading items
+        this.filteredItems = this.getSortedItems();
+        this.filteredMaterials = [...this.materials];
+        
+        // Watch for confirmDelete changes and save to localStorage
+        this.$watch('confirmDelete', (value) => {
+          localStorage.setItem('gradbeniApp_confirmDelete', value ? 'true' : 'false');
+        });
+        
+        feather.replace();
+        console.log('App initialized successfully with', this.workItems.length, 'items,', this.materials.length, 'materials,', this.quotes.length, 'quotes and', this.categories.length, 'categories');
+      } catch (error) {
+        console.error('Error during app initialization:', error);
+      } finally {
+        // Always hide splash screen after initialization (success or failure)
+        setTimeout(() => {
+          this.showSplash = false;
+          console.log('Splash screen hidden');
+        }, 500);
+      }
     },
     
     // Add demo data for first-time users
