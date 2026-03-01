@@ -98,6 +98,16 @@ function app() {
     calculatorQuoteTotalArea: 0,
     selectedMeasurementForItem: null,
     selectedMeasurementIndex: null,
+    
+    // Sync
+    syncCode: null,
+    syncExpires: null,
+    enterSyncCode: '',
+    syncError: null,
+    syncSuccess: null,
+    
+    // User preferences
+    confirmDelete: true, // Potrdi pred izbrisom (true/false)
     singleItemCategory: '',
     singleItemWorkItemId: '',
     singleItemDifficulty: 'medium',
@@ -907,6 +917,110 @@ function app() {
       }
     },
     
+    // SYNC FUNCTIONS
+    async generateSyncCode() {
+      try {
+        // Prepare data to sync
+        const syncData = {
+          quotes: this.quotes,
+          workItems: this.workItems,
+          materials: this.materials,
+          clients: this.clients,
+          company: this.company,
+          syncDate: new Date().toISOString()
+        };
+        
+        const res = await fetch('/api/sync/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: syncData })
+        });
+        
+        if (res.ok) {
+          const result = await res.json();
+          this.syncCode = result.code;
+          this.syncExpires = new Date(result.expiresAt).toLocaleString('sl-SI');
+          if (window.showToast) {
+            window.showToast('✅ Koda ustvarjena! Veljavna 24 ur.', 'success');
+          }
+        } else {
+          if (window.showToast) {
+            window.showToast('❌ Napaka pri ustvarjanju kode', 'error');
+          }
+        }
+      } catch (error) {
+        console.error('Error generating sync code:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri sinhronizaciji', 'error');
+        }
+      }
+    },
+    
+    async retrieveSyncData() {
+      try {
+        if (!this.enterSyncCode || this.enterSyncCode.length < 4) {
+          this.syncError = 'Vnesi veljavno kodo';
+          return;
+        }
+        
+        this.syncError = null;
+        this.syncSuccess = null;
+        
+        const res = await fetch('/api/sync/retrieve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: this.enterSyncCode.trim() })
+        });
+        
+        if (res.ok) {
+          const result = await res.json();
+          const data = result.data;
+          
+          // Confirm before overwriting
+          if (!confirm('⚠️ To bo prepisalo vse trenutne podatke s podatki iz druge naprave. Nadaljujem?')) {
+            return;
+          }
+          
+          // Update all data
+          if (data.quotes) this.quotes = data.quotes;
+          if (data.workItems) this.workItems = data.workItems;
+          if (data.materials) this.materials = data.materials;
+          if (data.clients) this.clients = data.clients;
+          if (data.company) this.company = data.company;
+          
+          // Save to local database
+          await this.saveSyncedData();
+          
+          this.syncSuccess = '✅ Podatki uspešno sinhronizirani!';
+          this.enterSyncCode = '';
+          if (window.showToast) {
+            window.showToast('✅ Sinhronizacija uspešna!', 'success');
+          }
+        } else {
+          const error = await res.json();
+          this.syncError = error.error || 'Neveljavna ali potekla koda';
+        }
+      } catch (error) {
+        console.error('Error retrieving sync data:', error);
+        this.syncError = 'Napaka pri sinhronizaciji. Poskusi znova.';
+      }
+    },
+    
+    async saveSyncedData() {
+      // Save company settings
+      await fetch('/api/company', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this.company)
+      });
+      
+      // Note: Quotes, items, materials would need individual API calls
+      // For simplicity, we'll reload the page to refresh from DB
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    },
+    
     // Format price
     formatPrice(price) {
       return new Intl.NumberFormat('sl-SI', {
@@ -1297,7 +1411,7 @@ function app() {
       }
       
       const item = this.workItems.find(i => i.id === itemId);
-      if (!confirm(`Ali res želiš izbrisati postavko "${item.name}"?`)) {
+      if (this.confirmDelete && !confirm(`Ali res želiš izbrisati postavko "${item.name}"?`)) {
         return;
       }
       

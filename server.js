@@ -104,6 +104,17 @@ app.post('/api/materials', (req, res) => {
   }
 });
 
+// Delete material
+app.delete('/api/materials/:id', (req, res) => {
+  try {
+    const stmt = db.prepare('DELETE FROM materials WHERE id = ?');
+    stmt.run(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Work Item Materials (povezovalna tabela)
 app.get('/api/work-items/:id/materials', (req, res) => {
   try {
@@ -567,6 +578,153 @@ app.get('/api/quotes/:id/pdf/:type', (req, res) => {
     }
     
     doc.end();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== SYNC SYSTEM ====================
+// Simple sync system using codes (no registration needed)
+
+const SYNC_DIR = path.join(dataDir, 'sync');
+if (!fs.existsSync(SYNC_DIR)) {
+  fs.mkdirSync(SYNC_DIR, { recursive: true });
+}
+
+// Generate random sync code
+function generateSyncCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 12; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    if (i === 3 || i === 7) code += '-';
+  }
+  return code;
+}
+
+// Clean expired sync files (older than 24 hours)
+function cleanExpiredSyncs() {
+  try {
+    const files = fs.readdirSync(SYNC_DIR);
+    const now = Date.now();
+    files.forEach(file => {
+      const filePath = path.join(SYNC_DIR, file);
+      const stats = fs.statSync(filePath);
+      const age = now - stats.mtime.getTime();
+      if (age > 24 * 60 * 60 * 1000) { // 24 hours
+        fs.unlinkSync(filePath);
+        console.log(`🗑️ Expired sync deleted: ${file}`);
+      }
+    });
+  } catch (error) {
+    console.error('Error cleaning expired syncs:', error);
+  }
+}
+
+// Clean expired syncs every hour
+setInterval(cleanExpiredSyncs, 60 * 60 * 1000);
+
+// Create sync code with data
+app.post('/api/sync/create', (req, res) => {
+  try {
+    const { data } = req.body;
+    
+    if (!data) {
+      return res.status(400).json({ error: 'No data provided' });
+    }
+    
+    const code = generateSyncCode();
+    const syncData = {
+      code: code,
+      data: data,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    };
+    
+    const filePath = path.join(SYNC_DIR, `${code.replace(/-/g, '')}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(syncData, null, 2));
+    
+    console.log(`✅ Sync code created: ${code}`);
+    res.json({ 
+      code: code, 
+      expiresAt: syncData.expiresAt,
+      message: 'Sync code created. Valid for 24 hours.'
+    });
+  } catch (error) {
+    console.error('Error creating sync:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get data by sync code
+app.post('/api/sync/retrieve', (req, res) => {
+  try {
+    const { code } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ error: 'No code provided' });
+    }
+    
+    const cleanCode = code.replace(/-/g, '').toUpperCase();
+    const filePath = path.join(SYNC_DIR, `${cleanCode}.json`);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Invalid or expired sync code' });
+    }
+    
+    const syncData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    
+    // Check if expired
+    const now = new Date();
+    const expiresAt = new Date(syncData.expiresAt);
+    if (now > expiresAt) {
+      fs.unlinkSync(filePath);
+      return res.status(404).json({ error: 'Sync code has expired' });
+    }
+    
+    console.log(`✅ Sync data retrieved: ${code}`);
+    res.json({
+      data: syncData.data,
+      createdAt: syncData.createdAt,
+      expiresAt: syncData.expiresAt
+    });
+  } catch (error) {
+    console.error('Error retrieving sync:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Check sync status
+app.post('/api/sync/status', (req, res) => {
+  try {
+    const { code } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ error: 'No code provided' });
+    }
+    
+    const cleanCode = code.replace(/-/g, '').toUpperCase();
+    const filePath = path.join(SYNC_DIR, `${cleanCode}.json`);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.json({ exists: false, valid: false });
+    }
+    
+    const syncData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const now = new Date();
+    const expiresAt = new Date(syncData.expiresAt);
+    const isValid = now <= expiresAt;
+    
+    if (!isValid) {
+      fs.unlinkSync(filePath);
+    }
+    
+    res.json({
+      exists: true,
+      valid: isValid,
+      expiresAt: syncData.expiresAt,
+      expiresIn: Math.floor((expiresAt - now) / 1000 / 60) // minutes
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
