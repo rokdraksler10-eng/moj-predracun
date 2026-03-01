@@ -2,8 +2,8 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
-// Ensure data directory exists (Render uses /data, local uses ./data)
-const dataDir = process.env.RENDER ? '/data' : path.join(__dirname, '..', 'data');
+// Ensure data directory exists (use ./data for Free plan, /data only if disk is mounted)
+const dataDir = (process.env.RENDER && fs.existsSync('/data')) ? '/data' : path.join(__dirname, '..', 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }

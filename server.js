@@ -14,8 +14,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Database connection (render uses /data, local uses ./data)
-const dataDir = process.env.RENDER ? '/data' : './data';
+// Database connection (use /data only if disk exists, otherwise ./data)
+const dataDir = (process.env.RENDER && fs.existsSync('/data')) ? '/data' : './data';
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
