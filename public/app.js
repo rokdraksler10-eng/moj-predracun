@@ -482,6 +482,20 @@ function app() {
       console.log('Categories found:', this.categories);
     },
     
+    // Get sorted items (favorites first, then alphabetically)
+    getSortedItems() {
+      const items = [...this.workItems];
+      items.sort((a, b) => {
+        const aFav = this.isFavorite(a.id);
+        const bFav = this.isFavorite(b.id);
+        
+        if (aFav && !bFav) return -1;
+        if (!aFav && bFav) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      return items;
+    },
+    
     // Filter items by category
     filterItems() {
       if (!this.selectedCategory) {
