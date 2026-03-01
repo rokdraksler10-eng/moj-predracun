@@ -2,8 +2,8 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
-// Ensure data directory exists
-const dataDir = path.join(__dirname, '..', 'data');
+// Ensure data directory exists (Render uses /data, local uses ./data)
+const dataDir = process.env.RENDER ? '/data' : path.join(__dirname, '..', 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
