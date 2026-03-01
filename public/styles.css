@@ -1288,26 +1288,6 @@ button svg {
   position: relative;
 }
 
-.dark-mode-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
-.dark-mode-icon.active {
-  opacity: 1;
-}
-
-.dark-mode-icon svg {
-  width: 20px;
-  height: 20px;
-  display: block;
-}
-
 .dark-mode-toggle:hover {
   background: var(--bg-soft);
   transform: scale(1.1);
