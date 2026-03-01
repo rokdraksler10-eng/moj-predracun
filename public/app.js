@@ -428,10 +428,29 @@ function app() {
           fetch('/api/company')
         ]);
         
-        this.workItems = await itemsRes.json();
-        this.materials = await materialsRes.json();
+        const rawItems = await itemsRes.json();
+        const rawMaterials = await materialsRes.json();
+        
+        // Remove duplicates by name (keep first occurrence)
+        const seenItems = new Set();
+        this.workItems = rawItems.filter(item => {
+          if (seenItems.has(item.name)) return false;
+          seenItems.add(item.name);
+          return true;
+        });
+        
+        const seenMaterials = new Set();
+        this.materials = rawMaterials.filter(mat => {
+          if (seenMaterials.has(mat.name)) return false;
+          seenMaterials.add(mat.name);
+          return true;
+        });
+        
         this.clients = await clientsRes.json();
         this.company = await companyRes.json();
+        
+        console.log('Loaded', this.workItems.length, 'unique items (filtered from', rawItems.length, ')');
+        console.log('Loaded', this.materials.length, 'unique materials (filtered from', rawMaterials.length, ')');
       } catch (error) {
         console.error('Error loading data:', error);
       }
