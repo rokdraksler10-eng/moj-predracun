@@ -1288,13 +1288,24 @@ button svg {
   position: relative;
 }
 
-.dark-mode-toggle svg {
+.dark-mode-icon {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.dark-mode-icon.active {
+  opacity: 1;
+}
+
+.dark-mode-icon svg {
   width: 20px;
   height: 20px;
+  display: block;
 }
 
 .dark-mode-toggle:hover {
@@ -2149,6 +2160,14 @@ input:focus, select:focus, textarea:focus {
 .material-actions-large {
   display: flex;
   gap: 0.75rem;
+}
+
+.material-actions-bottom {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
 }
 
 .btn-action {
