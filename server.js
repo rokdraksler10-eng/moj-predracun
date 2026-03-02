@@ -543,6 +543,12 @@ app.get('/api/quotes/:id/pdf/:type', (req, res) => {
       y += 18;
     });
     
+    // Calculate totals from items (not from database which includes material)
+    const itemsTotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const taxRate = quote.tax_rate || 22;
+    const taxAmount = itemsTotal * (taxRate / 100);
+    const totalWithTax = itemsTotal + taxAmount;
+    
     // Totals (only for client)
     if (!isInternal) {
       y += 15;
@@ -550,17 +556,17 @@ app.get('/api/quotes/:id/pdf/:type', (req, res) => {
       
       doc.font('DejaVu').fontSize(9).fillColor('#475569');
       doc.text('Skupaj brez DDV:', totalsX, y);
-      doc.text(`${(quote.subtotal || 0).toFixed(2).replace('.', ',')} €`, totalsX + 140, y, { width: 100, align: 'right' });
+      doc.text(`${itemsTotal.toFixed(2).replace('.', ',')} €`, totalsX + 140, y, { width: 100, align: 'right' });
       
       y += 16;
-      doc.text(`DDV (${quote.tax_rate || 22}%):`, totalsX, y);
-      doc.text(`${(quote.tax_amount || 0).toFixed(2).replace('.', ',')} €`, totalsX + 140, y, { width: 100, align: 'right' });
+      doc.text(`DDV (${taxRate}%):`, totalsX, y);
+      doc.text(`${taxAmount.toFixed(2).replace('.', ',')} €`, totalsX + 140, y, { width: 100, align: 'right' });
       
       y += 20;
       doc.rect(totalsX - 10, y, 250, 30).fill(primaryColor);
       doc.font('DejaVu-Bold').fontSize(12).fillColor('white');
       doc.text('SKUPAJ Z DDV:', totalsX, y + 9);
-      doc.text(`${(quote.total || 0).toFixed(2).replace('.', ',')} €`, totalsX + 140, y + 9, { width: 100, align: 'right' });
+      doc.text(`${totalWithTax.toFixed(2).replace('.', ',')} €`, totalsX + 140, y + 9, { width: 100, align: 'right' });
       
       // Signatures
       y += 60;
