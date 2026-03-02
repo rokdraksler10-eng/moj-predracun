@@ -1,9 +1,9 @@
 const express = require('express');
 const Database = require('better-sqlite3');
+const PDFDocument = require('pdfkit');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const { generateQuotePDF } = require('./pdf-generator');
 
 const app = express();
 const PORT = process.env.PORT || 3456;
@@ -21,6 +21,10 @@ if (!fs.existsSync(dataDir)) {
 }
 const db = new Database(path.join(dataDir, 'quotes.db'));
 db.pragma('journal_mode = WAL');
+
+// Load DejaVu fonts
+const fontRegular = path.join(__dirname, 'DejaVuSans.ttf');
+const fontBold = path.join(__dirname, 'DejaVuSans-Bold.ttf');
 
 // ==================== API ROUTES ====================
 
@@ -150,39 +154,10 @@ app.get('/api/work-items/:id/materials', (req, res) => {
   }
 });
 
-// Clients
-app.get('/api/clients', (req, res) => {
-  try {
-    const clients = db.prepare('SELECT * FROM clients ORDER BY name').all();
-    res.json(clients);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/clients', (req, res) => {
-  try {
-    const { name, address, phone, email, type } = req.body;
-    const stmt = db.prepare(`
-      INSERT INTO clients (name, address, phone, email, type)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    const result = stmt.run(name, address, phone, email, type);
-    res.json({ id: result.lastInsertRowid });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Quotes (Predračuni)
+// Quotes
 app.get('/api/quotes', (req, res) => {
   try {
-    const quotes = db.prepare(`
-      SELECT q.*, c.name as client_name 
-      FROM quotes q
-      LEFT JOIN clients c ON q.client_id = c.id
-      ORDER BY q.created_at DESC
-    `).all();
+    const quotes = db.prepare('SELECT * FROM quotes ORDER BY created_at DESC').all();
     res.json(quotes);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -211,7 +186,6 @@ app.post('/api/quotes', (req, res) => {
   try {
     const { client_id, project_name, project_address, valid_until, items, subtotal, tax_rate, tax_amount, total, labor_total, material_total } = req.body;
     
-    // Use provided totals or calculate from items
     let finalSubtotal = subtotal || 0;
     let finalLaborTotal = labor_total || 0;
     let finalMaterialTotal = material_total || 0;
@@ -219,7 +193,6 @@ app.post('/api/quotes', (req, res) => {
     let finalTaxAmount = tax_amount || 0;
     let finalTotal = total || 0;
     
-    // If no totals provided, calculate from items
     if (!subtotal && items && items.length > 0) {
       finalSubtotal = 0;
       finalLaborTotal = 0;
@@ -232,7 +205,6 @@ app.post('/api/quotes', (req, res) => {
       finalTotal = finalSubtotal + finalTaxAmount;
     }
     
-    // Insert quote
     const quoteStmt = db.prepare(`
       INSERT INTO quotes (client_id, project_name, project_address, valid_until, subtotal, tax_rate, tax_amount, total, labor_total, material_total)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -240,7 +212,6 @@ app.post('/api/quotes', (req, res) => {
     const quoteResult = quoteStmt.run(client_id, project_name, project_address, valid_until || new Date().toISOString().split('T')[0], finalSubtotal, finalTaxRate, finalTaxAmount, finalTotal, finalLaborTotal, finalMaterialTotal);
     const quote_id = quoteResult.lastInsertRowid;
     
-    // Insert items
     if (items && items.length > 0) {
       const itemStmt = db.prepare(`
         INSERT INTO quote_items (quote_id, work_item_id, quantity, price_per_unit, difficulty, notes, subtotal)
@@ -262,7 +233,6 @@ app.post('/api/quotes', (req, res) => {
 // ==================== LOGO UPLOAD ====================
 const multer = require('multer');
 
-// Configure multer for logo uploads
 const logoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(dataDir, 'logos');
@@ -279,7 +249,7 @@ const logoStorage = multer.diskStorage({
 
 const logoUpload = multer({ 
   storage: logoStorage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+  limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|svg|webp/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -291,14 +261,12 @@ const logoUpload = multer({
   }
 });
 
-// Upload logo endpoint
 app.post('/api/company/logo', logoUpload.single('logo'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No logo file uploaded' });
     }
     
-    // Delete old logo if exists
     const company = db.prepare('SELECT logo_path FROM company_settings LIMIT 1').get();
     if (company?.logo_path) {
       const oldLogoPath = path.join(dataDir, company.logo_path);
@@ -307,7 +275,6 @@ app.post('/api/company/logo', logoUpload.single('logo'), (req, res) => {
       }
     }
     
-    // Save new logo path to database
     const relativePath = path.join('logos', req.file.filename);
     const stmt = db.prepare(`
       INSERT INTO company_settings (id, logo_path) VALUES (1, ?)
@@ -325,7 +292,6 @@ app.post('/api/company/logo', logoUpload.single('logo'), (req, res) => {
   }
 });
 
-// Get logo endpoint
 app.get('/api/company/logo', (req, res) => {
   try {
     const company = db.prepare('SELECT logo_path FROM company_settings LIMIT 1').get();
@@ -344,7 +310,6 @@ app.get('/api/company/logo', (req, res) => {
   }
 });
 
-// Delete logo endpoint
 app.delete('/api/company/logo', (req, res) => {
   try {
     const company = db.prepare('SELECT logo_path FROM company_settings LIMIT 1').get();
@@ -366,14 +331,12 @@ app.delete('/api/company/logo', (req, res) => {
 
 // ==================== PDF GENERATION ====================
 
-app.get('/api/quotes/:id/pdf/:type', async (req, res) => {
+app.get('/api/quotes/:id/pdf/:type', (req, res) => {
   try {
     const { id, type } = req.params;
     const quote = db.prepare('SELECT * FROM quotes WHERE id = ?').get(id);
     
-    if (!quote) {
-      return res.status(404).json({ error: 'Quote not found' });
-    }
+    if (!quote) return res.status(404).json({ error: 'Quote not found' });
     
     const company = db.prepare('SELECT * FROM company_settings LIMIT 1').get();
     const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(quote.client_id);
@@ -384,6 +347,17 @@ app.get('/api/quotes/:id/pdf/:type', async (req, res) => {
       WHERE qi.quote_id = ?
     `).all(id);
     
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const filename = type === 'internal' ? `navodila-${id}.pdf` : `predracun-${id}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    doc.pipe(res);
+    
+    // Register DejaVu fonts
+    doc.registerFont('DejaVu', fontRegular);
+    doc.registerFont('DejaVu-Bold', fontBold);
+    
     // Check for logo
     let logoPath = null;
     if (company?.logo_path) {
@@ -393,164 +367,170 @@ app.get('/api/quotes/:id/pdf/:type', async (req, res) => {
       }
     }
     
-    // Generate PDF using Puppeteer
-    const pdfBuffer = await generateQuotePDF(quote, company, client, items, type, logoPath);
+    // Settings
+    const pageWidth = 612;
+    const margin = 50;
+    const isInternal = type === 'internal';
+    const primaryColor = isInternal ? '#059669' : '#2563eb';
     
-    const filename = type === 'internal' ? `navodila-${id}.pdf` : `predracun-${id}.pdf`;
+    // Header
+    let y = 50;
     
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    res.send(pdfBuffer);
-    
-  } catch (error) {
-    console.error('PDF generation error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ==================== SYNC SYSTEM ====================
-// Simple sync system using codes (no registration needed)
-
-const SYNC_DIR = path.join(dataDir, 'sync');
-if (!fs.existsSync(SYNC_DIR)) {
-  fs.mkdirSync(SYNC_DIR, { recursive: true });
-}
-
-// Generate random sync code
-function generateSyncCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 12; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-    if (i === 3 || i === 7) code += '-';
-  }
-  return code;
-}
-
-// Clean expired sync files (older than 24 hours)
-function cleanExpiredSyncs() {
-  try {
-    const files = fs.readdirSync(SYNC_DIR);
-    const now = Date.now();
-    files.forEach(file => {
-      const filePath = path.join(SYNC_DIR, file);
-      const stats = fs.statSync(filePath);
-      const age = now - stats.mtime.getTime();
-      if (age > 24 * 60 * 60 * 1000) { // 24 hours
-        fs.unlinkSync(filePath);
-        console.log(`🗑️ Expired sync deleted: ${file}`);
+    if (logoPath) {
+      try {
+        doc.image(logoPath, margin, y, { width: 80, height: 60 });
+        doc.font('DejaVu-Bold').fontSize(16).fillColor('#1e293b').text(company?.name || '', margin + 90, y + 10);
+      } catch (e) {
+        doc.font('DejaVu-Bold').fontSize(20).fillColor('#1e293b').text(company?.name || 'Moje Gradbeno Podjetje', margin, y);
       }
+    } else {
+      doc.font('DejaVu-Bold').fontSize(20).fillColor('#1e293b').text(company?.name || 'Moje Gradbeno Podjetje', margin, y);
+    }
+    
+    // Company info
+    y += 35;
+    doc.font('DejaVu').fontSize(9).fillColor('#64748b');
+    doc.text(company?.address || '', margin, y);
+    doc.text(`Tel: ${company?.phone || '-'} | Email: ${company?.email || '-'}`, margin, y + 12);
+    if (company?.tax_id) {
+      doc.text(`Davčna številka: ${company.tax_id}`, margin, y + 24);
+    }
+    
+    // Document type box
+    const boxY = 50;
+    doc.rect(pageWidth - margin - 150, boxY, 150, 60).lineWidth(1.5).stroke(primaryColor);
+    doc.font('DejaVu-Bold').fontSize(11).fillColor(primaryColor);
+    doc.text(isInternal ? 'NAVODILA ZA DELO' : 'PREDRAČUN', pageWidth - margin - 140, boxY + 12, { width: 130, align: 'center' });
+    doc.fontSize(20);
+    doc.text(`#${quote.id}`, pageWidth - margin - 140, boxY + 32, { width: 130, align: 'center' });
+    
+    // Line
+    y += 50;
+    doc.strokeColor('#e2e8f0').lineWidth(1);
+    doc.moveTo(margin, y).lineTo(pageWidth - margin, y).stroke();
+    
+    // Info section
+    y += 20;
+    doc.font('DejaVu-Bold').fontSize(10).fillColor('#475569');
+    doc.text('Datum izdaje:', margin, y);
+    doc.text('Veljavnost:', margin + 140, y);
+    doc.text('Projekt:', margin + 280, y);
+    
+    doc.font('DejaVu').fontSize(10).fillColor('#0f172a');
+    doc.text(new Date(quote.created_at).toLocaleDateString('sl-SI'), margin, y + 14);
+    doc.text(new Date(quote.valid_until).toLocaleDateString('sl-SI'), margin + 140, y + 14);
+    doc.text(quote.project_name || 'Brez naziva', margin + 280, y + 14, { width: 180 });
+    
+    // Client box
+    y += 50;
+    doc.rect(margin, y, pageWidth - margin * 2, 45).fill('#f8fafc');
+    doc.font('DejaVu-Bold').fontSize(9).fillColor('#475569');
+    doc.text('STRANKA', margin + 10, y + 8);
+    doc.font('DejaVu-Bold').fontSize(12).fillColor('#0f172a');
+    doc.text(client?.name || quote.client_name || 'Brez naziva', margin + 10, y + 22);
+    doc.font('DejaVu').fontSize(9).fillColor('#64748b');
+    doc.text(client?.address || quote.project_address || '', margin + 10, y + 36);
+    
+    // Table
+    y += 65;
+    const tableWidth = pageWidth - margin * 2;
+    
+    // Table header
+    doc.rect(margin, y, tableWidth, 22).fill('#f1f5f9');
+    doc.font('DejaVu-Bold').fontSize(9).fillColor('#475569');
+    
+    if (isInternal) {
+      doc.text('#', margin + 8, y + 6, { width: 30 });
+      doc.text('Postavka', margin + 40, y + 6, { width: tableWidth * 0.5 });
+      doc.text('Količina', margin + tableWidth * 0.55, y + 6, { width: tableWidth * 0.2, align: 'center' });
+      doc.text('Težavnost', margin + tableWidth * 0.78, y + 6, { width: tableWidth * 0.15 });
+    } else {
+      doc.text('Postavka / Opis', margin + 8, y + 6, { width: tableWidth * 0.42 });
+      doc.text('Kol.', margin + tableWidth * 0.45, y + 6, { width: tableWidth * 0.1, align: 'center' });
+      doc.text('Enota', margin + tableWidth * 0.56, y + 6, { width: tableWidth * 0.1, align: 'center' });
+      doc.text('Cena', margin + tableWidth * 0.68, y + 6, { width: tableWidth * 0.14, align: 'right' });
+      doc.text('Znesek', margin + tableWidth * 0.83, y + 6, { width: tableWidth * 0.14, align: 'right' });
+    }
+    
+    // Items
+    y += 24;
+    doc.font('DejaVu').fontSize(9);
+    
+    items.forEach((item, idx) => {
+      if (y > 650) {
+        doc.addPage();
+        y = 50;
+      }
+      
+      if (idx % 2 === 0) {
+        doc.rect(margin, y - 2, tableWidth, 18).fill('#fafafa');
+      }
+      
+      if (isInternal) {
+        doc.fillColor('#64748b');
+        doc.text((idx + 1).toString(), margin + 8, y + 2, { width: 30 });
+        doc.fillColor('#0f172a').font('DejaVu-Bold');
+        doc.text(item.work_item_name, margin + 40, y + 2, { width: tableWidth * 0.5 });
+        doc.font('DejaVu').fillColor('#475569');
+        doc.text(`${item.quantity} ${item.work_item_unit}`, margin + tableWidth * 0.55, y + 2, { width: tableWidth * 0.2, align: 'center' });
+        const diffText = item.difficulty === 'easy' ? 'Lahko' : item.difficulty === 'hard' ? 'Težko' : 'Srednje';
+        doc.text(diffText, margin + tableWidth * 0.78, y + 2, { width: tableWidth * 0.15 });
+      } else {
+        doc.fillColor('#0f172a').font('DejaVu-Bold');
+        doc.text(item.work_item_name, margin + 8, y + 2, { width: tableWidth * 0.42 });
+        doc.font('DejaVu').fillColor('#475569');
+        doc.text(item.quantity.toString(), margin + tableWidth * 0.45, y + 2, { width: tableWidth * 0.1, align: 'center' });
+        doc.text(item.work_item_unit, margin + tableWidth * 0.56, y + 2, { width: tableWidth * 0.1, align: 'center' });
+        doc.text(`${item.price_per_unit.toFixed(2).replace('.', ',')} €`, margin + tableWidth * 0.68, y + 2, { width: tableWidth * 0.14, align: 'right' });
+        doc.text(`${item.subtotal.toFixed(2).replace('.', ',')} €`, margin + tableWidth * 0.83, y + 2, { width: tableWidth * 0.14, align: 'right' });
+      }
+      
+      y += 18;
     });
+    
+    // Totals (only for client)
+    if (!isInternal) {
+      y += 15;
+      const totalsX = pageWidth - margin - 240;
+      
+      doc.font('DejaVu').fontSize(9).fillColor('#475569');
+      doc.text('Skupaj brez DDV:', totalsX, y);
+      doc.text(`${(quote.subtotal || 0).toFixed(2).replace('.', ',')} €`, totalsX + 140, y, { width: 100, align: 'right' });
+      
+      y += 16;
+      doc.text(`DDV (${quote.tax_rate || 22}%):`, totalsX, y);
+      doc.text(`${(quote.tax_amount || 0).toFixed(2).replace('.', ',')} €`, totalsX + 140, y, { width: 100, align: 'right' });
+      
+      y += 20;
+      doc.rect(totalsX - 10, y, 250, 30).fill(primaryColor);
+      doc.font('DejaVu-Bold').fontSize(12).fillColor('white');
+      doc.text('SKUPAJ Z DDV:', totalsX, y + 9);
+      doc.text(`${(quote.total || 0).toFixed(2).replace('.', ',')} €`, totalsX + 140, y + 9, { width: 100, align: 'right' });
+      
+      // Signatures
+      y += 60;
+      if (y < 700) {
+        doc.strokeColor('#94a3b8').lineWidth(0.5);
+        doc.moveTo(margin, y).lineTo(margin + 200, y).stroke();
+        doc.moveTo(pageWidth - margin - 200, y).lineTo(pageWidth - margin, y).stroke();
+        doc.font('DejaVu').fontSize(9).fillColor('#64748b');
+        doc.text('Podpis izvajalca', margin, y + 8);
+        doc.text('Podpis stranke', pageWidth - margin - 200, y + 8);
+      }
+    }
+    
+    // Footer
+    doc.font('DejaVu').fontSize(8).fillColor('#94a3b8');
+    doc.text(`${company?.name || 'Moj Predračun'} ${company?.phone ? '| ' + company.phone : ''} ${company?.email ? '| ' + company.email : ''}`, margin, 760, { align: 'center', width: tableWidth });
+    
+    if (!isInternal) {
+      doc.fillColor(primaryColor).font('DejaVu-Bold').fontSize(10);
+      doc.text('Hvala za zaupanje!', margin, 775, { align: 'center', width: tableWidth });
+    }
+    
+    doc.end();
   } catch (error) {
-    console.error('Error cleaning expired syncs:', error);
-  }
-}
-
-// Clean expired syncs every hour
-setInterval(cleanExpiredSyncs, 60 * 60 * 1000);
-
-// Create sync code with data
-app.post('/api/sync/create', (req, res) => {
-  try {
-    const { data } = req.body;
-    
-    if (!data) {
-      return res.status(400).json({ error: 'No data provided' });
-    }
-    
-    const code = generateSyncCode();
-    const syncData = {
-      code: code,
-      data: data,
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-    };
-    
-    const filePath = path.join(SYNC_DIR, `${code.replace(/-/g, '')}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(syncData, null, 2));
-    
-    console.log(`✅ Sync code created: ${code}`);
-    res.json({ 
-      code: code, 
-      expiresAt: syncData.expiresAt,
-      message: 'Sync code created. Valid for 24 hours.'
-    });
-  } catch (error) {
-    console.error('Error creating sync:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get data by sync code
-app.post('/api/sync/retrieve', (req, res) => {
-  try {
-    const { code } = req.body;
-    
-    if (!code) {
-      return res.status(400).json({ error: 'No code provided' });
-    }
-    
-    const cleanCode = code.replace(/-/g, '').toUpperCase();
-    const filePath = path.join(SYNC_DIR, `${cleanCode}.json`);
-    
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Invalid or expired sync code' });
-    }
-    
-    const syncData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    
-    // Check if expired
-    const now = new Date();
-    const expiresAt = new Date(syncData.expiresAt);
-    if (now > expiresAt) {
-      fs.unlinkSync(filePath);
-      return res.status(404).json({ error: 'Sync code has expired' });
-    }
-    
-    console.log(`✅ Sync data retrieved: ${code}`);
-    res.json({
-      data: syncData.data,
-      createdAt: syncData.createdAt,
-      expiresAt: syncData.expiresAt
-    });
-  } catch (error) {
-    console.error('Error retrieving sync:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Check sync status
-app.post('/api/sync/status', (req, res) => {
-  try {
-    const { code } = req.body;
-    
-    if (!code) {
-      return res.status(400).json({ error: 'No code provided' });
-    }
-    
-    const cleanCode = code.replace(/-/g, '').toUpperCase();
-    const filePath = path.join(SYNC_DIR, `${cleanCode}.json`);
-    
-    if (!fs.existsSync(filePath)) {
-      return res.json({ exists: false, valid: false });
-    }
-    
-    const syncData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    const now = new Date();
-    const expiresAt = new Date(syncData.expiresAt);
-    const isValid = now <= expiresAt;
-    
-    if (!isValid) {
-      fs.unlinkSync(filePath);
-    }
-    
-    res.json({
-      exists: true,
-      valid: isValid,
-      expiresAt: syncData.expiresAt,
-      expiresIn: Math.floor((expiresAt - now) / 1000 / 60) // minutes
-    });
-  } catch (error) {
+    console.error('PDF error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -560,7 +540,7 @@ app.listen(PORT, HOST, () => {
   console.log(`🚀 Gradbeni app teče na:`);
   console.log(`   http://localhost:${PORT} (lokalno)`);
   console.log(`   http://0.0.0.0:${PORT} (omrežje)`);
-  console.log(`📁 Podatkovna baza: data/quotes.db`);
+  console.log(`📁 Podatkovna baza: ${path.join(dataDir, 'quotes.db')}`);
 });
 
 module.exports = app;
