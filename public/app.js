@@ -586,6 +586,52 @@ function app() {
       }
     },
     
+    // Edit quote - load it for editing
+    editQuote(id) {
+      this.loadQuote(id);
+    },
+    
+    // Delete quote
+    async deleteQuote(id) {
+      // Check if user wants confirmation
+      const confirmDelete = localStorage.getItem('gradbeniApp_confirmDelete') !== 'false';
+      
+      if (confirmDelete) {
+        if (!confirm('Ali res želiš izbrisati ta predračun?')) {
+          return;
+        }
+      }
+      
+      try {
+        const res = await fetch(`/api/quotes/${id}`, {
+          method: 'DELETE'
+        });
+        
+        if (res.ok) {
+          // Remove from local array
+          this.quotes = this.quotes.filter(q => q.id !== id);
+          this.filteredQuotes = this.filteredQuotes.filter(q => q.id !== id);
+          
+          if (window.showToast) {
+            window.showToast('✅ Predračun izbrisan', 'success');
+          }
+        } else {
+          if (window.showToast) {
+            window.showToast('❌ Napaka pri brisanju', 'error');
+          } else {
+            alert('Napaka pri brisanju predračuna');
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting quote:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri brisanju', 'error');
+        } else {
+          alert('Napaka pri brisanju predračuna');
+        }
+      }
+    },
+    
     // Get work item name by ID
     getWorkItemName(id) {
       // First check if it's stored in the quote item

@@ -230,6 +230,30 @@ app.post('/api/quotes', (req, res) => {
   }
 });
 
+// Delete quote
+app.delete('/api/quotes/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // First delete quote items
+    const deleteItems = db.prepare('DELETE FROM quote_items WHERE quote_id = ?');
+    deleteItems.run(id);
+    
+    // Then delete quote
+    const deleteQuote = db.prepare('DELETE FROM quotes WHERE id = ?');
+    const result = deleteQuote.run(id);
+    
+    if (result.changes > 0) {
+      res.json({ success: true, message: 'Predračun izbrisan' });
+    } else {
+      res.status(404).json({ error: 'Predračun ni najden' });
+    }
+  } catch (error) {
+    console.error('Error deleting quote:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==================== LOGO UPLOAD ====================
 const multer = require('multer');
 

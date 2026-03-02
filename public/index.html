@@ -189,14 +189,23 @@
         
         <div class="quotes-grid">
           <template x-for="quote in (filteredQuotes.length > 0 || searchQuery || filterStatus ? filteredQuotes : quotes)" :key="quote.id">
-            <div class="quote-card-simple" @click="loadQuote(quote.id)">
-              <div class="quote-main">
+            <div class="quote-card-simple">
+              <div class="quote-main" @click="loadQuote(quote.id)" style="cursor: pointer; flex: 1;">
                 <h3 x-text="quote.project_name || 'Brez naziva'"></h3>
                 <p x-text="quote.client_name || 'Brez stranke'"></p>
               </div>
-              <div class="quote-meta">
+              <div class="quote-meta" @click="loadQuote(quote.id)" style="cursor: pointer;">
                 <span class="quote-price" x-text="formatPrice(quote.total)"></span>
                 <span class="quote-date" x-text="formatDateShort(quote.created_at)"></span>
+              </div>
+              <!-- Action buttons -->
+              <div class="quote-actions" style="display: flex; gap: 8px; margin-left: 12px; padding-left: 12px; border-left: 1px solid #e2e8f0;">
+                <button @click.stop="editQuote(quote.id)" class="btn-icon-action" title="Uredi" style="width: 32px; height: 32px; border-radius: 6px; border: none; background: #dbeafe; color: #2563eb; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                  ✏️
+                </button>
+                <button @click.stop="deleteQuote(quote.id)" class="btn-icon-action" title="Izbriši" style="width: 32px; height: 32px; border-radius: 6px; border: none; background: #fee2e2; color: #dc2626; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                  🗑️
+                </button>
               </div>
             </div>
           </template>
