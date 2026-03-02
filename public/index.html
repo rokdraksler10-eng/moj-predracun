@@ -172,18 +172,18 @@
         </div>
         
         <!-- Status Filter Tabs -->
-        <div class="status-tabs" x-show="quotes.length > 0" style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
-          <button @click="filterStatus = ''" :class="{ 'active': filterStatus === '' }" style="padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; font-size: 13px; font-weight: 500;" :style="filterStatus === '' ? 'background: #2563eb; color: white;' : 'background: #f1f5f9; color: #64748b;'">
-            Vsi <span x-text="quotes.length" style="margin-left: 4px; opacity: 0.7;"></span>
+        <div class="status-tabs" x-show="quotes.length > 0" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; padding: 0 5px;">
+          <button @click="filterStatus = ''" :class="{ 'active': filterStatus === '' }" style="padding: 10px 20px; border-radius: 25px; border: 2px solid; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" :style="filterStatus === '' ? 'background: #2563eb; color: white; border-color: #2563eb;' : 'background: white; color: #2563eb; border-color: #dbeafe;'">
+            📋 Vsi predračuni <span x-text="quotes.length" style="background: rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 700;"></span>
           </button>
-          <button @click="filterStatus = 'pending'" :class="{ 'active': filterStatus === 'pending' }" style="padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; font-size: 13px; font-weight: 500;" :style="filterStatus === 'pending' ? 'background: #f59e0b; color: white;' : 'background: #fef3c7; color: #92400e;'">
-            ⏳ V čakanju <span x-text="quotes.filter(q => !q.status || q.status === 'pending').length" style="margin-left: 4px; opacity: 0.7;"></span>
+          <button @click="filterStatus = 'pending'" :class="{ 'active': filterStatus === 'pending' }" style="padding: 10px 20px; border-radius: 25px; border: 2px solid; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" :style="filterStatus === 'pending' ? 'background: #f59e0b; color: white; border-color: #f59e0b;' : 'background: white; color: #d97706; border-color: #fef3c7;'">
+            ⏳ V čakanju <span x-text="quotes.filter(q => !q.status || q.status === 'pending').length" style="background: rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 700;"></span>
           </button>
-          <button @click="filterStatus = 'accepted'" :class="{ 'active': filterStatus === 'accepted' }" style="padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; font-size: 13px; font-weight: 500;" :style="filterStatus === 'accepted' ? 'background: #059669; color: white;' : 'background: #d1fae5; color: #065f46;'">
-            ✅ Sprejeti <span x-text="quotes.filter(q => q.status === 'accepted').length" style="margin-left: 4px; opacity: 0.7;"></span>
+          <button @click="filterStatus = 'accepted'" :class="{ 'active': filterStatus === 'accepted' }" style="padding: 10px 20px; border-radius: 25px; border: 2px solid; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" :style="filterStatus === 'accepted' ? 'background: #059669; color: white; border-color: #059669;' : 'background: white; color: #059669; border-color: #d1fae5;'">
+            ✅ Sprejeti <span x-text="quotes.filter(q => q.status === 'accepted').length" style="background: rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 700;"></span>
           </button>
-          <button @click="filterStatus = 'rejected'" :class="{ 'active': filterStatus === 'rejected' }" style="padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; font-size: 13px; font-weight: 500;" :style="filterStatus === 'rejected' ? 'background: #64748b; color: white;' : 'background: #f1f5f9; color: #64748b;'">
-            🗑️ Zavrnjeni <span x-text="quotes.filter(q => q.status === 'rejected').length" style="margin-left: 4px; opacity: 0.7;"></span>
+          <button @click="filterStatus = 'rejected'" :class="{ 'active': filterStatus === 'rejected' }" style="padding: 10px 20px; border-radius: 25px; border: 2px solid; cursor: pointer; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" :style="filterStatus === 'rejected' ? 'background: #64748b; color: white; border-color: #64748b;' : 'background: white; color: #64748b; border-color: #e2e8f0;'">
+            🗑️ Zavrnjeni <span x-text="quotes.filter(q => q.status === 'rejected').length" style="background: rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 700;"></span>
           </button>
         </div>
 

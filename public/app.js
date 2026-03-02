@@ -632,15 +632,55 @@ function app() {
       }
     },
     
-    // Delete quote
-    async deleteQuote(id) {
-      // Check if user wants confirmation
-      const confirmDelete = localStorage.getItem('gradbeniApp_confirmDelete') !== 'false';
+    // Change quote status with confirmation
+    async changeStatus(id, newStatus) {
+      const statusText = newStatus === 'accepted' ? 'sprejeto' : newStatus === 'rejected' ? 'zavrnjeno' : 'v čakanju';
       
-      if (confirmDelete) {
-        if (!confirm('Ali res želiš izbrisati ta predračun?')) {
-          return;
+      if (!confirm(`Ali res želiš označiti ta predračun kot "${statusText}"?`)) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/quotes/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (res.ok) {
+          // Update local data
+          const quote = this.quotes.find(q => q.id === id);
+          if (quote) {
+            quote.status = newStatus;
+          }
+          const filteredQuote = this.filteredQuotes.find(q => q.id === id);
+          if (filteredQuote) {
+            filteredQuote.status = newStatus;
+          }
+          
+          if (window.showToast) {
+            window.showToast(`✅ Status spremenjen v "${statusText}"`, 'success');
+          }
+        } else {
+          if (window.showToast) {
+            window.showToast('❌ Napaka pri spreminjanju statusa', 'error');
+          }
         }
+      } catch (error) {
+        console.error('Error changing status:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri spreminjanju statusa', 'error');
+        }
+      }
+    },
+    
+    // Delete quote with confirmation
+    async deleteQuote(id) {
+      const quote = this.quotes.find(q => q.id === id);
+      const projectName = quote?.project_name || 'Brez naziva';
+      
+      if (!confirm(`⚠️ POZOR!\n\nAli res želiš TRAJNO IZBRISATI predračun "${projectName}"?\n\nTej akciji ni mogoče razveljaviti!`)) {
+        return;
       }
       
       try {
@@ -654,7 +694,7 @@ function app() {
           this.filteredQuotes = this.filteredQuotes.filter(q => q.id !== id);
           
           if (window.showToast) {
-            window.showToast('✅ Predračun izbrisan', 'success');
+            window.showToast('🗑️ Predračun izbrisan', 'success');
           }
         } else {
           if (window.showToast) {
