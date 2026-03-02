@@ -368,9 +368,12 @@ function app() {
         );
       }
       
-      // Filter by status
+      // Filter by status (treat null/undefined as 'pending')
       if (this.filterStatus) {
-        filtered = filtered.filter(q => q.status === this.filterStatus);
+        filtered = filtered.filter(q => {
+          const quoteStatus = q.status || 'pending';
+          return quoteStatus === this.filterStatus;
+        });
       }
       
       this.filteredQuotes = filtered;
@@ -589,6 +592,44 @@ function app() {
     // Edit quote - load it for editing
     editQuote(id) {
       this.loadQuote(id);
+    },
+    
+    // Set quote status (pending, accepted, rejected)
+    async setQuoteStatus(id, status) {
+      try {
+        const res = await fetch(`/api/quotes/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+        
+        if (res.ok) {
+          // Update local data
+          const quote = this.quotes.find(q => q.id === id);
+          if (quote) {
+            quote.status = status;
+          }
+          // Also update in filtered array if present
+          const filteredQuote = this.filteredQuotes.find(q => q.id === id);
+          if (filteredQuote) {
+            filteredQuote.status = status;
+          }
+          
+          const statusText = status === 'accepted' ? 'sprejet' : status === 'rejected' ? 'zavrnjen' : 'v čakanju';
+          if (window.showToast) {
+            window.showToast(`✅ Predračun ${statusText}`, 'success');
+          }
+        } else {
+          if (window.showToast) {
+            window.showToast('❌ Napaka pri spreminjanju statusa', 'error');
+          }
+        }
+      } catch (error) {
+        console.error('Error setting quote status:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri spreminjanju statusa', 'error');
+        }
+      }
     },
     
     // Delete quote

@@ -22,6 +22,14 @@ if (!fs.existsSync(dataDir)) {
 const db = new Database(path.join(dataDir, 'quotes.db'));
 db.pragma('journal_mode = WAL');
 
+// Migration: Add status column if not exists
+try {
+  db.prepare(`ALTER TABLE quotes ADD COLUMN status TEXT DEFAULT 'pending'`).run();
+  console.log('Migration: Added status column to quotes');
+} catch (e) {
+  // Column already exists
+}
+
 // Load DejaVu fonts
 const fontRegular = path.join(__dirname, 'DejaVuSans.ttf');
 const fontBold = path.join(__dirname, 'DejaVuSans-Bold.ttf');
@@ -225,6 +233,29 @@ app.post('/api/quotes', (req, res) => {
     }
     
     res.json({ id: quote_id, total });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update quote status
+app.patch('/api/quotes/:id/status', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!['pending', 'accepted', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    
+    const stmt = db.prepare('UPDATE quotes SET status = ? WHERE id = ?');
+    const result = stmt.run(status, id);
+    
+    if (result.changes > 0) {
+      res.json({ success: true, status });
+    } else {
+      res.status(404).json({ error: 'Predračun ni najden' });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

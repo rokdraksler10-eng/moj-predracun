@@ -171,39 +171,79 @@
           </div>
         </div>
         
+        <!-- Status Filter Tabs -->
+        <div class="status-tabs" x-show="quotes.length > 0" style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
+          <button @click="filterStatus = ''" :class="{ 'active': filterStatus === '' }" style="padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; font-size: 13px; font-weight: 500;" :style="filterStatus === '' ? 'background: #2563eb; color: white;' : 'background: #f1f5f9; color: #64748b;'">
+            Vsi <span x-text="quotes.length" style="margin-left: 4px; opacity: 0.7;"></span>
+          </button>
+          <button @click="filterStatus = 'pending'" :class="{ 'active': filterStatus === 'pending' }" style="padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; font-size: 13px; font-weight: 500;" :style="filterStatus === 'pending' ? 'background: #f59e0b; color: white;' : 'background: #fef3c7; color: #92400e;'">
+            ⏳ V čakanju <span x-text="quotes.filter(q => !q.status || q.status === 'pending').length" style="margin-left: 4px; opacity: 0.7;"></span>
+          </button>
+          <button @click="filterStatus = 'accepted'" :class="{ 'active': filterStatus === 'accepted' }" style="padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; font-size: 13px; font-weight: 500;" :style="filterStatus === 'accepted' ? 'background: #059669; color: white;' : 'background: #d1fae5; color: #065f46;'">
+            ✅ Sprejeti <span x-text="quotes.filter(q => q.status === 'accepted').length" style="margin-left: 4px; opacity: 0.7;"></span>
+          </button>
+          <button @click="filterStatus = 'rejected'" :class="{ 'active': filterStatus === 'rejected' }" style="padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; font-size: 13px; font-weight: 500;" :style="filterStatus === 'rejected' ? 'background: #64748b; color: white;' : 'background: #f1f5f9; color: #64748b;'">
+            🗑️ Zavrnjeni <span x-text="quotes.filter(q => q.status === 'rejected').length" style="margin-left: 4px; opacity: 0.7;"></span>
+          </button>
+        </div>
+
         <!-- Stats Summary -->
         <div class="stats-summary" x-show="quotes.length > 0">
           <div class="stat-item">
-            <span class="stat-value" x-text="(filteredQuotes.length > 0 && (searchQuery || filterStatus)) ? filteredQuotes.length : quotes.length"></span>
-            <span class="stat-label" x-text="(filteredQuotes.length > 0 && (searchQuery || filterStatus)) ? 'Prikazanih' : 'Predračunov'"></span>
+            <span class="stat-value" x-text="(filteredQuotes.length > 0 || filterStatus) ? filteredQuotes.length : quotes.length"></span>
+            <span class="stat-label" x-text="(filteredQuotes.length > 0 || filterStatus) ? 'Prikazanih' : 'Predračunov'"></span>
           </div>
           <div class="stat-item">
-            <span class="stat-value" x-text="quotes.filter(q => q.status === 'draft').length"></span>
-            <span class="stat-label">V pripravi</span>
+            <span class="stat-value" x-text="quotes.filter(q => q.status === 'accepted').length"></span>
+            <span class="stat-label">Sprejeti</span>
           </div>
           <div class="stat-item">
-            <span class="stat-value" x-text="formatPrice((filteredQuotes.length > 0 && (searchQuery || filterStatus)) ? filteredQuotes.reduce((sum, q) => sum + (q.total || 0), 0) : quotes.reduce((sum, q) => sum + (q.total || 0), 0))"></span>
+            <span class="stat-value" x-text="formatPrice((filteredQuotes.length > 0 || filterStatus) ? filteredQuotes.reduce((sum, q) => sum + (q.total || 0), 0) : quotes.reduce((sum, q) => sum + (q.total || 0), 0))"></span>
             <span class="stat-label">Skupna vrednost</span>
           </div>
         </div>
         
         <div class="quotes-grid">
           <template x-for="quote in (filteredQuotes.length > 0 || searchQuery || filterStatus ? filteredQuotes : quotes)" :key="quote.id">
-            <div class="quote-card-simple">
-              <div class="quote-main" @click="loadQuote(quote.id)" style="cursor: pointer; flex: 1;">
-                <h3 x-text="quote.project_name || 'Brez naziva'"></h3>
-                <p x-text="quote.client_name || 'Brez stranke'"></p>
+            <div class="quote-card-simple" :style="quote.status === 'accepted' ? 'border-left: 4px solid #059669;' : quote.status === 'rejected' ? 'border-left: 4px solid #64748b; opacity: 0.7;' : 'border-left: 4px solid #f59e0b;'">
+              <!-- Status Badge -->
+              <div style="position: absolute; top: 8px; right: 8px;">
+                <span x-show="!quote.status || quote.status === 'pending'" style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">⏳ V čakanju</span>
+                <span x-show="quote.status === 'accepted'" style="background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">✅ Sprejet</span>
+                <span x-show="quote.status === 'rejected'" style="background: #f3f4f6; color: #6b7280; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">🗑️ Zavrnjen</span>
+              </div>
+              
+              <div class="quote-main" @click="loadQuote(quote.id)" style="cursor: pointer; flex: 1; padding-right: 100px;">
+                <h3 x-text="quote.project_name || 'Brez naziva'" style="margin-bottom: 4px;"></h3>
+                <p x-text="quote.client_name || 'Brez stranke'" style="color: #64748b; font-size: 13px;"></p>
               </div>
               <div class="quote-meta" @click="loadQuote(quote.id)" style="cursor: pointer;">
-                <span class="quote-price" x-text="formatPrice(quote.total)"></span>
-                <span class="quote-date" x-text="formatDateShort(quote.created_at)"></span>
+                <span class="quote-price" x-text="formatPrice(quote.total)" style="font-size: 16px; font-weight: 700; color: #1e293b;"></span>
+                <span class="quote-date" x-text="formatDateShort(quote.created_at)" style="font-size: 12px; color: #94a3b8;"></span>
               </div>
-              <!-- Action buttons -->
-              <div class="quote-actions" style="display: flex; gap: 8px; margin-left: 12px; padding-left: 12px; border-left: 1px solid #e2e8f0;">
-                <button @click.stop="editQuote(quote.id)" class="btn-icon-action" title="Uredi" style="width: 32px; height: 32px; border-radius: 6px; border: none; background: #dbeafe; color: #2563eb; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+              
+              <!-- Status Actions -->
+              <div class="quote-status-actions" style="display: flex; flex-direction: column; gap: 6px; margin-left: 12px; padding-left: 12px; border-left: 1px solid #e2e8f0;">
+                <!-- Accept button -->
+                <button x-show="quote.status !== 'accepted'" @click.stop="setQuoteStatus(quote.id, 'accepted')" title="Sprejmi" style="width: 32px; height: 32px; border-radius: 6px; border: none; background: #d1fae5; color: #059669; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                  ✅
+                </button>
+                <!-- Reject button -->
+                <button x-show="quote.status !== 'rejected'" @click.stop="setQuoteStatus(quote.id, 'rejected')" title="Zavrni" style="width: 32px; height: 32px; border-radius: 6px; border: none; background: #f3f4f6; color: #6b7280; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                  🗑️
+                </button>
+                <!-- Reset to pending -->
+                <button x-show="quote.status === 'accepted' || quote.status === 'rejected'" @click.stop="setQuoteStatus(quote.id, 'pending')" title="Ponastavi" style="width: 32px; height: 32px; border-radius: 6px; border: none; background: #fef3c7; color: #f59e0b; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                  ↩️
+                </button>
+              </div>
+              
+              <!-- Edit/Delete buttons -->
+              <div class="quote-actions" style="display: flex; flex-direction: column; gap: 6px; margin-left: 8px;">
+                <button @click.stop="editQuote(quote.id)" title="Uredi" style="width: 32px; height: 32px; border-radius: 6px; border: none; background: #dbeafe; color: #2563eb; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
                   ✏️
                 </button>
-                <button @click.stop="deleteQuote(quote.id)" class="btn-icon-action" title="Izbriši" style="width: 32px; height: 32px; border-radius: 6px; border: none; background: #fee2e2; color: #dc2626; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                <button @click.stop="deleteQuote(quote.id)" title="Izbriši" style="width: 32px; height: 32px; border-radius: 6px; border: none; background: #fee2e2; color: #dc2626; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
                   🗑️
                 </button>
               </div>
