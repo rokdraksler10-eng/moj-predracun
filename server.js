@@ -1,9 +1,9 @@
 const express = require('express');
 const Database = require('better-sqlite3');
-const PDFDocument = require('pdfkit');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const { generateQuotePDF } = require('./pdf-generator');
 
 const app = express();
 const PORT = process.env.PORT || 3456;
@@ -366,10 +366,15 @@ app.delete('/api/company/logo', (req, res) => {
 
 // ==================== PDF GENERATION ====================
 
-app.get('/api/quotes/:id/pdf/:type', (req, res) => {
+app.get('/api/quotes/:id/pdf/:type', async (req, res) => {
   try {
     const { id, type } = req.params;
     const quote = db.prepare('SELECT * FROM quotes WHERE id = ?').get(id);
+    
+    if (!quote) {
+      return res.status(404).json({ error: 'Quote not found' });
+    }
+    
     const company = db.prepare('SELECT * FROM company_settings LIMIT 1').get();
     const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(quote.client_id);
     const items = db.prepare(`
@@ -378,13 +383,6 @@ app.get('/api/quotes/:id/pdf/:type', (req, res) => {
       JOIN work_items wi ON qi.work_item_id = wi.id
       WHERE qi.quote_id = ?
     `).all(id);
-    
-    const doc = new PDFDocument({ margin: 50, size: 'A4' });
-    const filename = type === 'internal' ? `izracun-${id}.pdf` : `predracun-${id}.pdf`;
-    
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    doc.pipe(res);
     
     // Check for logo
     let logoPath = null;
@@ -395,362 +393,17 @@ app.get('/api/quotes/:id/pdf/:type', (req, res) => {
       }
     }
     
-    // ==================== CLEAN PROFESSIONAL HEADER ====================
-    const pageWidth = 612;
-    const margin = 50;
+    // Generate PDF using Puppeteer
+    const pdfBuffer = await generateQuotePDF(quote, company, client, items, type, logoPath);
     
-    // Header with logo area
-    let headerY = 50;
+    const filename = type === 'internal' ? `navodila-${id}.pdf` : `predracun-${id}.pdf`;
     
-    // Logo or Company Name
-    if (logoPath) {
-      try {
-        doc.image(logoPath, margin, headerY, { width: 80, height: 60 });
-        doc.fontSize(16).font('Helvetica-Bold').text(company?.name || '', margin + 90, headerY + 10);
-      } catch (e) {
-        // Fallback to text if logo fails
-        doc.fontSize(20).font('Helvetica-Bold').text(company?.name || 'Gradbeno podjetje', margin, headerY);
-      }
-    } else {
-      doc.fontSize(20).font('Helvetica-Bold').text(company?.name || 'Gradbeno podjetje', margin, headerY);
-    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.send(pdfBuffer);
     
-    // Company details
-    doc.fontSize(9).font('Helvetica').fillColor('#64748b');
-    const companyY = logoPath ? headerY + 35 : headerY + 25;
-    doc.text(company?.address || '', margin, companyY);
-    doc.text(`Tel: ${company?.phone || ''} | Email: ${company?.email || ''}`, margin, companyY + 12);
-    if (company?.tax_id) {
-      doc.text(`Davčna številka: ${company.tax_id}`, margin, companyY + 24);
-    }
-    
-    // Document type box (right side)
-    const docType = type === 'internal' ? 'NOTRANJI IZRAČUN' : 'PREDRAČUN';
-    const docTypeColor = type === 'internal' ? '#059669' : '#2563eb';
-    
-    doc.rect(pageWidth - margin - 150, headerY, 150, 60).lineWidth(1).stroke(docTypeColor);
-    doc.fillColor(docTypeColor).fontSize(11).font('Helvetica-Bold');
-    doc.text(docType, pageWidth - margin - 140, headerY + 15, { width: 130, align: 'center' });
-    doc.fontSize(20).font('Helvetica-Bold');
-    doc.text(`#${quote.id}`, pageWidth - margin - 140, headerY + 35, { width: 130, align: 'center' });
-    
-    // Horizontal line under header
-    doc.strokeColor('#e2e8f0').lineWidth(1);
-    doc.moveTo(margin, headerY + 80).lineTo(pageWidth - margin, headerY + 80).stroke();
-    
-    // ==================== DOCUMENT INFO ====================
-    let infoY = headerY + 100;
-    doc.fillColor('#334155').fontSize(10).font('Helvetica-Bold');
-    doc.text('DATUM IZDAJE:', margin, infoY);
-    doc.text('VELJAVNOST:', margin + 150, infoY);
-    doc.text('PROJEKT:', margin + 300, infoY);
-    
-    doc.fillColor('#0f172a').fontSize(10).font('Helvetica');
-    doc.text(new Date(quote.created_at).toLocaleDateString('sl-SI'), margin, infoY + 15);
-    doc.text(new Date(quote.valid_until).toLocaleDateString('sl-SI'), margin + 150, infoY + 15);
-    doc.text(quote.project_name || 'Brez naziva', margin + 300, infoY + 15, { width: 200 });
-    
-    // ==================== CLIENT INFO BOX ====================
-    infoY += 50;
-    doc.rect(margin, infoY, pageWidth - margin * 2, 50).fill('#f8fafc');
-    doc.fillColor('#334155').fontSize(9).font('Helvetica-Bold');
-    doc.text('STRANKA:', margin + 10, infoY + 8);
-    doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold');
-    doc.text(client?.name || quote.client_name || 'Brez naziva', margin + 10, infoY + 22);
-    doc.fontSize(9).font('Helvetica');
-    doc.text(client?.address || quote.project_address || '', margin + 10, infoY + 38);
-    
-    doc.fillColor('black');
-    
-    // ==================== ITEMS TABLE ====================
-    let tableY = infoY + 70;
-    const tableWidth = pageWidth - margin * 2;
-    const colWidths = { item: tableWidth * 0.45, qty: tableWidth * 0.12, unit: tableWidth * 0.13, price: tableWidth * 0.15, total: tableWidth * 0.15 };
-    const rowHeight = 20;
-    
-    // Table header
-    doc.rect(margin, tableY, tableWidth, rowHeight).fill('#f1f5f9');
-    doc.fillColor('#475569').fontSize(9).font('Helvetica-Bold');
-    doc.text('Postavka / Opis', margin + 8, tableY + 6, { width: colWidths.item });
-    doc.text('Kol.', margin + colWidths.item + 8, tableY + 6, { width: colWidths.qty, align: 'center' });
-    doc.text('Enota', margin + colWidths.item + colWidths.qty + 8, tableY + 6, { width: colWidths.unit, align: 'center' });
-    doc.text('Cena', margin + colWidths.item + colWidths.qty + colWidths.unit + 8, tableY + 6, { width: colWidths.price, align: 'right' });
-    doc.text('Znesek', margin + colWidths.item + colWidths.qty + colWidths.unit + colWidths.price + 8, tableY + 6, { width: colWidths.total, align: 'right' });
-    
-    doc.strokeColor('#e2e8f0').lineWidth(0.5);
-    doc.moveTo(margin, tableY + rowHeight).lineTo(pageWidth - margin, tableY + rowHeight).stroke();
-    
-    // Items
-    let rowY = tableY + rowHeight + 2;
-    doc.font('Helvetica').fillColor('#334155');
-    
-    items.forEach((item, idx) => {
-      // Check for page break
-      if (rowY > 650) {
-        doc.addPage();
-        rowY = 50;
-        // Redraw header on new page
-        doc.rect(margin, rowY, tableWidth, rowHeight).fill('#f1f5f9');
-        doc.fillColor('#475569').fontSize(9).font('Helvetica-Bold');
-        doc.text('Postavka / Opis', margin + 8, rowY + 6, { width: colWidths.item });
-        doc.text('Kol.', margin + colWidths.item + 8, rowY + 6, { width: colWidths.qty, align: 'center' });
-        doc.text('Enota', margin + colWidths.item + colWidths.qty + 8, rowY + 6, { width: colWidths.unit, align: 'center' });
-        doc.text('Cena', margin + colWidths.item + colWidths.qty + colWidths.unit + 8, rowY + 6, { width: colWidths.price, align: 'right' });
-        doc.text('Znesek', margin + colWidths.item + colWidths.qty + colWidths.unit + colWidths.price + 8, rowY + 6, { width: colWidths.total, align: 'right' });
-        doc.moveTo(margin, rowY + rowHeight).lineTo(pageWidth - margin, rowY + rowHeight).stroke();
-        rowY += rowHeight + 2;
-        doc.font('Helvetica').fillColor('#334155');
-      }
-      
-      // Alternating row background
-      if (idx % 2 === 0) {
-        doc.rect(margin, rowY - 2, tableWidth, rowHeight).fill('#fafafa');
-      }
-      
-      // Item data
-      doc.fillColor('#0f172a').fontSize(9).font('Helvetica-Bold');
-      doc.text(item.work_item_name, margin + 8, rowY + 3, { width: colWidths.item });
-      
-      doc.font('Helvetica').fillColor('#334155');
-      doc.text(item.quantity.toString(), margin + colWidths.item + 8, rowY + 3, { width: colWidths.qty, align: 'center' });
-      doc.text(item.work_item_unit, margin + colWidths.item + colWidths.qty + 8, rowY + 3, { width: colWidths.unit, align: 'center' });
-      doc.text(item.price_per_unit.toFixed(2) + ' €', margin + colWidths.item + colWidths.qty + colWidths.unit + 8, rowY + 3, { width: colWidths.price - 5, align: 'right' });
-      doc.text(item.subtotal.toFixed(2) + ' €', margin + colWidths.item + colWidths.qty + colWidths.unit + colWidths.price + 8, rowY + 3, { width: colWidths.total - 5, align: 'right' });
-      
-      // Notes row
-      if (item.notes) {
-        rowY += 14;
-        doc.fillColor('#64748b').fontSize(8);
-        doc.text(item.notes, margin + 15, rowY, { width: tableWidth - 30 });
-        rowY += 10;
-      } else {
-        rowY += rowHeight;
-      }
-    });
-    
-    // Bottom line of table
-    doc.strokeColor('#cbd5e1').lineWidth(1);
-    doc.moveTo(margin, rowY).lineTo(pageWidth - margin, rowY).stroke();
-    
-    // ==================== TOTALS SECTION ====================
-    const totalsY = rowY + 20;
-    const totalsWidth = 220;
-    const totalsX = pageWidth - margin - totalsWidth;
-    
-    if (type === 'internal') {
-      // Internal document - detailed breakdown
-      doc.fillColor('#475569').fontSize(9).font('Helvetica');
-      doc.text('Material:', totalsX, totalsY);
-      doc.text((quote.material_total || 0).toFixed(2) + ' €', totalsX + 120, totalsY, { width: 100, align: 'right' });
-      
-      doc.text('Delo:', totalsX, totalsY + 16);
-      doc.text((quote.labor_total || 0).toFixed(2) + ' €', totalsX + 120, totalsY + 16, { width: 100, align: 'right' });
-      
-      doc.text('Skupaj brez DDV:', totalsX, totalsY + 32);
-      doc.text((quote.subtotal || 0).toFixed(2) + ' €', totalsX + 120, totalsY + 32, { width: 100, align: 'right' });
-      
-      doc.text(`DDV (${quote.tax_rate || 22}%):`, totalsX, totalsY + 48);
-      doc.text((quote.tax_amount || 0).toFixed(2) + ' €', totalsX + 120, totalsY + 48, { width: 100, align: 'right' });
-      
-      // Total box
-      doc.rect(totalsX - 10, totalsY + 62, totalsWidth + 10, 30).fill(docTypeColor);
-      doc.fillColor('white').fontSize(11).font('Helvetica-Bold');
-      doc.text('SKUPAJ:', totalsX, totalsY + 70);
-      doc.text((quote.total || 0).toFixed(2) + ' €', totalsX + 120, totalsY + 70, { width: 100, align: 'right' });
-    } else {
-      // Client document - simplified
-      doc.fillColor('#475569').fontSize(9).font('Helvetica');
-      doc.text('Skupaj brez DDV:', totalsX, totalsY);
-      doc.text((quote.subtotal || 0).toFixed(2) + ' €', totalsX + 120, totalsY, { width: 100, align: 'right' });
-      
-      doc.text(`DDV (${quote.tax_rate || 22}%):`, totalsX, totalsY + 16);
-      doc.text((quote.tax_amount || 0).toFixed(2) + ' €', totalsX + 120, totalsY + 16, { width: 100, align: 'right' });
-      
-      // Total box
-      doc.rect(totalsX - 10, totalsY + 32, totalsWidth + 10, 28).fill(docTypeColor);
-      doc.fillColor('white').fontSize(12).font('Helvetica-Bold');
-      doc.text('SKUPAJ Z DDV:', totalsX, totalsY + 40);
-      doc.text((quote.total || 0).toFixed(2) + ' €', totalsX + 120, totalsY + 40, { width: 100, align: 'right' });
-    }
-    
-    doc.fillColor('black');
-    
-    // ==================== PAGE 2: WORK DOCUMENT FOR EMPLOYER ====================
-    if (type === 'internal') {
-      doc.addPage();
-      
-      // Clean header
-      doc.fontSize(16).font('Helvetica-Bold').fillColor('#059669').text('NAVODILA ZA DELO', margin, 50);
-      doc.strokeColor('#059669').lineWidth(2);
-      doc.moveTo(margin, 70).lineTo(pageWidth - margin, 70).stroke();
-      
-      doc.fillColor('#64748b').fontSize(9).font('Helvetica');
-      doc.text('Notranji dokument - navodila za izvajalca', margin, 75);
-      
-      let p2y = 100;
-      
-      // Project info section
-      doc.fillColor('#475569').fontSize(9).font('Helvetica-Bold');
-      doc.text('PROJEKT', margin, p2y);
-      doc.fillColor('#0f172a').fontSize(12).font('Helvetica-Bold');
-      doc.text(quote.project_name || 'Brez naziva', margin, p2y + 14);
-      doc.fillColor('#64748b').fontSize(9).font('Helvetica');
-      doc.text(quote.project_address || '', margin, p2y + 30);
-      doc.text(`Datum: ${new Date(quote.created_at).toLocaleDateString('sl-SI')}`, margin, p2y + 44);
-      
-      // Line
-      p2y += 65;
-      doc.strokeColor('#e2e8f0').lineWidth(0.5);
-      doc.moveTo(margin, p2y).lineTo(pageWidth - margin, p2y).stroke();
-      
-      // Work items section
-      p2y += 20;
-      doc.fillColor('#475569').fontSize(10).font('Helvetica-Bold');
-      doc.text('SEZNAM DEL', margin, p2y);
-      
-      p2y += 20;
-      const p2TableWidth = pageWidth - margin * 2;
-      const p2ColWidths = { num: 30, name: p2TableWidth * 0.55, qty: p2TableWidth * 0.20, diff: p2TableWidth * 0.15 };
-      
-      // Table header
-      doc.rect(margin, p2y, p2TableWidth, 20).fill('#f1f5f9');
-      doc.fillColor('#475569').fontSize(9).font('Helvetica-Bold');
-      doc.text('#', margin + 8, p2y + 5, { width: p2ColWidths.num });
-      doc.text('Postavka', margin + p2ColWidths.num + 8, p2y + 5, { width: p2ColWidths.name });
-      doc.text('Količina', margin + p2ColWidths.num + p2ColWidths.name + 8, p2y + 5, { width: p2ColWidths.qty, align: 'center' });
-      doc.text('Težavnost', margin + p2ColWidths.num + p2ColWidths.name + p2ColWidths.qty + 8, p2y + 5, { width: p2ColWidths.diff, align: 'center' });
-      
-      p2y += 22;
-      doc.font('Helvetica').fillColor('#334155');
-      
-      items.forEach((item, idx) => {
-        if (p2y > 720) {
-          doc.addPage();
-          p2y = 50;
-        }
-        
-        if (idx % 2 === 0) {
-          doc.rect(margin, p2y - 2, p2TableWidth, 18).fill('#fafafa');
-        }
-        
-        doc.fillColor('#64748b').fontSize(9);
-        doc.text((idx + 1).toString(), margin + 8, p2y + 2, { width: p2ColWidths.num });
-        
-        doc.fillColor('#0f172a').fontSize(9).font('Helvetica-Bold');
-        doc.text(item.work_item_name, margin + p2ColWidths.num + 8, p2y + 2, { width: p2ColWidths.name });
-        
-        doc.font('Helvetica').fillColor('#334155');
-        doc.text(`${item.quantity} ${item.work_item_unit}`, margin + p2ColWidths.num + p2ColWidths.name + 8, p2y + 2, { width: p2ColWidths.qty, align: 'center' });
-        
-        const diffText = item.difficulty === 'easy' ? 'Lahko' : item.difficulty === 'hard' ? 'Težko' : 'Srednje';
-        doc.text(diffText, margin + p2ColWidths.num + p2ColWidths.name + p2ColWidths.qty + 8, p2y + 2, { width: p2ColWidths.diff, align: 'center' });
-        
-        p2y += 18;
-      });
-      
-      // Total
-      p2y += 10;
-      const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
-      doc.rect(margin, p2y, p2TableWidth, 25).fill('#ecfdf5');
-      doc.fillColor('#059669').fontSize(10).font('Helvetica-Bold');
-      doc.text(`Skupna količina: ${totalQty.toFixed(2)} enot`, margin + 10, p2y + 7);
-      
-      // Materials section
-      p2y += 45;
-      if (p2y < 720) {
-        doc.fillColor('#475569').fontSize(10).font('Helvetica-Bold');
-        doc.text('POTREBEN MATERIAL (približno)', margin, p2y);
-        
-        p2y += 20;
-        let totalArea = 0;
-        items.forEach(item => {
-          if (item.work_item_unit === 'm²' || item.work_item_unit === 'm2') {
-            totalArea += item.quantity;
-          }
-        });
-        
-        if (totalArea > 0) {
-          doc.rect(margin, p2y, p2TableWidth, 20).fill('#f1f5f9');
-          doc.fillColor('#475569').fontSize(9).font('Helvetica-Bold');
-          doc.text('Material', margin + 8, p2y + 5, { width: p2TableWidth * 0.6 });
-          doc.text('Količina', margin + p2TableWidth * 0.65, p2y + 5, { width: 80, align: 'right' });
-          
-          p2y += 22;
-          const materials = [
-            { name: 'Lepilo za ploščice', calc: totalArea * 5, unit: 'kg' },
-            { name: 'Fugirna masa', calc: totalArea * 0.5, unit: 'kg' },
-            { name: 'Knauf plošče (1.2x2.5m)', calc: Math.ceil(totalArea / 3), unit: 'kom' },
-            { name: 'Profili za knauf', calc: Math.ceil(totalArea / 3) * 2, unit: 'kom' },
-            { name: 'Ploščice 60x60 cm (+10%)', calc: Math.ceil(totalArea * 2.78 * 1.1), unit: 'kom' },
-            { name: 'Silikon sanitarni', calc: Math.ceil(totalArea / 10), unit: 'tuba' }
-          ];
-          
-          materials.forEach((mat, idx) => {
-            if (p2y > 720) {
-              doc.addPage();
-              p2y = 50;
-            }
-            
-            if (idx % 2 === 0) {
-              doc.rect(margin, p2y - 2, p2TableWidth, 16).fill('#fafafa');
-            }
-            
-            doc.fillColor('#334155').fontSize(9).font('Helvetica');
-            doc.text(mat.name, margin + 8, p2y + 2, { width: p2TableWidth * 0.6 });
-            doc.text(Math.ceil(mat.calc) + ' ' + mat.unit, margin + p2TableWidth * 0.65, p2y + 2, { width: 80, align: 'right' });
-            
-            p2y += 16;
-          });
-          
-          p2y += 10;
-          doc.fillColor('#92400e').fontSize(8);
-          doc.text('Opomba: Količine so približne. Priporočamo dodatno rezervo 10%.', margin, p2y);
-        }
-      }
-      
-      // Footer
-      doc.fontSize(8).fillColor('#94a3b8').font('Helvetica');
-      doc.text(`${company?.name || 'Moj Predračun'} - Interni dokument`, margin, 770, { align: 'center', width: p2TableWidth });
-    }
-    
-    // ==================== CLIENT NOTES & SIGNATURES ====================
-    if (type === 'client') {
-      let notesY = totalsY + 90;
-      
-      if (notesY < 680) {
-        // Notes section
-        doc.strokeColor('#e2e8f0').lineWidth(0.5);
-        doc.moveTo(margin, notesY).lineTo(pageWidth - margin, notesY).stroke();
-        
-        notesY += 15;
-        doc.fillColor('#475569').fontSize(9).font('Helvetica-Bold');
-        doc.text('OPOMBE', margin, notesY);
-        
-        doc.fillColor('#64748b').fontSize(9).font('Helvetica');
-        doc.text(quote.notes || '_____________________________________________', margin, notesY + 15);
-        
-        // Signature section
-        notesY += 60;
-        if (notesY < 720) {
-          doc.strokeColor('#e2e8f0').lineWidth(0.5);
-          doc.moveTo(margin, notesY).lineTo(pageWidth / 2 - 20, notesY).stroke();
-          doc.moveTo(pageWidth / 2 + 20, notesY).lineTo(pageWidth - margin, notesY).stroke();
-          
-          doc.fillColor('#64748b').fontSize(9);
-          doc.text('Podpis izvajalca', margin, notesY + 8);
-          doc.text('Podpis stranke', pageWidth / 2 + 20, notesY + 8);
-        }
-      }
-      
-      // Footer
-      doc.fontSize(8).fillColor('#94a3b8').font('Helvetica');
-      doc.text(`${company?.name || ''} | ${company?.phone || ''} | ${company?.email || ''}`, margin, 760, { align: 'center', width: pageWidth - margin * 2 });
-      doc.fillColor(docTypeColor).fontSize(10).font('Helvetica-Bold');
-      doc.text('Hvala za zaupanje!', margin, 775, { align: 'center', width: pageWidth - margin * 2 });
-    }
-    
-    doc.end();
   } catch (error) {
+    console.error('PDF generation error:', error);
     res.status(500).json({ error: error.message });
   }
 });
