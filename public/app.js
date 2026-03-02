@@ -106,6 +106,9 @@ function app() {
     syncError: null,
     syncSuccess: null,
     
+    // Logo upload
+    uploadingLogo: false,
+    
     // User preferences
     confirmDelete: localStorage.getItem('gradbeniApp_confirmDelete') !== null 
       ? localStorage.getItem('gradbeniApp_confirmDelete') === 'true' 
@@ -466,6 +469,11 @@ function app() {
         
         this.clients = await clientsRes.json();
         this.company = await companyRes.json();
+        
+        // Set logo URL if logo exists
+        if (this.company.logo_path) {
+          this.company.logo_url = '/api/company/logo';
+        }
         
         console.log('Loaded', this.workItems.length, 'unique items (filtered from', rawItems.length, ')');
         console.log('Loaded', this.materials.length, 'unique materials (filtered from', rawMaterials.length, ')');
@@ -978,6 +986,88 @@ function app() {
           window.showToast('❌ Napaka pri shranjevanju', 'error');
         } else {
           alert('Napaka pri shranjevanju');
+        }
+      }
+    },
+    
+    // LOGO UPLOAD FUNCTIONS
+    async uploadLogo(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Validate file size (2MB max)
+      if (file.size > 2 * 1024 * 1024) {
+        if (window.showToast) {
+          window.showToast('❌ Datoteka je prevelika (max 2MB)', 'error');
+        } else {
+          alert('Datoteka je prevelika (max 2MB)');
+        }
+        return;
+      }
+      
+      this.uploadingLogo = true;
+      
+      try {
+        const formData = new FormData();
+        formData.append('logo', file);
+        
+        const res = await fetch('/api/company/logo', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (res.ok) {
+          const result = await res.json();
+          this.company.logo_path = result.logo_path;
+          this.company.logo_url = '/api/company/logo?t=' + Date.now(); // Cache buster
+          if (window.showToast) {
+            window.showToast('✅ Logo uspešno naložen!', 'success');
+          }
+        } else {
+          const error = await res.json();
+          if (window.showToast) {
+            window.showToast('❌ ' + (error.error || 'Napaka pri nalaganju'), 'error');
+          } else {
+            alert(error.error || 'Napaka pri nalaganju loga');
+          }
+        }
+      } catch (error) {
+        console.error('Error uploading logo:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri nalaganju loga', 'error');
+        } else {
+          alert('Napaka pri nalaganju loga');
+        }
+      } finally {
+        this.uploadingLogo = false;
+        // Reset input
+        event.target.value = '';
+      }
+    },
+    
+    async deleteLogo() {
+      if (!confirm('Ali res želiš odstraniti logo?')) return;
+      
+      try {
+        const res = await fetch('/api/company/logo', {
+          method: 'DELETE'
+        });
+        
+        if (res.ok) {
+          this.company.logo_path = null;
+          this.company.logo_url = null;
+          if (window.showToast) {
+            window.showToast('✅ Logo odstranjen', 'success');
+          }
+        } else {
+          if (window.showToast) {
+            window.showToast('❌ Napaka pri odstranjevanju', 'error');
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting logo:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri odstranjevanju', 'error');
         }
       }
     },

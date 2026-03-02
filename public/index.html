@@ -961,39 +961,94 @@
       
       <div class="settings-form">
         <div class="form-section">
-          <h3>Osnovni podatki</h3>
+          <h3>🖼️ Logo podjetja</h3>
+          <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">
+            Logo se bo prikazoval na vrhu PDF predračunov in računov.
+          </p>
+          
+          <!-- Logo Preview -->
+          <div x-show="company.logo_url" style="margin-bottom: 20px; text-align: center; padding: 20px; background: #f8fafc; border-radius: 8px; border: 2px dashed #cbd5e1;">
+            <img :src="company.logo_url" alt="Logo" style="max-height: 80px; max-width: 200px; object-fit: contain;">
+            <p style="font-size: 12px; color: #64748b; margin-top: 10px;">Trenutni logo</p>
+          </div>
+          
+          <div x-show="!company.logo_url" style="margin-bottom: 20px; text-align: center; padding: 30px; background: #f8fafc; border-radius: 8px; border: 2px dashed #cbd5e1;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="margin: 0 auto;">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <p style="font-size: 13px; color: #64748b; margin-top: 10px;">Ni naloženega loga</p>
+          </div>
+          
+          <!-- Logo Upload -->
+          <div class="form-group">
+            <input type="file" 
+                   id="logoInput" 
+                   accept="image/*" 
+                   @change="uploadLogo($event)" 
+                   style="display: none;">
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-secondary" @click="document.getElementById('logoInput').click()" :disabled="uploadingLogo">
+                <span x-show="!uploadingLogo">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 5px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  Naloži logo
+                </span>
+                <span x-show="uploadingLogo">Nalagam...</span>
+              </button>
+              <button class="btn-text" @click="deleteLogo()" x-show="company.logo_url" style="color: #dc2626;">
+                Odstrani
+              </button>
+            </div>
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">
+              Priporočljive dimenzije: 200x80px, max 2MB (PNG, JPG, SVG)
+            </p>
+          </div>
+        </div>
+        
+        <div class="form-section" style="margin-top: 25px;">
+          <h3>🏢 Osnovni podatki</h3>
           <div class="form-group">
             <label>Naziv podjetja</label>
-            <input type="text" x-model="company.name">
+            <input type="text" x-model="company.name" placeholder="npr. Gradbeno podjetje d.o.o.">
           </div>
           <div class="form-group">
             <label>Naslov</label>
-            <textarea x-model="company.address" rows="2"></textarea>
+            <textarea x-model="company.address" rows="2" placeholder="Ulica 123, 1000 Ljubljana"></textarea>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>Telefon</label>
-              <input type="text" x-model="company.phone">
+              <input type="text" x-model="company.phone" placeholder="040 123 456">
             </div>
             <div class="form-group">
               <label>Email</label>
-              <input type="email" x-model="company.email">
+              <input type="email" x-model="company.email" placeholder="info@podjetje.si">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>Davčna številka</label>
-              <input type="text" x-model="company.tax_id">
+              <input type="text" x-model="company.tax_id" placeholder="12345678">
             </div>
             <div class="form-group">
               <label>Transakcijski račun</label>
-              <input type="text" x-model="company.bank_account">
+              <input type="text" x-model="company.bank_account" placeholder="SI56 1234 5678 9012 345">
             </div>
           </div>
         </div>
         
-        <button class="btn-primary" @click="saveCompany()">
-          <i data-feather="save"></i> Shrani nastavitve
+        <button class="btn-primary" @click="saveCompany()" style="margin-top: 20px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 5px;">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          Shrani nastavitve
         </button>
       </div>
       
