@@ -796,8 +796,8 @@ function app() {
       }
     },
     
-    // Generate PDF
-    generatePDF(type) {
+    // Preview PDF (opens in new tab)
+    previewPDF(type) {
       if (!this.currentQuote.id) {
         if (window.showToast) {
           window.showToast('❌ Najprej shrani predračun', 'error');
@@ -809,6 +809,30 @@ function app() {
       
       const url = `/api/quotes/${this.currentQuote.id}/pdf/${type}`;
       window.open(url, '_blank');
+    },
+    
+    // Download PDF (forces download)
+    downloadPDF(type) {
+      if (!this.currentQuote.id) {
+        if (window.showToast) {
+          window.showToast('❌ Najprej shrani predračun', 'error');
+        } else {
+          alert('Najprej shrani predračun');
+        }
+        return;
+      }
+      
+      const url = `/api/quotes/${this.currentQuote.id}/pdf/${type}`;
+      const filename = type === 'internal' ? `navodila-${this.currentQuote.id}.pdf` : `predracun-${this.currentQuote.id}.pdf`;
+      
+      // Create temporary link for download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     },
     
     // Print quote

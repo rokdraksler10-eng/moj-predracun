@@ -295,16 +295,44 @@
         
         <!-- PDF Downloads - Separate Section -->
         <div class="pdf-section" x-show="currentQuote.id">
-          <h4>📥 Prenesi dokumente</h4>
-          <div class="pdf-buttons-row">
-            <button class="btn-pdf-client" @click="generatePDF('client')">
-              📄 PDF ZA STRANKO
-              <span class="pdf-desc">Cenik s cenami, DDV, skupaj</span>
-            </button>
-            <button class="btn-pdf-internal" @click="generatePDF('internal')">
-              📋 PDF ZA MOJSTRO
-              <span class="pdf-desc">Kaj delati, koliko materiala</span>
-            </button>
+          <h4>📄 Dokumenti</h4>
+          
+          <!-- PDF za stranko -->
+          <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 2px solid #dbeafe;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="background: #2563eb; color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">📄</div>
+              <div>
+                <div style="font-weight: 600; color: #1e293b;">PREDRAČUN ZA STRANKO</div>
+                <div style="font-size: 12px; color: #64748b;">Cenik s cenami, DDV, skupaj</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button @click="previewPDF('client')" style="flex: 1; padding: 10px; background: white; border: 1.5px solid #2563eb; border-radius: 8px; color: #2563eb; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                👁️ Predogled
+              </button>
+              <button @click="downloadPDF('client')" style="flex: 1; padding: 10px; background: #2563eb; border: none; border-radius: 8px; color: white; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                ⬇️ Prenesi
+              </button>
+            </div>
+          </div>
+          
+          <!-- PDF za mojstra -->
+          <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 2px solid #d1fae5;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="background: #059669; color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">📋</div>
+              <div>
+                <div style="font-weight: 600; color: #1e293b;">NAVODILA ZA MOJSTRO</div>
+                <div style="font-size: 12px; color: #64748b;">Kaj delati, koliko materiala</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button @click="previewPDF('internal')" style="flex: 1; padding: 10px; background: white; border: 1.5px solid #059669; border-radius: 8px; color: #059669; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                👁️ Predogled
+              </button>
+              <button @click="downloadPDF('internal')" style="flex: 1; padding: 10px; background: #059669; border: none; border-radius: 8px; color: white; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                ⬇️ Prenesi
+              </button>
+            </div>
           </div>
           <div class="export-buttons-row" style="margin-top: 1rem; display: flex; gap: 0.75rem;">
             <button class="btn-export" @click="printQuote()" style="flex: 1; padding: 0.75rem; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
