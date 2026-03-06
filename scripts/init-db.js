@@ -204,8 +204,121 @@ db.exec(`
     1.5; -- 1.5kg na m²
 `);
 
+// ============================================
+// NOVE TABELE ZA NAPREDNE FUNKCIJE
+// ============================================
+
+// Templates (Predloge predračunov) - Smart ponudnik
+// Templates (Predloge predračunov) - Smart ponudnik
+db.exec(`
+  CREATE TABLE IF NOT EXISTS quote_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    category TEXT DEFAULT 'Splošno',
+    icon TEXT DEFAULT '📋',
+    items_json TEXT NOT NULL, -- JSON array of template items
+    is_default INTEGER DEFAULT 0,
+    usage_count INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  
+  CREATE INDEX IF NOT EXISTS idx_templates_category ON quote_templates(category);
+`);
+
+// Quote Photos (Fotografije k projektom)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS quote_photos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    quote_id INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    original_name TEXT,
+    file_path TEXT NOT NULL,
+    file_size INTEGER,
+    mime_type TEXT,
+    caption TEXT,
+    photo_type TEXT DEFAULT 'other', -- 'before', 'during', 'after', 'other'
+    sort_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE
+  );
+  
+  CREATE INDEX IF NOT EXISTS idx_photos_quote ON quote_photos(quote_id);
+`);
+
+// Voice Notes (Glasovne beležke)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS quote_voice_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    quote_id INTEGER,
+    calculator_note INTEGER DEFAULT 0, -- 1 if this is calculator voice note
+    filename TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    duration INTEGER, -- duration in seconds
+    transcript TEXT, -- AI/prepoznani tekst
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (quote_id) REFERENCES quotes(id) ON DELETE CASCADE
+  );
+  
+  CREATE INDEX IF NOT EXISTS idx_voice_notes_quote ON quote_voice_notes(quote_id);
+`);
+
+// Default Templates (Pripravljeni predlogi za slovenski trg)
+db.exec(`
+  INSERT OR IGNORE INTO quote_templates (name, description, category, icon, items_json, is_default) VALUES
+  ('🛁 Kopalnica - standard', 'Kompletna prenova kopalnice do 5m²', 'Kopalnica', '🛁', '[
+    {"work_item_id": "hidroizolacija", "name": "Hidroizolacija - tekoča", "quantity": 25, "difficulty": "medium", "base_price": 15},
+    {"work_item_id": "keramika", "name": "Polaganje keramičnih ploščic", "quantity": 25, "difficulty": "medium", "base_price": 28},
+    {"work_item_id": "mozaik", "name": "Polaganje mozaika", "quantity": 8, "difficulty": "hard", "base_price": 38},
+    {"work_item_id": "silikon", "name": "Silikoniranje fug", "quantity": 33, "difficulty": "easy", "base_price": 8.8},
+    {"work_item_id": "vticnice", "name": "Elektro inštalacije - točke", "quantity": 4, "difficulty": "medium", "base_price": 85},
+    {"work_item_id": "priklop_vode", "name": "Vodovod - priklop točke", "quantity": 3, "difficulty": "medium", "base_price": 120},
+    {"work_item_id": "odtok", "name": "Odtoki - priklop", "quantity": 2, "difficulty": "medium", "base_price": 95}
+  ]', 1),
+  
+  ('🛁 Kopalnica - velika', 'Kompletna prenova kopalnice nad 8m²', 'Kopalnica', '🛁', '[
+    {"work_item_id": "hidroizolacija", "name": "Hidroizolacija - tekoča", "quantity": 40, "difficulty": "medium", "base_price": 15},
+    {"work_item_id": "keramika", "name": "Polaganje keramičnih ploščic", "quantity": 40, "difficulty": "medium", "base_price": 28},
+    {"work_item_id": "vticnice", "name": "Elektro inštalacije - točke", "quantity": 6, "difficulty": "medium", "base_price": 85},
+    {"work_item_id": "priklop_vode", "name": "Vodovod - priklop točke", "quantity": 4, "difficulty": "medium", "base_price": 120},
+    {"work_item_id": "odtok", "name": "Odtoki - priklop", "quantity": 3, "difficulty": "medium", "base_price": 95}
+  ]', 1),
+  
+  ('🛋️ Dnevna soba - talne obloge', 'Menjava talnih oblog v dnevni sobi', 'Soba', '🛋️', '[
+    {"work_item_id": "demontaza", "name": "Demontaža starih ploščic", "quantity": 20, "difficulty": "easy", "base_price": 12},
+    {"work_item_id": "laminat", "name": "Laminat - polaganje", "quantity": 20, "difficulty": "medium", "base_price": 14},
+    {"work_item_id": "barvanje", "name": "Notranje slikanje - 2x", "quantity": 50, "difficulty": "medium", "base_price": 12}
+  ]', 1),
+  
+  ('🍳 Kuhinja - adaptacija', 'Prenova kuhinje', 'Kuhinja', '🍳', '[
+    {"work_item_id": "keramika", "name": "Polaganje keramičnih ploščic", "quantity": 15, "difficulty": "medium", "base_price": 28},
+    {"work_item_id": "vticnice", "name": "Elektro inštalacije - točke", "quantity": 5, "difficulty": "medium", "base_price": 85},
+    {"work_item_id": "priklop_vode", "name": "Vodovod - priklop točke", "quantity": 2, "difficulty": "medium", "base_price": 120},
+    {"work_item_id": "barvanje", "name": "Notranje slikanje - 2x", "quantity": 25, "difficulty": "medium", "base_price": 12}
+  ]', 1),
+  
+  ('🚽 Samo sanitarne inštalacije', 'Samo zamenjava WC, umivalnika, tuša', 'Kopalnica', '🚽', '[
+    {"work_item_id": "priklop_vode", "name": "Vodovod - priklop točke", "quantity": 3, "difficulty": "medium", "base_price": 120},
+    {"work_item_id": "odtok", "name": "Odtoki - priklop", "quantity": 3, "difficulty": "medium", "base_price": 95},
+    {"work_item_id": "silikon", "name": "Silikoniranje fug", "quantity": 5, "difficulty": "easy", "base_price": 8.8}
+  ]', 1),
+  
+  ('🏠 Celotno stanovanje - osnovno', 'Osnovna prenova celotnega stanovanja', 'Stanovanje', '🏠', '[
+    {"work_item_id": "demontaza", "name": "Demontaža starih ploščic", "quantity": 30, "difficulty": "easy", "base_price": 12},
+    {"work_item_id": "hidroizolacija", "name": "Hidroizolacija - tekoča", "quantity": 25, "difficulty": "medium", "base_price": 15},
+    {"work_item_id": "keramika", "name": "Polaganje keramičnih ploščic", "quantity": 25, "difficulty": "medium", "base_price": 28},
+    {"work_item_id": "laminat", "name": "Laminat - polaganje", "quantity": 35, "difficulty": "medium", "base_price": 14},
+    {"work_item_id": "gk_stene", "name": "Montaža sadrokartona - stene", "quantity": 20, "difficulty": "medium", "base_price": 22},
+    {"work_item_id": "barvanje", "name": "Notranje slikanje - 2x", "quantity": 120, "difficulty": "medium", "base_price": 12},
+    {"work_item_id": "vticnice", "name": "Elektro inštalacije - točke", "quantity": 8, "difficulty": "medium", "base_price": 85}
+  ]', 1)
+`);
+
 console.log('✅ Baza inicializirana!');
 console.log('📊 Tabele: company_settings, work_items, materials, work_item_materials, clients, quotes, quote_items');
+console.log('🆕 NOVE TABELE: quote_templates, quote_photos, quote_voice_notes');
 console.log('📝 Vzorčni podatki vstavljeni');
+console.log('📋 Pripravljenih 6 predlog za hitre ponudbe');
 
 db.close();

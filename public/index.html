@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://unpkg.com">
   
   <!-- Styles -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2.0">
   
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -148,25 +148,25 @@
         <div class="quick-actions" x-show="quotes.length > 0">
           <h3>⚡ Hitre akcije</h3>
           <div class="quick-actions-grid">
+            <button class="quick-action-btn" @click="showTemplatesModal = true; loadTemplates()">
+              <span class="quick-action-icon">📋</span>
+              <span class="quick-action-text">Hitri predračuni</span>
+              <span class="quick-action-desc">Uporabi pripravljene predloge za kopalnice, sobe...</span>
+            </button>
             <button class="quick-action-btn" @click="page = 'calculator'">
               <span class="quick-action-icon">🧮</span>
               <span class="quick-action-text">Kalkulator</span>
-              <span class="quick-action-desc">Hitro izračunaj in dodaj v predračun</span>
+              <span class="quick-action-desc">Hitro izračunaj površine in dodaj v predračun</span>
             </button>
             <button class="quick-action-btn" @click="newQuote()">
               <span class="quick-action-icon">📄</span>
               <span class="quick-action-text">Nov predračun</span>
-              <span class="quick-action-desc">Začni s praznim predračunom</span>
+              <span class="quick-action-desc">Začni s praznim predračunom po meri</span>
             </button>
             <button class="quick-action-btn" @click="page = 'items'">
-              <span class="quick-action-icon">📋</span>
+              <span class="quick-action-icon">🔧</span>
               <span class="quick-action-text">Uredi postavke</span>
-              <span class="quick-action-desc">Dodaj ali uredi cene del</span>
-            </button>
-            <button class="quick-action-btn" @click="page = 'settings'">
-              <span class="quick-action-icon">⚙️</span>
-              <span class="quick-action-text">Nastavitve</span>
-              <span class="quick-action-desc">Podatki podjetja in logo</span>
+              <span class="quick-action-desc">Dodaj ali uredi cene del in materialov</span>
             </button>
           </div>
         </div>
@@ -386,6 +386,19 @@
             </button>
             <button class="btn-export" @click="exportCSV()" style="flex: 1; padding: 0.75rem; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
               📊 Izvoz CSV
+            </button>
+          </div>
+          
+          <!-- Media Actions -->
+          <div class="quote-media-actions" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px dashed #e2e8f0;">
+            <h4 style="width: 100%; margin-bottom: 0.75rem; font-size: 0.875rem; color: #64748b;">📎 Dokumentacija projekta</h4>
+            <button @click="openPhotoModal()" style="flex: 1; min-width: 140px; padding: 0.75rem 1rem; border: 2px solid #e2e8f0; border-radius: 8px; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 500;">
+              📸 Fotografije
+              <span x-show="quotePhotos.length > 0" style="background: #2563eb; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;" x-text="quotePhotos.length"></span>
+            </button>
+            <button @click="openVoiceModal()" style="flex: 1; min-width: 140px; padding: 0.75rem 1rem; border: 2px solid #e2e8f0; border-radius: 8px; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 500;">
+              🎤 Glasovne beležke
+              <span x-show="quoteVoiceNotes.length > 0" style="background: #2563eb; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;" x-text="quoteVoiceNotes.length"></span>
             </button>
           </div>
         </div>
@@ -618,14 +631,21 @@
                     <span class="factor medium active" title="Srednje">M: 0%</span>
                     <span class="factor hard" title="Težko">T: +30%</span>
                   </div>
-                  <!-- Edit/Delete buttons for custom items -->
-                  <div class="item-admin" x-show="canEditItem(item.id)" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e2e8f0; display: flex; gap: 10px;">
+                  <!-- Edit/Duplicate/Delete buttons for custom items -->
+                  <div class="item-admin" x-show="canEditItem(item.id)" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e2e8f0; display: flex; gap: 8px; flex-wrap: wrap;">
                     <button @click="openEditItem(item)" class="btn-edit" title="Uredi">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                       </svg>
                       Uredi
+                    </button>
+                    <button @click="duplicateItem(item)" class="btn-duplicate" title="Podvoji postavko" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: #dbeafe; color: #2563eb;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                      Podvoji
                     </button>
                     <button @click="deleteItem(item.id)" class="btn-delete" title="Izbriši" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; background: #fee2e2; color: #dc2626;">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
@@ -679,6 +699,10 @@
                     <button @click="editMaterial(material)" class="btn-action edit" title="Uredi material">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                       <span>Uredi</span>
+                    </button>
+                    <button @click="duplicateMaterial(material)" class="btn-action duplicate" title="Podvoji material" style="background: #dbeafe; color: #2563eb;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                      <span>Podvoji</span>
                     </button>
                     <button @click="deleteMaterial(material.id)" class="btn-action delete" title="Izbriši material">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -860,9 +884,14 @@
         
         <!-- Notes Section -->
         <div class="calc-section">
-          <h3>📝 Beležka</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3>📝 Beležka</h3>
+            <button @click="openVoiceModal()" class="btn-secondary" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;">
+              🎤 Diktiraj
+            </button>
+          </div>
           <div class="form-group">
-            <textarea x-model="calculatorNotes" rows="8" placeholder="Zapiši opombe, mere, posebnosti...&#10;&#10;Primer:&#10;- Stara keramika odstranjena&#10;- Podlaga neenakomerna&#10;- Potrebno izravnavo&#10;- Dostop omejen"></textarea>
+            <textarea x-model="calculatorNotes" rows="8" placeholder="Zapiši opombe, mere, posebnosti...&#10;&#10;Primer:&#10;- Stara keramika odstranjena&#10;- Podlaga neenakomerna&#10;- Potrebno izravnavo&#10;- Dostop omejen&#10;&#10;💡 Namig: Uporabi gumb 🎤 za glasovno diktiranje!"></textarea>
           </div>
           <div class="notes-actions">
             <button class="btn-secondary" @click="clearCalculator()">
@@ -1194,6 +1223,190 @@
       </div>
     </div>
     
+    <!-- ==================== TEMPLATES MODAL ==================== -->
+    <div x-show="showTemplatesModal" class="modal modal-large" @click.self="showTemplatesModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h3>📋 Hitri predračuni</h3>
+            <p class="modal-subtitle">Izberi pripravljen predlog in prihrani čas</p>
+          </div>
+          <button class="btn-icon" @click="showTemplatesModal = false">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Template Categories -->
+          <div class="template-categories">
+            <button @click="templateFilter = ''" :class="{ active: templateFilter === '' }">Vsi</button>
+            <button @click="templateFilter = 'Kopalnica'" :class="{ active: templateFilter === 'Kopalnica' }">🛁 Kopalnice</button>
+            <button @click="templateFilter = 'Soba'" :class="{ active: templateFilter === 'Soba' }">🛋️ Sobe</button>
+            <button @click="templateFilter = 'Kuhinja'" :class="{ active: templateFilter === 'Kuhinja' }">🍳 Kuhinje</button>
+            <button @click="templateFilter = 'Stanovanje'" :class="{ active: templateFilter === 'Stanovanje' }">🏠 Stanovanja</button>
+          </div>
+          
+          <!-- Templates Grid -->
+          <div class="templates-grid">
+            <template x-for="template in filteredTemplates" :key="template.id">
+              <div class="template-card" @click="useTemplate(template)">
+                <div class="template-icon" x-text="template.icon"></div>
+                <h4 x-text="template.name"></h4>
+                <p x-text="template.description"></p>
+                <div class="template-meta">
+                  <span x-text="countTemplateItems(template) + ' postavk'"></span>
+                  <span x-show="template.usage_count > 0" x-text="'Uporabljen ' + template.usage_count + 'x'"></span>
+                </div>
+                <button class="btn-primary btn-small">Uporabi predlogo</button>
+              </div>
+            </template>
+          </div>
+          
+          <!-- Empty State -->
+          <div x-show="filteredTemplates.length === 0" class="empty-state">
+            <p>Ni predlog za to kategorijo</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="showTemplatesModal = false">Prekliči</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ==================== PHOTO GALLERY MODAL ==================== -->
+    <div x-show="showPhotoModal" class="modal modal-large" @click.self="showPhotoModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h3>📸 Fotografije projekta</h3>
+            <p class="modal-subtitle" x-text="currentQuote?.project_name || 'Projekt'"></p>
+          </div>
+          <button class="btn-icon" @click="showPhotoModal = false">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Photo Upload -->
+          <div class="photo-upload-section">
+            <div class="photo-upload-types">
+              <label class="upload-type" :class="{ active: newPhotoType === 'before' }">
+                <input type="radio" x-model="newPhotoType" value="before">
+                <span>🏠 Pred</span>
+              </label>
+              <label class="upload-type" :class="{ active: newPhotoType === 'during' }">
+                <input type="radio" x-model="newPhotoType" value="during">
+                <span>🔨 Med delom</span>
+              </label>
+              <label class="upload-type" :class="{ active: newPhotoType === 'after' }">
+                <input type="radio" x-model="newPhotoType" value="after">
+                <span>✅ Po</span>
+              </label>
+              <label class="upload-type" :class="{ active: newPhotoType === 'other' }">
+                <input type="radio" x-model="newPhotoType" value="other">
+                <span>📋 Drugo</span>
+              </label>
+            </div>
+            
+            <div class="photo-upload-area" @click="$refs.photoInput.click()" @dragover.prevent @drop.prevent="handlePhotoDrop($event)">
+              <input type="file" x-ref="photoInput" accept="image/*" multiple @change="handlePhotoSelect($event)" style="display: none;">
+              <div class="upload-placeholder">
+                <span class="upload-icon">📷</span>
+                <p>Tapni za dodajanje fotografij</p>
+                <p class="upload-hint">ali povleci sem</p>
+              </div>
+            </div>
+            
+            <div class="photo-caption-input">
+              <input type="text" x-model="newPhotoCaption" placeholder="Opis fotografije (opcijsko)...">
+            </div>
+          </div>
+          
+          <!-- Photo Gallery -->
+          <div class="photo-gallery" x-show="quotePhotos.length > 0">
+            <h4>Fotografije (<span x-text="quotePhotos.length"></span>)</h4>
+            <div class="photo-grid">
+              <template x-for="photo in quotePhotos" :key="photo.id">
+                <div class="photo-item" :class="'type-' + photo.photo_type">
+                  <img :src="'/api/photos/' + photo.id" :alt="photo.caption" @click="openPhotoViewer(photo)">
+                  <div class="photo-overlay">
+                    <span class="photo-type-badge" x-text="getPhotoTypeLabel(photo.photo_type)"></span>
+                    <p x-text="photo.caption" x-show="photo.caption"></p>
+                    <button class="btn-delete-photo" @click.stop="deletePhoto(photo.id)">🗑️</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+          
+          <div x-show="quotePhotos.length === 0" class="empty-state">
+            <p>Še ni fotografij. Dodaj prvo!</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="showPhotoModal = false">Zapri</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ==================== VOICE RECORDER MODAL ==================== -->
+    <div x-show="showVoiceModal" class="modal" @click.self="showVoiceModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h3>🎤 Glasovna beležka</h3>
+            <p class="modal-subtitle">Diktiraj meritve in opombe</p>
+          </div>
+          <button class="btn-icon" @click="showVoiceModal = false">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Recording Interface -->
+          <div class="voice-recorder">
+            <div class="recorder-visualization" :class="{ recording: isRecording }">
+              <div class="recorder-waves" x-show="isRecording">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <div class="recorder-icon" x-show="!isRecording">🎤</div>
+            </div>
+            
+            <div class="recorder-timer" x-text="recordingTime"></div>
+            
+            <div class="recorder-controls">
+              <button class="btn-record" @click="toggleRecording()" :class="{ recording: isRecording }">
+                <span x-text="isRecording ? '⏹️ Ustavi' : '🔴 Snemaj'"></span>
+              </button>
+            </div>
+            
+            <p class="recorder-hint" x-show="!isRecording">
+              Tapni gumb in diktiraj npr.: <br>
+              <em>"Dnevna soba 4 krat 5 metrov, visok strop, potrebno izravnavanje podlage"</em>
+            </p>
+          </div>
+          
+          <!-- Voice Notes List -->
+          <div class="voice-notes-list" x-show="quoteVoiceNotes.length > 0">
+            <h4>Shranjene beležke</h4>
+            <template x-for="note in quoteVoiceNotes" :key="note.id">
+              <div class="voice-note-item">
+                <button class="btn-play" @click="playVoiceNote(note.id)">
+                  <span x-text="playingVoiceNote === note.id ? '⏸️' : '▶️'"></span>
+                </button>
+                <div class="voice-note-info">
+                  <span class="voice-duration" x-text="formatDuration(note.duration)"></span>
+                  <span class="voice-date" x-text="formatDateShort(note.created_at)"></span>
+                </div>
+                <p x-text="note.transcript" x-show="note.transcript" class="voice-transcript"></p>
+                <button class="btn-delete" @click="deleteVoiceNote(note.id)">🗑️</button>
+              </div>
+            </template>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="showVoiceModal = false">Zapri</button>
+        </div>
+      </div>
+    </div>
+    
   </main>
 
   <script>
@@ -1264,7 +1477,7 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2.0"></script>
   <script>feather.replace();</script>
 </body>
 </html>

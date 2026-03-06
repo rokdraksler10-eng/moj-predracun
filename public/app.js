@@ -1729,6 +1729,49 @@ function app() {
       this.extractCategories();
     },
     
+    // Duplicate item
+    async duplicateItem(item) {
+      try {
+        // Create a copy with "(kopija)" suffix
+        const newItem = {
+          id: 'custom_' + Date.now(),
+          name: item.name + ' (kopija)',
+          category: item.category,
+          unit: item.unit,
+          base_price: item.base_price,
+          description: item.description,
+          difficulty_easy_factor: item.difficulty_easy_factor || 0.8,
+          difficulty_medium_factor: item.difficulty_medium_factor || 1.0,
+          difficulty_hard_factor: item.difficulty_hard_factor || 1.3,
+          isCustom: true
+        };
+        
+        // Add to workItems
+        this.workItems.push(newItem);
+        
+        // Save to localStorage
+        this.saveCustomItems();
+        
+        // Refresh filtered items
+        this.filteredItems = this.getSortedItems();
+        
+        // Auto-favorite the new item
+        this.toggleFavorite(newItem.id);
+        
+        if (window.showToast) {
+          window.showToast(`✅ Postavka "${newItem.name}" podvojena`, 'success');
+        }
+        
+        // Open edit modal for the new item
+        this.openEditItem(newItem);
+      } catch (error) {
+        console.error('Error duplicating item:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri podvajanju', 'error');
+        }
+      }
+    },
+    
     // ===== MATERIALS MANAGEMENT =====
     
     // Open add material modal
@@ -1810,6 +1853,42 @@ function app() {
       
       this.materials = this.materials.filter(m => m.id !== materialId);
       this.saveMaterials();
+    },
+    
+    // Duplicate material
+    duplicateMaterial(material) {
+      try {
+        // Create a copy with "(kopija)" suffix
+        const newMaterial = {
+          id: 'mat_' + Date.now(),
+          name: material.name + ' (kopija)',
+          category: material.category,
+          unit: material.unit,
+          unit_price: material.unit_price,
+          description: material.description
+        };
+        
+        // Add to materials
+        this.materials.push(newMaterial);
+        
+        // Save to localStorage
+        this.saveMaterials();
+        
+        // Refresh filtered materials
+        this.filteredMaterials = [...this.materials];
+        
+        if (window.showToast) {
+          window.showToast(`✅ Material "${newMaterial.name}" podvojen`, 'success');
+        }
+        
+        // Open edit modal for the new material
+        this.editMaterial(newMaterial);
+      } catch (error) {
+        console.error('Error duplicating material:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri podvajanju', 'error');
+        }
+      }
     },
     
     // Close material modal
@@ -2374,6 +2453,419 @@ function app() {
       // Show message with count of items in quote
       const itemCount = this.currentQuote.items.length;
       const totalPrice = this.currentQuote.total || m.calculatedPrice;
+    },
+    
+    // ============================================
+    // TEMPLATES - SMART PREDLOGE
+    // ============================================
+    
+    templates: [],
+    showTemplatesModal: false,
+    templateFilter: '',
+    
+    // Load templates from API
+    async loadTemplates() {
+      try {
+        const res = await fetch('/api/templates');
+        this.templates = await res.json();
+      } catch (error) {
+        console.error('Error loading templates:', error);
+      }
+    },
+    
+    // Filtered templates
+    get filteredTemplates() {
+      if (!this.templateFilter) return this.templates;
+      return this.templates.filter(t => t.category === this.templateFilter);
+    },
+    
+    // Count items in template
+    countTemplateItems(template) {
+      try {
+        const items = JSON.parse(template.items_json);
+        return items.length;
+      } catch (e) {
+        return 0;
+      }
+    },
+    
+    // Use template to create quote
+    async useTemplate(template) {
+      try {
+        // Create new quote
+        this.newQuote();
+        this.currentQuote.project_name = template.name.replace(/^[^\\s]+\\s/, ''); // Remove emoji
+        
+        // Parse template items
+        const templateItems = JSON.parse(template.items_json);
+        
+        // Add items to quote
+        for (const item of templateItems) {
+          // Find matching work item or create custom
+          let workItem = this.workItems.find(wi => 
+            wi.name.toLowerCase().includes(item.name.toLowerCase()) ||
+            item.name.toLowerCase().includes(wi.name.toLowerCase())
+          );
+          
+          let workItemId, pricePerUnit;
+          
+          if (workItem) {
+            workItemId = workItem.id;
+            // Apply difficulty factor
+            let factor = 1.0;
+            switch(item.difficulty) {
+              case 'easy': factor = workItem.difficulty_easy_factor || 0.8; break;
+              case 'hard': factor = workItem.difficulty_hard_factor || 1.3; break;
+            }
+            pricePerUnit = workItem.base_price * factor;
+          } else {
+            // Create temporary custom item
+            workItemId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            pricePerUnit = item.base_price;
+            
+            this.workItems.push({
+              id: workItemId,
+              name: item.name,
+              category: template.category,
+              unit: 'm²',
+              base_price: item.base_price,
+              difficulty_easy_factor: 0.8,
+              difficulty_medium_factor: 1.0,
+              difficulty_hard_factor: 1.3,
+              isCustom: true
+            });
+          }
+          
+          this.currentQuote.items.push({
+            work_item_id: workItemId,
+            quantity: item.quantity,
+            difficulty: item.difficulty,
+            price_per_unit: pricePerUnit,
+            notes: 'Iz predloge: ' + template.name,
+            subtotal: item.quantity * pricePerUnit,
+            workItemName: item.name
+          });
+        }
+        
+        this.calculateTotals();
+        
+        // Update template usage count
+        await fetch(`/api/templates/${template.id}/use`, { method: 'PATCH' });
+        template.usage_count++;
+        
+        // Close modal
+        this.showTemplatesModal = false;
+        
+        // Show success
+        if (window.showToast) {
+          window.showToast(`✅ Uporabljena predloga: ${template.name}`, 'success');
+        }
+      } catch (error) {
+        console.error('Error using template:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri uporabi predloge', 'error');
+        }
+      }
+    },
+    
+    // ============================================
+    // PHOTOS - FOTO DOKUMENTACIJA
+    // ============================================
+    
+    showPhotoModal: false,
+    quotePhotos: [],
+    newPhotoCaption: '',
+    newPhotoType: 'other',
+    uploadingPhoto: false,
+    
+    // Open photo modal
+    async openPhotoModal() {
+      if (!this.currentQuote?.id) {
+        if (window.showToast) {
+          window.showToast('❌ Najprej shrani predračun', 'error');
+        }
+        return;
+      }
+      this.showPhotoModal = true;
+      await this.loadQuotePhotos();
+    },
+    
+    // Load photos for current quote
+    async loadQuotePhotos() {
+      if (!this.currentQuote?.id) return;
+      try {
+        const res = await fetch(`/api/quotes/${this.currentQuote.id}/photos`);
+        this.quotePhotos = await res.json();
+      } catch (error) {
+        console.error('Error loading photos:', error);
+      }
+    },
+    
+    // Handle photo selection
+    async handlePhotoSelect(event) {
+      const files = event.target.files;
+      if (!files.length) return;
+      
+      for (const file of files) {
+        await this.uploadPhoto(file);
+      }
+      
+      // Reset input
+      event.target.value = '';
+    },
+    
+    // Handle photo drop
+    async handlePhotoDrop(event) {
+      const files = event.dataTransfer.files;
+      for (const file of files) {
+        if (file.type.startsWith('image/')) {
+          await this.uploadPhoto(file);
+        }
+      }
+    },
+    
+    // Upload photo
+    async uploadPhoto(file) {
+      this.uploadingPhoto = true;
+      
+      const formData = new FormData();
+      formData.append('photo', file);
+      formData.append('caption', this.newPhotoCaption);
+      formData.append('photo_type', this.newPhotoType);
+      
+      try {
+        const res = await fetch(`/api/quotes/${this.currentQuote.id}/photos`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (res.ok) {
+          await this.loadQuotePhotos();
+          this.newPhotoCaption = '';
+          if (window.showToast) {
+            window.showToast('✅ Fotografija dodana', 'success');
+          }
+        }
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri nalaganju', 'error');
+        }
+      } finally {
+        this.uploadingPhoto = false;
+      }
+    },
+    
+    // Delete photo
+    async deletePhoto(photoId) {
+      if (!confirm('Ali res želiš izbrisati to fotografijo?')) return;
+      
+      try {
+        const res = await fetch(`/api/photos/${photoId}`, { method: 'DELETE' });
+        if (res.ok) {
+          this.quotePhotos = this.quotePhotos.filter(p => p.id !== photoId);
+          if (window.showToast) {
+            window.showToast('🗑️ Fotografija izbrisana', 'success');
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting photo:', error);
+      }
+    },
+    
+    // Get photo type label
+    getPhotoTypeLabel(type) {
+      const labels = {
+        'before': 'Pred',
+        'during': 'Med delom',
+        'after': 'Po',
+        'other': 'Drugo'
+      };
+      return labels[type] || 'Drugo';
+    },
+    
+    // Open photo viewer
+    openPhotoViewer(photo) {
+      window.open(`/api/photos/${photo.id}`, '_blank');
+    },
+    
+    // ============================================
+    // VOICE RECORDING - GLASOVNE BELEŽKE
+    // ============================================
+    
+    showVoiceModal: false,
+    isRecording: false,
+    recordingTime: '00:00',
+    recordingStartTime: null,
+    recordingTimer: null,
+    mediaRecorder: null,
+    recordedChunks: [],
+    quoteVoiceNotes: [],
+    playingVoiceNote: null,
+    audioPlayer: null,
+    
+    // Load voice notes
+    async loadVoiceNotes() {
+      if (!this.currentQuote?.id) return;
+      try {
+        const res = await fetch(`/api/quotes/${this.currentQuote.id}/voice`);
+        this.quoteVoiceNotes = await res.json();
+      } catch (error) {
+        console.error('Error loading voice notes:', error);
+      }
+    },
+    
+    // Open voice modal
+    async openVoiceModal() {
+      if (!this.currentQuote?.id && !this.page === 'calculator') {
+        if (window.showToast) {
+          window.showToast('❌ Najprej shrani predračun', 'error');
+        }
+        return;
+      }
+      this.showVoiceModal = true;
+      if (this.currentQuote?.id) {
+        await this.loadVoiceNotes();
+      }
+    },
+    
+    // Toggle recording
+    async toggleRecording() {
+      if (this.isRecording) {
+        this.stopRecording();
+      } else {
+        await this.startRecording();
+      }
+    },
+    
+    // Start recording
+    async startRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.mediaRecorder = new MediaRecorder(stream);
+        this.recordedChunks = [];
+        
+        this.mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            this.recordedChunks.push(event.data);
+          }
+        };
+        
+        this.mediaRecorder.onstop = () => {
+          this.saveRecording();
+        };
+        
+        this.mediaRecorder.start();
+        this.isRecording = true;
+        this.recordingStartTime = Date.now();
+        
+        // Start timer
+        this.recordingTimer = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+          const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+          const secs = (elapsed % 60).toString().padStart(2, '0');
+          this.recordingTime = `${mins}:${secs}`;
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Error starting recording:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri dostopu do mikrofona', 'error');
+        }
+      }
+    },
+    
+    // Stop recording
+    stopRecording() {
+      if (this.mediaRecorder && this.isRecording) {
+        this.mediaRecorder.stop();
+        this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        
+        this.isRecording = false;
+        clearInterval(this.recordingTimer);
+        this.recordingTime = '00:00';
+      }
+    },
+    
+    // Save recording
+    async saveRecording() {
+      const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+      const duration = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+      
+      const formData = new FormData();
+      formData.append('audio', blob, 'recording.webm');
+      formData.append('duration', duration);
+      formData.append('transcript', ''); // Could add speech-to-text here
+      
+      try {
+        const quoteId = this.currentQuote?.id || 'temp';
+        const res = await fetch(`/api/quotes/${quoteId}/voice`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (res.ok) {
+          if (this.currentQuote?.id) {
+            await this.loadVoiceNotes();
+          }
+          if (window.showToast) {
+            window.showToast('✅ Beležka shranjena', 'success');
+          }
+        }
+      } catch (error) {
+        console.error('Error saving recording:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri shranjevanju', 'error');
+        }
+      }
+    },
+    
+    // Play voice note
+    playVoiceNote(noteId) {
+      if (this.playingVoiceNote === noteId) {
+        // Pause
+        if (this.audioPlayer) {
+          this.audioPlayer.pause();
+        }
+        this.playingVoiceNote = null;
+      } else {
+        // Play
+        if (this.audioPlayer) {
+          this.audioPlayer.pause();
+        }
+        
+        this.audioPlayer = new Audio(`/api/voice/${noteId}`);
+        this.audioPlayer.play();
+        this.playingVoiceNote = noteId;
+        
+        this.audioPlayer.onended = () => {
+          this.playingVoiceNote = null;
+        };
+      }
+    },
+    
+    // Delete voice note
+    async deleteVoiceNote(noteId) {
+      if (!confirm('Ali res želiš izbrisati to beležko?')) return;
+      
+      try {
+        const res = await fetch(`/api/voice/${noteId}`, { method: 'DELETE' });
+        if (res.ok) {
+          this.quoteVoiceNotes = this.quoteVoiceNotes.filter(n => n.id !== noteId);
+          if (window.showToast) {
+            window.showToast('🗑️ Beležka izbrisana', 'success');
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting voice note:', error);
+      }
+    },
+    
+    // Format duration
+    formatDuration(seconds) {
+      const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const secs = (seconds % 60).toString().padStart(2, '0');
+      return `${mins}:${secs}`;
     }
   };
 }

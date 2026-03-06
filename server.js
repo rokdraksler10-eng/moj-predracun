@@ -4,6 +4,7 @@ const PDFDocument = require('pdfkit');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3456;
@@ -142,6 +143,57 @@ app.delete('/api/materials/:id', (req, res) => {
     const stmt = db.prepare('DELETE FROM materials WHERE id = ?');
     stmt.run(req.params.id);
     res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Duplicate work item
+app.post('/api/work-items/:id/duplicate', (req, res) => {
+  try {
+    const original = db.prepare('SELECT * FROM work_items WHERE id = ?').get(req.params.id);
+    if (!original) return res.status(404).json({ error: 'Work item not found' });
+    
+    const newName = original.name + ' (kopija)';
+    const stmt = db.prepare(`
+      INSERT INTO work_items (name, category, unit, base_price, difficulty_easy_factor, difficulty_medium_factor, difficulty_hard_factor, description)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(
+      newName,
+      original.category,
+      original.unit,
+      original.base_price,
+      original.difficulty_easy_factor,
+      original.difficulty_medium_factor,
+      original.difficulty_hard_factor,
+      original.description
+    );
+    res.json({ id: result.lastInsertRowid, name: newName });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Duplicate material
+app.post('/api/materials/:id/duplicate', (req, res) => {
+  try {
+    const original = db.prepare('SELECT * FROM materials WHERE id = ?').get(req.params.id);
+    if (!original) return res.status(404).json({ error: 'Material not found' });
+    
+    const newName = original.name + ' (kopija)';
+    const stmt = db.prepare(`
+      INSERT INTO materials (name, category, unit, unit_price, description)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(
+      newName,
+      original.category,
+      original.unit,
+      original.unit_price,
+      original.description
+    );
+    res.json({ id: result.lastInsertRowid, name: newName });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -286,8 +338,6 @@ app.delete('/api/quotes/:id', (req, res) => {
 });
 
 // ==================== LOGO UPLOAD ====================
-const multer = require('multer');
-
 const logoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(dataDir, 'logos');
@@ -378,6 +428,277 @@ app.delete('/api/company/logo', (req, res) => {
       stmt.run();
     }
     
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== TEMPLATES API ====================
+
+// Get all templates
+app.get('/api/templates', (req, res) => {
+  try {
+    const templates = db.prepare('SELECT * FROM quote_templates ORDER BY usage_count DESC, name').all();
+    res.json(templates);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get single template
+app.get('/api/templates/:id', (req, res) => {
+  try {
+    const template = db.prepare('SELECT * FROM quote_templates WHERE id = ?').get(req.params.id);
+    if (!template) return res.status(404).json({ error: 'Template not found' });
+    res.json(template);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create template
+app.post('/api/templates', (req, res) => {
+  try {
+    const { name, description, category, icon, items_json } = req.body;
+    const stmt = db.prepare(`
+      INSERT INTO quote_templates (name, description, category, icon, items_json)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(name, description, category, icon || '📋', JSON.stringify(items_json));
+    res.json({ id: result.lastInsertRowid });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update template usage count (when used)
+app.patch('/api/templates/:id/use', (req, res) => {
+  try {
+    const stmt = db.prepare('UPDATE quote_templates SET usage_count = usage_count + 1 WHERE id = ?');
+    stmt.run(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete template
+app.delete('/api/templates/:id', (req, res) => {
+  try {
+    const stmt = db.prepare('DELETE FROM quote_templates WHERE id = ?');
+    stmt.run(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== PHOTOS API ====================
+
+// Photo storage setup
+const photoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(dataDir, 'photos');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'photo-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const photoUpload = multer({ 
+  storage: photoStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp|heic|heif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype) || file.mimetype.startsWith('image/');
+    if (extname || mimetype) {
+      return cb(null, true);
+    }
+    cb(new Error('Samo slike so dovoljene'));
+  }
+});
+
+// Upload photo for quote
+app.post('/api/quotes/:id/photos', photoUpload.single('photo'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No photo uploaded' });
+    }
+    
+    const { caption, photo_type } = req.body;
+    const relativePath = path.join('photos', req.file.filename);
+    
+    const stmt = db.prepare(`
+      INSERT INTO quote_photos (quote_id, filename, original_name, file_path, file_size, mime_type, caption, photo_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(
+      req.params.id,
+      req.file.filename,
+      req.file.originalname,
+      relativePath,
+      req.file.size,
+      req.file.mimetype,
+      caption || '',
+      photo_type || 'other'
+    );
+    
+    res.json({ 
+      id: result.lastInsertRowid,
+      filename: req.file.filename,
+      url: `/api/photos/${result.lastInsertRowid}`
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get photos for quote
+app.get('/api/quotes/:id/photos', (req, res) => {
+  try {
+    const photos = db.prepare('SELECT id, filename, caption, photo_type, created_at FROM quote_photos WHERE quote_id = ? ORDER BY sort_order, created_at').all(req.params.id);
+    res.json(photos);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get photo file
+app.get('/api/photos/:id', (req, res) => {
+  try {
+    const photo = db.prepare('SELECT * FROM quote_photos WHERE id = ?').get(req.params.id);
+    if (!photo) return res.status(404).json({ error: 'Photo not found' });
+    
+    const photoPath = path.join(dataDir, photo.file_path);
+    if (!fs.existsSync(photoPath)) {
+      return res.status(404).json({ error: 'Photo file not found' });
+    }
+    
+    res.sendFile(photoPath);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete photo
+app.delete('/api/photos/:id', (req, res) => {
+  try {
+    const photo = db.prepare('SELECT * FROM quote_photos WHERE id = ?').get(req.params.id);
+    if (photo) {
+      const photoPath = path.join(dataDir, photo.file_path);
+      if (fs.existsSync(photoPath)) {
+        fs.unlinkSync(photoPath);
+      }
+      db.prepare('DELETE FROM quote_photos WHERE id = ?').run(req.params.id);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== VOICE NOTES API ====================
+
+// Voice note storage
+const voiceStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(dataDir, 'voice');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'voice-' + uniqueSuffix + '.webm');
+  }
+});
+
+const voiceUpload = multer({ 
+  storage: voiceStorage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /webm|mp3|mp4|wav|ogg|m4a/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    if (extname || file.mimetype.startsWith('audio/') || file.mimetype.startsWith('video/webm')) {
+      return cb(null, true);
+    }
+    cb(new Error('Samo avdio datoteke so dovoljene'));
+  }
+});
+
+// Upload voice note
+app.post('/api/quotes/:id/voice', voiceUpload.single('audio'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No audio uploaded' });
+    }
+    
+    const { duration, transcript } = req.body;
+    const relativePath = path.join('voice', req.file.filename);
+    
+    const stmt = db.prepare(`
+      INSERT INTO quote_voice_notes (quote_id, filename, file_path, duration, transcript)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(req.params.id, req.file.filename, relativePath, duration || 0, transcript || '');
+    
+    res.json({ 
+      id: result.lastInsertRowid,
+      filename: req.file.filename,
+      url: `/api/voice/${result.lastInsertRowid}`
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get voice notes for quote
+app.get('/api/quotes/:id/voice', (req, res) => {
+  try {
+    const notes = db.prepare('SELECT id, filename, duration, transcript, created_at FROM quote_voice_notes WHERE quote_id = ? ORDER BY created_at').all(req.params.id);
+    res.json(notes);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get voice file
+app.get('/api/voice/:id', (req, res) => {
+  try {
+    const note = db.prepare('SELECT * FROM quote_voice_notes WHERE id = ?').get(req.params.id);
+    if (!note) return res.status(404).json({ error: 'Voice note not found' });
+    
+    const voicePath = path.join(dataDir, note.file_path);
+    if (!fs.existsSync(voicePath)) {
+      return res.status(404).json({ error: 'Voice file not found' });
+    }
+    
+    res.setHeader('Content-Type', 'audio/webm');
+    res.sendFile(voicePath);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete voice note
+app.delete('/api/voice/:id', (req, res) => {
+  try {
+    const note = db.prepare('SELECT * FROM quote_voice_notes WHERE id = ?').get(req.params.id);
+    if (note) {
+      const voicePath = path.join(dataDir, note.file_path);
+      if (fs.existsSync(voicePath)) {
+        fs.unlinkSync(voicePath);
+      }
+      db.prepare('DELETE FROM quote_voice_notes WHERE id = ?').run(req.params.id);
+    }
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
