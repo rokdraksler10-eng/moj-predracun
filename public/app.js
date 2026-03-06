@@ -840,6 +840,21 @@ function app() {
       this.calculateTotals();
     },
     
+    // Update quote item (inline editing)
+    updateQuoteItem(index) {
+      const item = this.currentQuote.items[index];
+      
+      // Ensure values are numbers
+      item.quantity = parseFloat(item.quantity) || 0;
+      item.price_per_unit = parseFloat(item.price_per_unit) || 0;
+      
+      // Recalculate subtotal
+      item.subtotal = Math.round(item.quantity * item.price_per_unit * 100) / 100;
+      
+      // Recalculate totals
+      this.calculateTotals();
+    },
+    
     // Save quote
     async saveQuote() {
       this.saving = true;
@@ -2461,7 +2476,16 @@ function app() {
     
     templates: [],
     showTemplatesModal: false,
+    showEditTemplateModal: false,
     templateFilter: '',
+    editingTemplateId: null,
+    editTemplateForm: {
+      name: '',
+      description: '',
+      category: '',
+      icon: '📋',
+      items_json: []
+    },
     
     // Load templates from API
     async loadTemplates() {
@@ -2565,6 +2589,102 @@ function app() {
         if (window.showToast) {
           window.showToast('❌ Napaka pri uporabi predloge', 'error');
         }
+      }
+    },
+    
+    // Open edit template modal
+    openEditTemplate(template) {
+      this.editingTemplateId = template.id;
+      let items = [];
+      try {
+        items = JSON.parse(template.items_json);
+      } catch (e) {
+        items = [];
+      }
+      this.editTemplateForm = {
+        name: template.name,
+        description: template.description || '',
+        category: template.category || 'Splošno',
+        icon: template.icon || '📋',
+        items_json: items
+      };
+      this.showEditTemplateModal = true;
+    },
+    
+    // Save edited template
+    async saveEditedTemplate() {
+      if (!this.editTemplateForm.name) {
+        alert('Vnesi ime predloge');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/templates/${this.editingTemplateId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.editTemplateForm)
+        });
+        
+        if (res.ok) {
+          await this.loadTemplates();
+          this.showEditTemplateModal = false;
+          if (window.showToast) {
+            window.showToast('✅ Predloga posodobljena', 'success');
+          }
+        }
+      } catch (error) {
+        console.error('Error saving template:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri shranjevanju', 'error');
+        }
+      }
+    },
+    
+    // Delete template
+    async deleteTemplate(template) {
+      if (!confirm(`Ali res želiš izbrisati predlogo "${template.name}"?`)) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/templates/${template.id}`, { method: 'DELETE' });
+        if (res.ok) {
+          this.templates = this.templates.filter(t => t.id !== template.id);
+          if (window.showToast) {
+            window.showToast('🗑️ Predloga izbrisana', 'success');
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting template:', error);
+        if (window.showToast) {
+          window.showToast('❌ Napaka pri brisanju', 'error');
+        }
+      }
+    },
+    
+    // Add item to template
+    addTemplateItem() {
+      this.editTemplateForm.items_json.push({
+        work_item_id: '',
+        name: 'Nova postavka',
+        quantity: 1,
+        difficulty: 'medium',
+        base_price: 0
+      });
+    },
+    
+    // Remove item from template
+    removeTemplateItem(index) {
+      this.editTemplateForm.items_json.splice(index, 1);
+    },
+    
+    // Update template item from work item selection
+    updateTemplateItem(index) {
+      const item = this.editTemplateForm.items_json[index];
+      const workItem = this.workItems.find(wi => wi.id == item.work_item_id);
+      if (workItem) {
+        item.name = workItem.name;
+        item.base_price = workItem.base_price;
       }
     },
     

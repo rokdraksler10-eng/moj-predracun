@@ -483,6 +483,22 @@ app.patch('/api/templates/:id/use', (req, res) => {
   }
 });
 
+// Update template (edit)
+app.put('/api/templates/:id', (req, res) => {
+  try {
+    const { name, description, category, icon, items_json } = req.body;
+    const stmt = db.prepare(`
+      UPDATE quote_templates 
+      SET name = ?, description = ?, category = ?, icon = ?, items_json = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+    stmt.run(name, description, category, icon || '📋', JSON.stringify(items_json), req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Delete template
 app.delete('/api/templates/:id', (req, res) => {
   try {

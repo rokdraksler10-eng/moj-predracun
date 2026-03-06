@@ -23,7 +23,10 @@
   <link rel="preconnect" href="https://unpkg.com">
   
   <!-- Styles -->
-  <link rel="stylesheet" href="styles.css?v=2.0">
+  <link rel="stylesheet" href="styles.css?v=2.1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -299,18 +302,28 @@
           </div>
         </div>
         
-        <!-- Items List -->
+        <!-- Items List - Editable -->
         <div class="items-list" x-show="currentQuote.items?.length > 0">
-          <h4>📋 Postavke</h4>
+          <h4>📋 Postavke <small style="font-weight: normal; color: #64748b;">(klikni za urejanje)</small></h4>
           <template x-for="(item, index) in currentQuote.items" :key="index">
-            <div class="item-row-simple">
-              <div class="item-info">
-                <strong x-text="getWorkItemName(item.work_item_id)"></strong>
-                <span x-text="item.quantity + ' m² × ' + item.price_per_unit.toFixed(2) + '€'"></span>
+            <div class="item-row-editable">
+              <div class="item-info-editable">
+                <strong x-text="getWorkItemName(item.work_item_id)" style="font-size: 0.875rem; color: #1e293b;"></strong>
+                <div class="item-controls" style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem;">
+                  <input type="number" x-model="item.quantity" @change="updateQuoteItem(index)" step="0.01" min="0" style="width: 70px; padding: 0.375rem; font-size: 0.875rem; border: 1px solid #e2e8f0; border-radius: 4px;">
+                  <span style="font-size: 0.75rem; color: #64748b;">m² ×</span>
+                  <input type="number" x-model="item.price_per_unit" @change="updateQuoteItem(index)" step="0.01" min="0" style="width: 80px; padding: 0.375rem; font-size: 0.875rem; border: 1px solid #e2e8f0; border-radius: 4px;">
+                  <span style="font-size: 0.75rem; color: #64748b;">€</span>
+                  <select x-model="item.difficulty" @change="updateQuoteItem(index)" style="padding: 0.375rem; font-size: 0.75rem; border: 1px solid #e2e8f0; border-radius: 4px;">
+                    <option value="easy">Lahko</option>
+                    <option value="medium">Srednje</option>
+                    <option value="hard">Težko</option>
+                  </select>
+                </div>
               </div>
-              <div class="item-actions">
-                <span class="item-total" x-text="item.subtotal.toFixed(2) + '€'"></span>
-                <button class="btn-delete" @click="removeItem(index)">✕</button>
+              <div class="item-actions" style="text-align: right;">
+                <span class="item-total" x-text="item.subtotal.toFixed(2) + '€'" style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 0.25rem;"></span>
+                <button class="btn-delete" @click="removeItem(index)" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">✕</button>
               </div>
             </div>
           </template>
@@ -1248,7 +1261,7 @@
           <!-- Templates Grid -->
           <div class="templates-grid">
             <template x-for="template in filteredTemplates" :key="template.id">
-              <div class="template-card" @click="useTemplate(template)">
+              <div class="template-card" :class="{ 'is-editing': showEditTemplateModal && editingTemplateId === template.id }">
                 <div class="template-icon" x-text="template.icon"></div>
                 <h4 x-text="template.name"></h4>
                 <p x-text="template.description"></p>
@@ -1256,7 +1269,11 @@
                   <span x-text="countTemplateItems(template) + ' postavk'"></span>
                   <span x-show="template.usage_count > 0" x-text="'Uporabljen ' + template.usage_count + 'x'"></span>
                 </div>
-                <button class="btn-primary btn-small">Uporabi predlogo</button>
+                <div class="template-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                  <button @click.stop="useTemplate(template)" class="btn-primary btn-small" style="flex: 2;">Uporabi</button>
+                  <button @click.stop="openEditTemplate(template)" class="btn-edit btn-small" style="flex: 1; padding: 0.5rem;">✏️</button>
+                  <button @click.stop="deleteTemplate(template)" class="btn-delete btn-small" style="flex: 1; padding: 0.5rem; background: #fee2e2; color: #dc2626;">🗑️</button>
+                </div>
               </div>
             </template>
           </div>
@@ -1267,7 +1284,100 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="showTemplatesModal = false">Prekliči</button>
+          <button class="btn-secondary" @click="showTemplatesModal = false">Zapri</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ==================== EDIT TEMPLATE MODAL ==================== -->
+    <div x-show="showEditTemplateModal" class="modal modal-large" @click.self="showEditTemplateModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h3>✏️ Uredi predlogo</h3>
+            <p class="modal-subtitle">Prilagodi predlogo po svoji meri</p>
+          </div>
+          <button class="btn-icon" @click="showEditTemplateModal = false">
+            <i data-feather="x"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Template Info -->
+          <div class="form-group">
+            <label>Naziv predloge *</label>
+            <input type="text" x-model="editTemplateForm.name" placeholder="npr. 🛁 Kopalnica - moja">
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Kategorija</label>
+              <select x-model="editTemplateForm.category">
+                <option value="Kopalnica">🛁 Kopalnica</option>
+                <option value="Soba">🛋️ Soba</option>
+                <option value="Kuhinja">🍳 Kuhinja</option>
+                <option value="Stanovanje">🏠 Stanovanje</option>
+                <option value="Ostalo">📋 Ostalo</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Ikona</label>
+              <input type="text" x-model="editTemplateForm.icon" placeholder="npr. 🛁" style="font-size: 1.5rem; text-align: center;">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Opis</label>
+            <textarea x-model="editTemplateForm.description" rows="2" placeholder="Kratek opis predloge..."></textarea>
+          </div>
+          
+          <!-- Template Items -->
+          <h4 style="margin: 1.5rem 0 1rem; font-size: 1rem; color: var(--text);">Postavke v predlogi</h4>
+          
+          <div class="template-items-list">
+            <template x-for="(item, index) in editTemplateForm.items_json" :key="index">
+              <div class="template-item-row" style="background: var(--bg); padding: 1rem; border-radius: var(--radius); margin-bottom: 0.75rem;">
+                <div class="form-row" style="margin-bottom: 0.5rem;">
+                  <div class="form-group" style="flex: 2;">
+                    <label>Delo</label>
+                    <select x-model="item.work_item_id" @change="updateTemplateItem(index)" style="width: 100%;">
+                      <option value="">-- Izberi delo --</option>
+                      <template x-for="wi in workItems" :key="wi.id">
+                        <option :value="wi.id" x-text="wi.name + ' (' + wi.base_price + '€/' + wi.unit + ')'"></option>
+                      </template>
+                    </select>
+                  </div>
+                  <div class="form-group" style="flex: 1;">
+                    <label>Količina</label>
+                    <input type="number" x-model="item.quantity" step="0.1" min="0" style="width: 100%;">
+                  </div>
+                  <div class="form-group" style="flex: 1;">
+                    <label>Težavnost</label>
+                    <select x-model="item.difficulty" style="width: 100%;">
+                      <option value="easy">Lahko</option>
+                      <option value="medium">Srednje</option>
+                      <option value="hard">Težko</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.875rem; color: var(--text-light);" x-text="'Cena: ' + item.base_price + ' €/m²'"></span>
+                  <button @click="removeTemplateItem(index)" class="btn-delete" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+                    🗑️ Odstrani
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+          
+          <button @click="addTemplateItem()" class="btn-secondary" style="width: 100%; margin-top: 0.5rem; justify-content: center;">
+            <i data-feather="plus"></i> Dodaj postavko
+          </button>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="showEditTemplateModal = false">Prekliči</button>
+          <button class="btn-primary" @click="saveEditedTemplate()">
+            <i data-feather="save"></i> Shrani spremembe
+          </button>
         </div>
       </div>
     </div>
@@ -1477,7 +1587,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=2.0"></script>
+  <script src="app.js?v=2.1"></script>
   <script>feather.replace();</script>
 </body>
 </html>
