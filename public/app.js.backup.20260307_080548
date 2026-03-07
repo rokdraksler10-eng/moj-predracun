@@ -105,9 +105,6 @@ function app() {
     enterSyncCode: '',
     syncError: null,
     syncSuccess: null,
-    syncInProgress: false,
-    pendingCount: 0,
-    lastSyncTime: null,
     
     // Logo upload
     uploadingLogo: false,
@@ -131,18 +128,7 @@ function app() {
         this.loadFavorites();
         this.loadDarkMode(); // Load dark mode preference
         
-        // Wait for IndexedDB to be ready
-        console.log('Waiting for IndexedDB...');
-        if (window.offlineDB) {
-          try {
-            await window.offlineDB.init();
-            console.log('IndexedDB initialized');
-          } catch (dbError) {
-            console.warn('IndexedDB init failed, using API only:', dbError);
-          }
-        }
-        
-        console.log('Loading data...');
+        console.log('Loading data from API...');
         await this.loadData();
         
         console.log('Loading quotes...');
@@ -164,18 +150,6 @@ function app() {
         this.$watch('confirmDelete', (value) => {
           localStorage.setItem('gradbeniApp_confirmDelete', value ? 'true' : 'false');
         });
-        
-        // Listen for sync complete event
-        window.addEventListener('sync-complete', () => {
-          console.log('Sync complete, refreshing data...');
-          this.loadQuotes();
-          this.loadData();
-          this.updatePendingCount();
-        });
-        
-        // Update pending count initially and periodically
-        this.updatePendingCount();
-        setInterval(() => this.updatePendingCount(), 30000); // Check every 30 seconds
         
         feather.replace();
         console.log('App initialized successfully with', this.workItems.length, 'items,', this.materials.length, 'materials,', this.quotes.length, 'quotes and', this.categories.length, 'categories');
@@ -369,51 +343,14 @@ function app() {
       }
     },
     
-    // Load all quotes (IndexedDB first, API fallback)
+    // Load all quotes
     async loadQuotes() {
-      const db = window.offlineDB;
-      let loadedFromCache = false;
-      
-      // Try to load from IndexedDB first
-      if (db && db.db) {
-        try {
-          const cachedQuotes = await db.getQuotes();
-          if (cachedQuotes.length > 0) {
-            this.quotes = cachedQuotes;
-            this.filterQuotes();
-            loadedFromCache = true;
-            console.log('Loaded', cachedQuotes.length, 'quotes from IndexedDB');
-          }
-        } catch (cacheError) {
-          console.warn('Failed to load quotes from IndexedDB:', cacheError);
-        }
-      }
-      
-      // Try to fetch from API
       try {
         const res = await fetch('/api/quotes');
         this.quotes = await res.json();
-        this.filterQuotes();
-        
-        // Save to IndexedDB for offline use
-        if (db && db.db) {
-          try {
-            for (const quote of this.quotes) {
-              await db.saveQuote(quote);
-            }
-            console.log('Saved', this.quotes.length, 'quotes to IndexedDB');
-          } catch (saveError) {
-            console.warn('Failed to save quotes to IndexedDB:', saveError);
-          }
-        }
+        this.filterQuotes(); // Initialize filtered quotes
       } catch (error) {
-        if (!loadedFromCache) {
-          console.error('Error loading quotes:', error);
-          this.quotes = [];
-          this.filterQuotes();
-        } else {
-          console.log('API failed, using cached quotes');
-        }
+        console.error('Error loading quotes:', error);
       }
     },
     
@@ -505,107 +442,43 @@ function app() {
       return this.workItems.filter(item => this.isFavorite(item.id));
     },
     
-    // Load all data (IndexedDB first, API fallback)
+    // Load all data
     async loadData() {
       try {
-        const db = window.offlineDB;
-        let loadedFromCache = false;
+        const [itemsRes, materialsRes, clientsRes, companyRes] = await Promise.all([
+          fetch('/api/work-items'),
+          fetch('/api/materials'),
+          fetch('/api/clients'),
+          fetch('/api/company')
+        ]);
         
-        // Try to load from IndexedDB first
-        if (db && db.db) {
-          try {
-            const [cachedItems, cachedMaterials, cachedClients] = await Promise.all([
-              db.getWorkItems().catch(() => []),
-              db.getMaterials().catch(() => []),
-              db.getClients().catch(() => [])
-            ]);
-            
-            if (cachedItems.length > 0) {
-              this.workItems = cachedItems;
-              loadedFromCache = true;
-              console.log('Loaded', cachedItems.length, 'items from IndexedDB');
-            }
-            
-            if (cachedMaterials.length > 0) {
-              this.materials = cachedMaterials;
-              loadedFromCache = true;
-              console.log('Loaded', cachedMaterials.length, 'materials from IndexedDB');
-            }
-            
-            if (cachedClients.length > 0) {
-              this.clients = cachedClients;
-              loadedFromCache = true;
-            }
-          } catch (cacheError) {
-            console.warn('Failed to load from IndexedDB:', cacheError);
-          }
-        }
+        const rawItems = await itemsRes.json();
+        const rawMaterials = await materialsRes.json();
         
-        // Always try to fetch from API (for fresh data)
-        try {
-          const [itemsRes, materialsRes, clientsRes, companyRes] = await Promise.all([
-            fetch('/api/work-items'),
-            fetch('/api/materials'),
-            fetch('/api/clients'),
-            fetch('/api/company')
-          ]);
-          
-          const rawItems = await itemsRes.json();
-          const rawMaterials = await materialsRes.json();
-          
-          // Remove duplicates by name (keep first occurrence)
-          const seenItems = new Set();
-          this.workItems = rawItems.filter(item => {
-            if (seenItems.has(item.name)) return false;
-            seenItems.add(item.name);
-            return true;
-          });
-          
-          const seenMaterials = new Set();
-          this.materials = rawMaterials.filter(mat => {
-            if (seenMaterials.has(mat.name)) return false;
-            seenMaterials.add(mat.name);
-            return true;
-          });
-          
-          this.clients = await clientsRes.json();
-          this.company = await companyRes.json();
-          
-          // Save to IndexedDB for offline use
-          if (db && db.db) {
-            try {
-              for (const item of this.workItems) {
-                await db.saveWorkItem(item);
-              }
-              for (const mat of this.materials) {
-                await db.saveMaterial(mat);
-              }
-              for (const client of this.clients) {
-                await db.saveClient(client);
-              }
-              console.log('Saved data to IndexedDB');
-            } catch (saveError) {
-              console.warn('Failed to save to IndexedDB:', saveError);
-            }
-          }
-          
-          console.log('Loaded fresh data from API:', this.workItems.length, 'items');
-        } catch (apiError) {
-          if (!loadedFromCache) {
-            console.error('Failed to load from API and no cache:', apiError);
-            showToast('📴 Delam offline - uporabljam lokalne podatke', 'warning');
-          } else {
-            console.log('API failed, using cached data');
-            showToast('📴 Brez povezave - uporabljam shranjene podatke', 'info');
-          }
-        }
+        // Remove duplicates by name (keep first occurrence)
+        const seenItems = new Set();
+        this.workItems = rawItems.filter(item => {
+          if (seenItems.has(item.name)) return false;
+          seenItems.add(item.name);
+          return true;
+        });
+        
+        const seenMaterials = new Set();
+        this.materials = rawMaterials.filter(mat => {
+          if (seenMaterials.has(mat.name)) return false;
+          seenMaterials.add(mat.name);
+          return true;
+        });
+        
+        this.clients = await clientsRes.json();
+        this.company = await companyRes.json();
         
         // Set logo URL if logo exists
-        if (this.company && this.company.logo_path) {
+        if (this.company.logo_path) {
           this.company.logo_url = '/api/company/logo';
         }
         
-        console.log('Data ready:', this.workItems.length, 'items,', this.materials.length, 'materials');
+        console.log('Loaded', this.workItems.length, 'unique items (filtered from', rawItems.length, ')');
         console.log('Loaded', this.materials.length, 'unique materials (filtered from', rawMaterials.length, ')');
       } catch (error) {
         console.error('Error loading data:', error);
@@ -3113,59 +2986,6 @@ function app() {
       const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
       const secs = (seconds % 60).toString().padStart(2, '0');
       return `${mins}:${secs}`;
-    },
-    
-    // ==================== SYNC FUNCTIONS ====================
-    
-    // Trigger manual sync
-    async triggerSync() {
-      if (this.syncInProgress) return;
-      
-      const db = window.offlineDB;
-      if (!db || !db.db) {
-        if (window.showToast) {
-          window.showToast('⚠️ Offline način ni na voljo', 'warning');
-        }
-        return;
-      }
-      
-      this.syncInProgress = true;
-      
-      try {
-        await db.triggerSync();
-        this.lastSyncTime = new Date().toISOString();
-        await this.updatePendingCount();
-      } catch (error) {
-        console.error('Sync failed:', error);
-      } finally {
-        this.syncInProgress = false;
-      }
-    },
-    
-    // Update pending items count
-    async updatePendingCount() {
-      const db = window.offlineDB;
-      if (!db || !db.db) {
-        this.pendingCount = 0;
-        return;
-      }
-      
-      try {
-        const [pendingQuotes, pendingClients] = await Promise.all([
-          db.getPendingQuotes().catch(() => []),
-          db.getByIndex('clients', 'syncStatus', 'pending').catch(() => [])
-        ]);
-        
-        this.pendingCount = pendingQuotes.length + pendingClients.length;
-      } catch (error) {
-        console.error('Failed to update pending count:', error);
-        this.pendingCount = 0;
-      }
-    },
-    
-    // Check if we have pending changes
-    hasPendingChanges() {
-      return this.pendingCount > 0;
     }
   };
 }

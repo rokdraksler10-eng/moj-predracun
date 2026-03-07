@@ -17,6 +17,19 @@
 - [x] Testiranje na mobilnih napravah - DELUJE
 - [x] Stabilnost strežnika - Pripravljeno za Render deploy
 - [x] Dodaj možnost tiskanja predračuna - PDF izvoz deluje
+- [x] ✅ **Service Worker (OFFLINE MODE - Faza 1)** - 7.3.2026
+  - [x] Cache staticnih datotek (HTML, CSS, JS)
+  - [x] Intercept network requestov
+  - [x] Fallback na cache, če ni interneta
+  - [x] Offline indikator v UI
+  - [x] Online/offline event handling
+  - [x] ✅ OBSEŽNO TESTIRANO - vsi testi uspešni
+- [x] ✅ **IndexedDB (OFFLINE MODE - Faza 2)** - 7.3.2026
+  - [x] IndexedDB shema (quotes, clients, workItems, materials)
+  - [x] Shrani/Naloži iz IndexedDB
+  - [x] Sinhronizacija s strežnikom
+  - [x] Sync gumb v navigaciji z indikatorjem
+  - [x] Avtomatsko shranjevanje v IndexedDB
 
 ## ✅ JUTRI (1.3.2026)
 

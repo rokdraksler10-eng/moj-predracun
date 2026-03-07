@@ -55,6 +55,107 @@
   --transition-slow: 300ms ease;
 }
 
+/* ===== Offline Mode Styles ===== */
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--warning);
+  color: white;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.875rem;
+  z-index: 9999;
+  transform: translateY(-100%);
+  transition: transform var(--transition);
+}
+
+body.offline .offline-banner {
+  display: block !important;
+  transform: translateY(0);
+}
+
+body.offline {
+  padding-top: 2rem;
+}
+
+body.offline .nav {
+  top: 2rem;
+}
+
+/* Offline indicator in nav */
+.offline-indicator {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--warning-light);
+  color: var(--warning);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+body.offline .offline-indicator {
+  display: flex;
+}
+
+/* ===== Sync Button Styles ===== */
+.sync-toggle {
+  position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius);
+  color: var(--text-light);
+  transition: all var(--transition);
+}
+
+.sync-toggle:hover {
+  background: var(--bg-soft);
+  color: var(--primary);
+}
+
+.sync-toggle.syncing {
+  color: var(--primary);
+}
+
+.sync-toggle.has-pending {
+  color: var(--warning);
+}
+
+.sync-toggle.has-pending:hover {
+  color: var(--danger);
+}
+
+.sync-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: var(--danger);
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 600;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ===== Reset & Base ===== */
 * {
   margin: 0;
