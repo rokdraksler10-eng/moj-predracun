@@ -1,0 +1,162 @@
+<!-- CRM Section - Client Details -->
+<div x-show="page === 'client-crm'" class="page" x-cloak>
+  <div class="page-header">
+    <button @click="page = 'clients'" class="btn-secondary">
+      <i data-feather="arrow-left"></i> Nazaj
+    </button>
+    <h1 x-text="crmClient?.first_name + ' ' + crmClient?.last_name"></h1>
+    <span x-text="crmClient?.company_name" class="text-muted"></span>
+  </div>
+
+  <!-- Client Stats Cards -->
+  <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1rem 0;">
+    <div class="stat-card" style="background: var(--card-bg); padding: 1rem; border-radius: var(--radius); box-shadow: var(--shadow);">
+      <div class="stat-label" style="font-size: 0.75rem; color: var(--text-muted);">Skupni prihodek</div>
+      <div class="stat-value" style="font-size: 1.5rem; font-weight: 700; color: var(--success);" 
+           x-text="formatPrice(crmRevenue?.total_revenue || 0) + ' €'"></div>
+    </div>
+    <div class="stat-card" style="background: var(--card-bg); padding: 1rem; border-radius: var(--radius); box-shadow: var(--shadow);">
+      <div class="stat-label" style="font-size: 0.75rem; color: var(--text-muted);">Predračuni</div>
+      <div class="stat-value" style="font-size: 1.5rem; font-weight: 700;" 
+           x-text="crmRevenue?.total_quotes || 0"></div>
+    </div>
+    <div class="stat-card" style="background: var(--card-bg); padding: 1rem; border-radius: var(--radius); box-shadow: var(--shadow);">
+      <div class="stat-label" style="font-size: 0.75rem; color: var(--text-muted);">Sprejeto</div>
+      <div class="stat-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary);" 
+           x-text="formatPrice(crmRevenue?.accepted_value || 0) + ' €'"></div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="crm-tabs" style="display: flex; gap: 0.5rem; margin: 1rem 0; border-bottom: 1px solid var(--border);">
+    <button @click="crmTab = 'overview'" :class="{ active: crmTab === 'overview' }" class="tab-btn">Pregled</button>
+    <button @click="crmTab = 'quotes'" :class="{ active: crmTab === 'quotes' }" class="tab-btn">Predračuni</button>
+    <button @click="crmTab = 'interactions'" :class="{ active: crmTab === 'interactions' }" class="tab-btn">Interakcije</button>
+    <button @click="crmTab = 'notes'" :class="{ active: crmTab === 'notes' }" class="tab-btn">Zapiski</button>
+    <button @click="crmTab = 'reminders'" :class="{ active: crmTab === 'reminders' }" class="tab-btn">Opomniki</button>
+  </div>
+
+  <!-- Overview Tab -->
+  <div x-show="crmTab === 'overview'" class="tab-content">
+    <!-- Quick Actions -->
+    <div class="quick-actions" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+      <button @click="newQuoteForClient()" class="btn-primary">
+        <i data-feather="plus"></i> Nov predračun
+      </button>
+      <button @click="showAddInteraction = true" class="btn-secondary">
+        <i data-feather="phone"></i> Dodaj interakcijo
+      </button>
+      <button @click="showAddReminder = true" class="btn-secondary">
+        <i data-feather="bell"></i> Opomnik
+      </button>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="section" style="background: var(--card-bg); padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem;">
+      <h3>Zadnja aktivnost</h3>
+      <template x-for="activity in crmActivity" :key="activity.id">
+        <div class="activity-item" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-bottom: 1px solid var(--border-light);">
+          <div class="activity-icon" :class="activity.type" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bg-soft);">
+            <i :data-feather="activity.type === 'quote' ? 'file-text' : 'activity'"></i>
+          </div>
+          <div class="activity-content" style="flex: 1;">
+            <div x-text="activity.project_name || activity.description"></div>
+            <div class="text-muted" style="font-size: 0.75rem;" x-text="formatDate(activity.created_at || activity.date)"></div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Tags -->
+    <div class="section" style="background: var(--card-bg); padding: 1rem; border-radius: var(--radius);">
+      <h3>Oznake</h3>
+      <div class="tags" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+        <template x-for="tag in crmTags" :key="tag">
+          <span class="tag" style="background: var(--primary-soft); color: var(--primary); padding: 0.25rem 0.75rem; border-radius: var(--radius-full); font-size: 0.875rem;" x-text="tag"></span>
+        </template>
+        <button @click="showAddTag = true" class="btn-sm" style="padding: 0.25rem 0.5rem;">+ Dodaj</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quotes Tab -->
+  <div x-show="crmTab === 'quotes'" class="tab-content">
+    <div class="quotes-list">
+      <template x-for="quote in crmQuotes" :key="quote.id">
+        <div class="quote-card" style="background: var(--card-bg); padding: 1rem; border-radius: var(--radius); margin-bottom: 0.75rem; box-shadow: var(--shadow-sm);" @click="openQuote(quote.id)">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 600;" x-text="quote.project_name || 'Brez naziva'"></div>
+              <div class="text-muted" style="font-size: 0.875rem;" x-text="formatDate(quote.quote_date)"></div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-weight: 700;" x-text="formatPrice(quote.total) + ' €'"></div>
+              <span class="status-badge" :class="quote.status" x-text="quote.status"></span>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- Interactions Tab -->
+  <div x-show="crmTab === 'interactions'" class="tab-content">
+    <button @click="showAddInteraction = true" class="btn-primary" style="width: 100%; margin-bottom: 1rem;">
+      <i data-feather="plus"></i> Nova interakcija
+    </button>
+    <div class="interactions-list">
+      <template x-for="interaction in crmInteractions" :key="interaction.id">
+        <div class="interaction-item" style="background: var(--card-bg); padding: 1rem; border-radius: var(--radius); margin-bottom: 0.75rem; border-left: 4px solid var(--primary);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <span class="interaction-type" style="text-transform: uppercase; font-size: 0.75rem; font-weight: 600; color: var(--primary);" x-text="interaction.type"></span>
+              <div x-text="interaction.description"></div>
+            </div>
+            <div class="text-muted" style="font-size: 0.75rem;" x-text="formatDate(interaction.date)"></div>
+          </div>
+          <div x-show="interaction.follow_up_date" style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--warning);">
+            <i data-feather="clock" style="width: 14px; height: 14px;"></i> Follow-up: <span x-text="formatDate(interaction.follow_up_date)"></span>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- Notes Tab -->
+  <div x-show="crmTab === 'notes'" class="tab-content">
+    <button @click="showAddNote = true" class="btn-primary" style="width: 100%; margin-bottom: 1rem;">
+      <i data-feather="plus"></i> Nov zapis
+    </button>
+    <div class="notes-list">
+      <template x-for="note in crmNotes" :key="note.id">
+        <div class="note-item" style="background: var(--bg-soft); padding: 1rem; border-radius: var(--radius); margin-bottom: 0.75rem;">
+          <div x-text="note.note" style="white-space: pre-wrap;"></div>
+          <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.5rem;" x-text="formatDateTime(note.created_at)"></div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- Reminders Tab -->
+  <div x-show="crmTab === 'reminders'" class="tab-content">
+    <button @click="showAddReminder = true" class="btn-primary" style="width: 100%; margin-bottom: 1rem;">
+      <i data-feather="plus"></i> Nov opomnik
+    </button>
+    <div class="reminders-list">
+      <template x-for="reminder in crmReminders" :key="reminder.id">
+        <div class="reminder-item" :class="{ 'completed': reminder.is_completed }" style="background: var(--card-bg); padding: 1rem; border-radius: var(--radius); margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+          <div style="flex: 1;">
+            <div style="font-weight: 600;" :style="reminder.is_completed ? 'text-decoration: line-through;' : ''" x-text="reminder.title"></div>
+            <div class="text-muted" style="font-size: 0.875rem;" x-text="reminder.description"></div>
+            <div style="font-size: 0.75rem; margin-top: 0.25rem;" :class="isOverdue(reminder.reminder_date) ? 'text-danger' : 'text-muted'">
+              <i data-feather="calendar" style="width: 12px; height: 12px;"></i> <span x-text="formatDate(reminder.reminder_date)"></span>
+            </div>
+          </div>
+          <button x-show="!reminder.is_completed" @click="completeReminder(reminder.id)" class="btn-sm btn-success">
+            <i data-feather="check"></i>
+          </button>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>

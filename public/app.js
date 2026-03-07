@@ -99,6 +99,38 @@ function app() {
     selectedMeasurementForItem: null,
     selectedMeasurementIndex: null,
     
+    // CRM State (Faza 5)
+    crmClient: null,
+    crmTab: 'overview',
+    crmQuotes: [],
+    crmNotes: [],
+    crmInteractions: [],
+    crmReminders: [],
+    crmRevenue: {},
+    crmActivity: [],
+    crmTags: [],
+    showAddNote: false,
+    showAddInteraction: false,
+    showAddReminder: false,
+    showAddTag: false,
+    newNoteText: '',
+    newInteraction: { type: 'call', description: '', date: '', follow_up_date: '' },
+    newReminder: { title: '', description: '', reminder_date: '' },
+    newTag: '',
+    
+    // Payments State (Faza 5)
+    quotePayments: [],
+    paymentSchedule: [],
+    showAddPayment: false,
+    newPayment: { amount: '', payment_date: '', payment_method: 'bank_transfer', reference_number: '', notes: '', is_deposit: false },
+    showPaymentSchedule: false,
+    newSchedule: [{ amount: '', due_date: '', description: '' }],
+    
+    // Dashboard State (Faza 5)
+    dashboardStats: {},
+    dashboardReminders: [],
+    dashboardActivity: [],
+    
     // Sync
     syncCode: null,
     syncExpires: null,
@@ -3243,6 +3275,196 @@ function app() {
     // Check if we have pending changes
     hasPendingChanges() {
       return this.pendingCount > 0;
+    },
+    
+    // ==================== CRM FUNCTIONS (FAZA 5) ====================
+    
+    // Open CRM for client
+    async openClientCRM(clientId) {
+      this.loading = true;
+      try {
+        const response = await fetch(`/api/clients/${clientId}/crm`);
+        const data = await response.json();
+        
+        this.crmClient = data;
+        this.crmQuotes = data.quotes || [];
+        this.crmNotes = data.notes || [];
+        this.crmInteractions = data.interactions || [];
+        this.crmReminders = data.reminders || [];
+        this.crmRevenue = data.revenue || {};
+        this.crmActivity = data.recent_activity || [];
+        this.crmTags = data.tags || [];
+        this.crmTab = 'overview';
+        
+        this.page = 'client-crm';
+      } catch (error) {
+        console.error('Failed to load CRM:', error);
+        showToast('❌ Napaka pri nalaganju CRM', 'error');
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Add note to client
+    async addClientNote() {
+      if (!this.newNoteText.trim()) return;
+      
+      try {
+        const response = await fetch(`/api/clients/${this.crmClient.id}/notes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ note: this.newNoteText })
+        });
+        
+        if (response.ok) {
+          this.newNoteText = '';
+          this.showAddNote = false;
+          await this.openClientCRM(this.crmClient.id);
+          showToast('✅ Zapis shranjen', 'success');
+        }
+      } catch (error) {
+        console.error('Failed to add note:', error);
+        showToast('❌ Napaka pri shranjevanju', 'error');
+      }
+    },
+    
+    // Add interaction
+    async addClientInteraction() {
+      try {
+        const response = await fetch(`/api/clients/${this.crmClient.id}/interactions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.newInteraction)
+        });
+        
+        if (response.ok) {
+          this.newInteraction = { type: 'call', description: '', date: '', follow_up_date: '' };
+          this.showAddInteraction = false;
+          await this.openClientCRM(this.crmClient.id);
+          showToast('✅ Interakcija zabeležena', 'success');
+        }
+      } catch (error) {
+        console.error('Failed to add interaction:', error);
+        showToast('❌ Napaka', 'error');
+      }
+    },
+    
+    // Add reminder
+    async addClientReminder() {
+      try {
+        const response = await fetch(`/api/clients/${this.crmClient.id}/reminders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.newReminder)
+        });
+        
+        if (response.ok) {
+          this.newReminder = { title: '', description: '', reminder_date: '' };
+          this.showAddReminder = false;
+          await this.openClientCRM(this.crmClient.id);
+          showToast('✅ Opomnik ustvarjen', 'success');
+        }
+      } catch (error) {
+        console.error('Failed to add reminder:', error);
+        showToast('❌ Napaka', 'error');
+      }
+    },
+    
+    // Complete reminder
+    async completeReminder(reminderId) {
+      try {
+        const response = await fetch(`/api/reminders/${reminderId}/complete`, {
+          method: 'PATCH'
+        });
+        
+        if (response.ok) {
+          await this.openClientCRM(this.crmClient.id);
+          showToast('✅ Opomnik opravljen', 'success');
+        }
+      } catch (error) {
+        console.error('Failed to complete reminder:', error);
+      }
+    },
+    
+    // Check if date is overdue
+    isOverdue(date) {
+      return new Date(date) < new Date();
+    },
+    
+    // ==================== PAYMENTS FUNCTIONS (FAZA 5) ====================
+    
+    // Load payments for quote
+    async loadQuotePayments(quoteId) {
+      try {
+        const response = await fetch(`/api/quotes/${quoteId}/payments`);
+        const data = await response.json();
+        this.quotePayments = data;
+      } catch (error) {
+        console.error('Failed to load payments:', error);
+      }
+    },
+    
+    // Add payment
+    async addPayment() {
+      try {
+        const response = await fetch(`/api/quotes/${this.currentQuote.id}/payments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.newPayment)
+        });
+        
+        if (response.ok) {
+          this.newPayment = { amount: '', payment_date: '', payment_method: 'bank_transfer', reference_number: '', notes: '', is_deposit: false };
+          this.showAddPayment = false;
+          await this.loadQuotePayments(this.currentQuote.id);
+          showToast('✅ Plačilo zabeleženo', 'success');
+        }
+      } catch (error) {
+        console.error('Failed to add payment:', error);
+        showToast('❌ Napaka', 'error');
+      }
+    },
+    
+    // ==================== DASHBOARD FUNCTIONS (FAZA 5) ====================
+    
+    // Load dashboard stats
+    async loadDashboard() {
+      this.loading = true;
+      try {
+        const response = await fetch('/api/dashboard/stats');
+        const data = await response.json();
+        
+        this.dashboardStats = data.stats;
+        this.dashboardReminders = data.upcoming_reminders;
+        this.dashboardActivity = data.recent_activity;
+      } catch (error) {
+        console.error('Failed to load dashboard:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // ==================== UTILITY FUNCTIONS ====================
+    
+    // Format date
+    formatDate(date) {
+      if (!date) return '';
+      const d = new Date(date);
+      return d.toLocaleDateString('sl-SI');
+    },
+    
+    // Format date time
+    formatDateTime(date) {
+      if (!date) return '';
+      const d = new Date(date);
+      return d.toLocaleString('sl-SI');
+    },
+    
+    // Format price
+    formatPrice(price) {
+      const num = parseFloat(price);
+      if (isNaN(num)) return '0,00';
+      return num.toFixed(2).replace('.', ',');
     }
   };
 }
