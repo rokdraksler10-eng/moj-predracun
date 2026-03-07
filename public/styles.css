@@ -156,6 +156,200 @@ body.offline .offline-indicator {
   to { transform: rotate(360deg); }
 }
 
+/* ===== TOUCH-FRIENDLY MOBILE OPTIMIZATIONS ===== */
+
+/* Minimum touch target 48x48px */
+button, 
+.nav-links button,
+.action-btn,
+.icon-btn,
+.card-actions button,
+.quote-actions button,
+.modal-footer button,
+.bottom-nav button {
+  min-height: 48px !important;
+  min-width: 48px !important;
+}
+
+/* Prevent zoom on iOS inputs */
+input, 
+select, 
+textarea,
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="tel"],
+input[type="date"] {
+  font-size: 16px !important; /* iOS zooms if < 16px */
+  min-height: 48px !important;
+  padding: 12px 16px !important;
+  touch-action: manipulation;
+}
+
+/* Better spacing for touch */
+.touch-spacer {
+  height: 16px;
+}
+
+/* Increase tap target for small elements */
+.nav-links button span,
+.checkbox-label,
+.radio-label {
+  padding: 8px 4px;
+}
+
+/* Mobile-optimized bottom navigation */
+@media (max-width: 768px) {
+  /* Hide top nav, show bottom nav */
+  .nav {
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    left: 0;
+    right: 0;
+    padding: 8px 0;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+  }
+  
+  .nav-links {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    padding: 0;
+  }
+  
+  .nav-links button {
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+  
+  .nav-links button i,
+  .nav-links button svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .nav-links button span {
+    font-size: 11px;
+  }
+  
+  .nav-brand {
+    display: none; /* Hide logo in bottom nav */
+  }
+  
+  /* Add padding to main content for bottom nav */
+  .main-content,
+  .container,
+  .page-content {
+    padding-bottom: 80px !important;
+  }
+  
+  /* Make cards full width on mobile */
+  .card {
+    margin: 8px;
+    border-radius: 12px;
+  }
+  
+  /* Larger touch targets for list items */
+  .quote-item,
+  .work-item,
+  .material-item,
+  .client-item {
+    padding: 16px;
+    min-height: 64px;
+  }
+  
+  /* Full width buttons */
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    width: 100%;
+    margin: 8px 0;
+  }
+  
+  /* Modal improvements */
+  .modal {
+    align-items: flex-end;
+  }
+  
+  .modal-content {
+    border-radius: 20px 20px 0 0;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  /* Form improvements */
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  
+  /* Better search input */
+  .search-input {
+    font-size: 16px;
+    padding: 14px 16px;
+    border-radius: 12px;
+  }
+  
+  /* Floating action button */
+  .fab {
+    position: fixed;
+    bottom: 90px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 999;
+  }
+}
+
+/* Pull to refresh indicator */
+.pull-to-refresh {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-60px);
+  transition: transform 0.3s;
+  z-index: 9999;
+}
+
+.pull-to-refresh.visible {
+  transform: translateY(0);
+}
+
+.pull-to-refresh svg {
+  animation: spin 1s linear infinite;
+}
+
+/* Safe area for notched phones */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .main-content {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}
+
 /* ===== Reset & Base ===== */
 * {
   margin: 0;

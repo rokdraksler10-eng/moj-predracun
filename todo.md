@@ -30,6 +30,12 @@
   - [x] Sinhronizacija s strežnikom
   - [x] Sync gumb v navigaciji z indikatorjem
   - [x] Avtomatsko shranjevanje v IndexedDB
+- [x] ✅ **TOUCH-FRIENDLY UI (Faza 3)** - 7.3.2026
+  - [x] 48px touch targeti za vse gumbe
+  - [x] Prevent zoom on iOS (16px font)
+  - [x] Bottom navigation za mobilne naprave
+  - [x] Pull-to-refresh funkcionalnost
+  - [x] Mobile-optimized modali in forme
 
 ## ✅ JUTRI (1.3.2026)
 

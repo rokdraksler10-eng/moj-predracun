@@ -123,6 +123,10 @@ function app() {
     singleItemSubtotal: 0,
     filteredItemsForSingleModal: [],
     
+    // Mobile touch handling
+    touchStartY: 0,
+    isPulling: false,
+    
     // Init
     async init() {
       try {
@@ -176,6 +180,9 @@ function app() {
         // Update pending count initially and periodically
         this.updatePendingCount();
         setInterval(() => this.updatePendingCount(), 30000); // Check every 30 seconds
+        
+        // Initialize pull-to-refresh
+        this.initPullToRefresh();
         
         feather.replace();
         console.log('App initialized successfully with', this.workItems.length, 'items,', this.materials.length, 'materials,', this.quotes.length, 'quotes and', this.categories.length, 'categories');
@@ -3113,6 +3120,76 @@ function app() {
       const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
       const secs = (seconds % 60).toString().padStart(2, '0');
       return `${mins}:${secs}`;
+    },
+    
+    // ==================== TOUCH & MOBILE FUNCTIONS ====================
+    
+    // Initialize pull-to-refresh
+    initPullToRefresh() {
+      const mainContent = document.querySelector('.main-content');
+      const pullIndicator = document.getElementById('pull-to-refresh');
+      
+      if (!mainContent || !pullIndicator) return;
+      
+      // Touch start
+      mainContent.addEventListener('touchstart', (e) => {
+        // Only trigger if at top of page
+        if (mainContent.scrollTop === 0) {
+          this.touchStartY = e.touches[0].clientY;
+          this.isPulling = true;
+        }
+      }, { passive: true });
+      
+      // Touch move
+      mainContent.addEventListener('touchmove', (e) => {
+        if (!this.isPulling) return;
+        
+        const touchY = e.touches[0].clientY;
+        const diff = touchY - this.touchStartY;
+        
+        // Show indicator if pulled down enough
+        if (diff > 60 && mainContent.scrollTop === 0) {
+          pullIndicator.classList.add('visible');
+        }
+      }, { passive: true });
+      
+      // Touch end
+      mainContent.addEventListener('touchend', async () => {
+        if (!this.isPulling) return;
+        
+        pullIndicator.classList.remove('visible');
+        
+        const touchY = event.changedTouches[0].clientY;
+        const diff = touchY - this.touchStartY;
+        
+        // Trigger refresh if pulled enough
+        if (diff > 100) {
+          if (window.showToast) {
+            window.showToast('🔄 Osvežujem...', 'info');
+          }
+          await this.refreshAllData();
+        }
+        
+        this.isPulling = false;
+      });
+    },
+    
+    // Refresh all data (used by pull-to-refresh)
+    async refreshAllData() {
+      try {
+        await this.loadData();
+        await this.loadQuotes();
+        await this.triggerSync();
+        
+        if (window.showToast) {
+          window.showToast('✅ Podatki osveženi', 'success');
+        }
+      } catch (error) {
+        console.error('Refresh failed:', error);
+        if (window.showToast) {
+          window.showToast('⚠️ Osvežitev ni uspela', 'error');
+        }
+      }
     },
     
     // ==================== SYNC FUNCTIONS ====================
