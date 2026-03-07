@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Moj Predračun</title>
+  <meta name="description" content="Profesionalni gradbeni predračuni">
+  
+  <!-- Minimal inline CSS -->
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: #f2f2f7; 
+      padding-bottom: 80px;
+    }
+    .nav { 
+      position: fixed; 
+      bottom: 0; 
+      left: 0; 
+      right: 0; 
+      background: white; 
+      border-top: 1px solid #e5e5ea;
+      display: flex; 
+      justify-content: space-around; 
+      padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+      z-index: 1000;
+    }
+    .nav button { 
+      background: none; 
+      border: none; 
+      padding: 8px 16px; 
+      font-size: 12px; 
+      color: #8e8e93; 
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav button.active { color: #007aff; }
+    .nav button svg { width: 24px; height: 24px; }
+    
+    .page { display: none; padding: 20px; max-width: 600px; margin: 0 auto; }
+    .page.active { display: block; }
+    
+    h1 { font-size: 28px; margin-bottom: 20px; }
+    h2 { font-size: 20px; margin-bottom: 16px; }
+    
+    .btn {
+      background: #007aff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      cursor: pointer;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #8e8e93;
+    }
+    
+    .debug-box {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      color: #00ff00;
+      padding: 10px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 9999;
+      max-width: 300px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Debug Box -->
+  <div class="debug-box" id="debug-box">
+    <div id="debug-log">Loading...</div>
+  </div>
+
+  <!-- Page 1: Quotes -->
+  <div id="page-quotes" class="page active">
+    <h1>Predračuni</h1>
+    <button class="btn" onclick="createNewQuote()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Nov predračun
+    </button>
+    <div id="quotes-list" style="margin-top: 20px;">
+      <div class="empty-state">
+        <p>Ni predračunov</p>
+        <p style="font-size: 14px; margin-top: 8px;">Klikni "Nov predračun" da začneš</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 2: Work Items -->
+  <div id="page-items" class="page">
+    <h1>Postavke dela</h1>
+    <div id="items-list" style="margin-top: 20px;">
+      <div class="card">
+        <strong>Demontaža starih ploščic</strong>
+        <p style="color: #8e8e93; margin-top: 4px;">12 €/m²</p>
+      </div>
+      <div class="card">
+        <strong>Polaganje keramike</strong>
+        <p style="color: #8e8e93; margin-top: 4px;">25 €/m²</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 3: Materials -->
+  <div id="page-materials" class="page">
+    <h1>Materiali</h1>
+    <div id="materials-list" style="margin-top: 20px;">
+      <div class="card">
+        <strong>Keramične ploščice</strong>
+        <p style="color: #8e8e93; margin-top: 4px;">15 €/m²</p>
+      </div>
+      <div class="card">
+        <strong>Lepilo za ploščice</strong>
+        <p style="color: #8e8e93; margin-top: 4px;">8 €/kg</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 4: Calculator -->
+  <div id="page-calculator" class="page">
+    <h1>Kalkulator</h1>
+    <div style="background: white; padding: 20px; border-radius: 16px; margin-top: 20px;">
+      <h2>Meritve</h2>
+      <div style="margin-top: 16px;">
+        <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #8e8e93;">Dolžina (m)</label>
+        <input type="number" id="calc-length" placeholder="npr. 5" style="width: 100%; padding: 12px; border: 1px solid #e5e5ea; border-radius: 8px; font-size: 16px;">
+      </div>
+      <div style="margin-top: 16px;">
+        <label style="display: block; margin-bottom: 8px; font-size: 14px; color: #8e8e93;">Širina (m)</label>
+        <input type="number" id="calc-width" placeholder="npr. 4" style="width: 100%; padding: 12px; border: 1px solid #e5e5ea; border-radius: 8px; font-size: 16px;">
+      </div>
+      <button class="btn" onclick="calculateArea()" style="margin-top: 20px; width: 100%;">Izračunaj površino</button>
+      <div id="calc-result" style="margin-top: 20px; padding: 16px; background: #f2f2f7; border-radius: 12px; display: none;">
+        <strong>Površina: <span id="calc-area">0</span> m²</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 5: Settings -->
+  <div id="page-settings" class="page">
+    <h1>Nastavitve</h1>
+    <div style="background: white; padding: 20px; border-radius: 16px; margin-top: 20px;">
+      <h2>O aplikaciji</h2>
+      <p style="margin-top: 12px; color: #8e8e93;">Moj Predračun v3.0</p>
+      <p style="margin-top: 8px; color: #8e8e93; font-size: 14px;">Professional gradbeni kalkulator</p>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <button onclick="showPage('quotes')" id="nav-quotes" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      Predračuni
+    </button>
+    <button onclick="showPage('items')" id="nav-items">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      Postavke
+    </button>
+    <button onclick="showPage('materials')" id="nav-materials">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+      Materiali
+    </button>
+    <button onclick="showPage('calculator')" id="nav-calculator">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="14"></line><line x1="12" y1="18" x2="12" y2="18"></line><line x1="16" y1="18" x2="16" y2="18"></line><line x1="8" y1="18" x2="8" y2="18"></line><line x1="12" y1="14" x2="12" y2="14"></line><line x1="8" y1="14" x2="8" y2="14"></line><line x1="16" y1="10" x2="16" y2="10"></line><line x1="8" y1="10" x2="12" y2="10"></line></svg>
+      Kalkulator
+    </button>
+    <button onclick="showPage('settings')" id="nav-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      Nastavitve
+    </button>
+  </nav>
+
+  <!-- Inline JavaScript - NO external files -->
+  <script>
+    // Debug logging
+    function log(msg) {
+      console.log(msg);
+      const debugBox = document.getElementById('debug-log');
+      if (debugBox) {
+        debugBox.innerHTML += '<br>' + msg;
+      }
+    }
+    
+    log('JavaScript loaded');
+    
+    // Global state
+    let currentPage = 'quotes';
+    let quotes = [];
+    
+    // Show page function
+    function showPage(pageName) {
+      log('showPage called: ' + pageName);
+      
+      // Hide all pages
+      document.querySelectorAll('.page').forEach(function(page) {
+        page.classList.remove('active');
+      });
+      
+      // Remove active from all nav buttons
+      document.querySelectorAll('.nav button').forEach(function(btn) {
+        btn.classList.remove('active');
+      });
+      
+      // Show selected page
+      const selectedPage = document.getElementById('page-' + pageName);
+      if (selectedPage) {
+        selectedPage.classList.add('active');
+        log('Page shown: ' + pageName);
+      } else {
+        log('ERROR: Page not found: ' + pageName);
+      }
+      
+      // Set nav button active
+      const navBtn = document.getElementById('nav-' + pageName);
+      if (navBtn) {
+        navBtn.classList.add('active');
+      }
+      
+      currentPage = pageName;
+    }
+    
+    // Create new quote
+    function createNewQuote() {
+      log('createNewQuote called');
+      alert('Funkcija "Nov predračun" se bo odprla tukaj!');
+    }
+    
+    // Calculate area
+    function calculateArea() {
+      log('calculateArea called');
+      const length = parseFloat(document.getElementById('calc-length').value) || 0;
+      const width = parseFloat(document.getElementById('calc-width').value) || 0;
+      const area = length * width;
+      
+      document.getElementById('calc-area').textContent = area.toFixed(2);
+      document.getElementById('calc-result').style.display = 'block';
+      log('Calculated area: ' + area);
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      log('DOMContentLoaded fired');
+      log('Current page: ' + currentPage);
+      log('Navigation buttons found: ' + document.querySelectorAll('.nav button').length);
+    });
+    
+    log('Script execution completed');
+  </script>
+</body>
+</html>
