@@ -24,6 +24,7 @@
   
   <!-- Styles -->
   <link rel="stylesheet" href="styles.css?v=2.1">
+  <link rel="stylesheet" href="styles-apple.css?v=1.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -206,26 +207,33 @@
     <div x-show="page === 'quotes'" class="page">
       
       <!-- LIST VIEW -->
-      <div x-show="!currentQuote">
-        <div class="page-header-simple">
-          <h1>Predračuni</h1>
-          <button class="btn-primary" @click="newQuote()">
-            <i data-feather="plus"></i> Nov
+      <div x-show="!currentQuote" class="container">
+        <!-- Apple-style Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5); padding-top: var(--space-4);">
+          <div>
+            <h1 style="font-size: var(--text-3xl); font-weight: var(--font-bold); letter-spacing: -0.02em;">Predračuni</h1>
+            <p class="text-muted" style="font-size: var(--text-base); margin-top: var(--space-1);">
+              <span x-text="filteredQuotes.length"></span> predračunov
+            </p>
+          </div>
+          <button class="btn btn-primary" @click="newQuote()" style="width: 56px; height: 56px; border-radius: var(--radius-full); padding: 0;">
+            <i data-feather="plus" style="width: 24px; height: 24px;"></i>
           </button>
         </div>
         
-        <!-- Search & Filter -->
-        <div class="search-filter-bar" x-show="quotes.length > 0">
-          <div class="search-box">
-            <i data-feather="search"></i>
-            <input type="text" x-model="searchQuery" placeholder="Išči po projektu, stranki..." @input="filterQuotes()">
-          </div>
-          <select x-model="filterStatus" @change="filterQuotes()" class="filter-select">
-            <option value="">Vsi statusi</option>
-            <option value="draft">V pripravi</option>
-            <option value="sent">Poslano</option>
-            <option value="accepted">Sprejeto</option>
-          </select>
+        <!-- Apple-style Search -->
+        <div class="search-bar" x-show="quotes.length > 0" style="margin-bottom: var(--space-5);">
+          <i data-feather="search" class="search-icon"></i>
+          <input type="text" x-model="searchQuery" placeholder="Išči po projektu, stranki..." @input="filterQuotes()" class="search-input">
+        </div>
+        
+        <!-- Apple-style Segmented Control -->
+        <div class="segmented-control" x-show="quotes.length > 0" style="margin-bottom: var(--space-5);">
+          <button @click="filterStatus = ''; filterQuotes()" :class="{ 'active': filterStatus === '' }">Vsi</button>
+          <button @click="filterStatus = 'pending'; filterQuotes()" :class="{ 'active': filterStatus === 'pending' }">Aktivni</button>
+          <button @click="filterStatus = 'accepted'; filterQuotes()" :class="{ 'active': filterStatus === 'accepted' }">Sprejeti</button>
+          <button @click="filterStatus = 'draft'; filterQuotes()" :class="{ 'active': filterStatus === 'draft' }">Osnutki</button>
+        </div>
         </div>
         
         <!-- Quick Actions -->
