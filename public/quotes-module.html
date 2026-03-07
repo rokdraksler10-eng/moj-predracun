@@ -558,7 +558,45 @@
             initializeDateFields();
             loadQuotes();
             setupEventListeners();
+            checkCalculatorTransfer(); // Check for data from calculator
         });
+
+        // Check if we have data transferred from calculator
+        function checkCalculatorTransfer() {
+            const transferData = localStorage.getItem('calculatorTransfer');
+            if (transferData) {
+                try {
+                    const data = JSON.parse(transferData);
+                    if (data.measurements && data.measurements.length > 0) {
+                        // Auto-create new quote with calculator data
+                        createNewQuote();
+                        
+                        // Add measurements as work items
+                        data.measurements.forEach(m => {
+                            const workItem = {
+                                name: m.name || (m.type === 'surface' ? 'Površina' : m.type === 'walls' ? 'Stene' : 'Prostornina'),
+                                unit: m.unit,
+                                price: 0, // User needs to set price
+                                quantity: m.value,
+                                description: m.details
+                            };
+                            state.selectedWorkItems.push(workItem);
+                        });
+                        
+                        renderWorkItems();
+                        updateTotals();
+                        
+                        // Show notification
+                        showToast(`Preneseno ${data.measurements.length} meritev iz kalkulatorja`, 'success');
+                        
+                        // Clear transfer data
+                        localStorage.removeItem('calculatorTransfer');
+                    }
+                } catch (e) {
+                    console.error('Error parsing calculator transfer:', e);
+                }
+            }
+        }
 
         function initializeDateFields() {
             const today = new Date().toISOString().split('T')[0];

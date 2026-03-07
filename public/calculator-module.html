@@ -571,9 +571,26 @@
         }
         
         function exportToInvoice() {
-            const data = JSON.stringify(measurements);
-            const encoded = encodeURIComponent(data);
-            window.location.href = 'invoice-module.html?data=' + encoded;
+            if (measurements.length === 0) {
+                showNotification('Ni meritev za prenos', 'error');
+                return;
+            }
+            
+            // Prepare data for transfer to quotes module
+            const transferData = {
+                measurements: measurements,
+                summary: {
+                    totalArea: measurements.filter(m => m.unit === 'm²').reduce((sum, m) => sum + m.value, 0),
+                    totalVolume: measurements.filter(m => m.unit === 'm³').reduce((sum, m) => sum + m.value, 0),
+                    timestamp: new Date().toISOString()
+                }
+            };
+            
+            // Store in localStorage for quotes module to pick up
+            localStorage.setItem('calculatorTransfer', JSON.stringify(transferData));
+            
+            // Navigate to quotes module
+            window.location.href = 'quotes-module.html?fromCalculator=true';
         }
         
         function exportToText() {
