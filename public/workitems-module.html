@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Postavke Dela</title>
+    <meta name="description" content="Upravljanje postavk dela za gradbene predračune. Dodajaj, urejaj in upravljaj postavke dela z enostavnim vmesnikom.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <title>Postavke Dela | Moj Predračun</title>
     <style>
         * {
             margin: 0;
@@ -117,6 +119,57 @@
         .btn-success:hover {
             background: #219a52;
         }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .loading-overlay.active { display: flex; }
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #f0f0f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Custom Confirm Dialog */
+        .confirm-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500;
+        }
+        .confirm-dialog.active { display: flex; }
+        .confirm-content {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: slideUp 0.3s ease;
+        }
+        .confirm-content p { margin-bottom: 20px; font-size: 16px; }
+        .confirm-buttons { display: flex; gap: 12px; justify-content: center; }
+        .confirm-buttons .btn { flex: 1; }
 
         .stats {
             display: flex;
@@ -549,8 +602,34 @@
         let currentSearch = '';
         let editingId = null;
         let difficultyFactors = [];
+        let confirmCallback = null;
 
         const API_BASE = '/api';
+
+        // Loading state functions
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        // Custom confirm dialog
+        function showConfirm(message, callback, actionText = 'Potrdi', actionClass = 'btn-danger') {
+            confirmCallback = callback;
+            document.getElementById('confirmMessage').textContent = message;
+            const actionBtn = document.getElementById('confirmActionBtn');
+            actionBtn.textContent = actionText;
+            actionBtn.className = 'btn ' + actionClass;
+            document.getElementById('confirmDialog').classList.add('active');
+        }
+        function handleConfirm(result) {
+            document.getElementById('confirmDialog').classList.remove('active');
+            if (confirmCallback) {
+                confirmCallback(result);
+                confirmCallback = null;
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             loadWorkItems();
@@ -601,6 +680,7 @@
         }
 
         async function createWorkItem(item) {
+            showLoading();
             try {
                 const response = await fetch(`${API_BASE}/work-items`, {
                     method: 'POST',
@@ -618,10 +698,13 @@
             } catch (error) {
                 showToast('Napaka: ' + error.message, 'error');
                 return false;
+            } finally {
+                hideLoading();
             }
         }
 
         async function updateWorkItem(id, item) {
+            showLoading();
             try {
                 const response = await fetch(`${API_BASE}/work-items/${id}`, {
                     method: 'PUT',
@@ -630,7 +713,7 @@
                 });
                 if (!response.ok) throw new Error('Napaka pri posodabljanju');
                 const updatedItem = await response.json();
-                const index = workItems.findIndex(i => i.id == id);
+                const index = workItems.findIndex(i => String(i.id) === String(id));
                 if (index !== -1) workItems[index] = updatedItem;
                 updateCategories();
                 renderTable();
@@ -640,33 +723,41 @@
             } catch (error) {
                 showToast('Napaka: ' + error.message, 'error');
                 return false;
+            } finally {
+                hideLoading();
             }
         }
 
-        async function deleteWorkItem(id) {
-            if (!confirm('Ali ste prepričani, da želite izbrisati to postavko?')) return;
-            
-            try {
-                const response = await fetch(`${API_BASE}/work-items/${id}`, {
-                    method: 'DELETE'
-                });
-                if (!response.ok) throw new Error('Napaka pri brisanju');
-                workItems = workItems.filter(i => i.id != id);
-                updateCategories();
-                renderTable();
-                updateStats();
-                showToast('Postavka izbrisana!', 'success');
-            } catch (error) {
-                showToast('Napaka: ' + error.message, 'error');
-            }
+        function deleteWorkItem(id) {
+            showConfirm('Ali ste prepričani, da želite izbrisati to postavko?', async (confirmed) => {
+                if (!confirmed) return;
+                
+                showLoading();
+                try {
+                    const response = await fetch(`${API_BASE}/work-items/${id}`, {
+                        method: 'DELETE'
+                    });
+                    if (!response.ok) throw new Error('Napaka pri brisanju');
+                    workItems = workItems.filter(i => String(i.id) !== String(id));
+                    updateCategories();
+                    renderTable();
+                    updateStats();
+                    showToast('Postavka izbrisana!', 'success');
+                } catch (error) {
+                    showToast('Napaka: ' + error.message, 'error');
+                } finally {
+                    hideLoading();
+                }
+            }, 'Izbriši', 'btn-danger');
         }
 
         async function toggleFavorite(id) {
-            const item = workItems.find(i => i.id == id);
+            const item = workItems.find(i => String(i.id) === String(id));
             if (!item) return;
 
             const updatedItem = { ...item, isFavorite: !item.isFavorite };
             
+            showLoading();
             try {
                 const response = await fetch(`${API_BASE}/work-items/${id}`, {
                     method: 'PUT',
@@ -675,12 +766,14 @@
                 });
                 if (!response.ok) throw new Error('Napaka');
                 const result = await response.json();
-                const index = workItems.findIndex(i => i.id == id);
+                const index = workItems.findIndex(i => String(i.id) === String(id));
                 if (index !== -1) workItems[index] = result;
                 renderTable();
                 updateStats();
             } catch (error) {
                 showToast('Napaka pri posodabljanju priljubljenih', 'error');
+            } finally {
+                hideLoading();
             }
         }
 
@@ -861,7 +954,7 @@
         }
 
         function editItem(id) {
-            const item = workItems.find(i => i.id == id);
+            const item = workItems.find(i => String(i.id) === String(id));
             if (item) openModal(item);
         }
 
@@ -903,5 +996,21 @@
             setTimeout(() => toast.remove(), 3000);
         }
     </script>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Custom Confirm Dialog -->
+    <div id="confirmDialog" class="confirm-dialog">
+        <div class="confirm-content">
+            <p id="confirmMessage">Ali ste prepričani?</p>
+            <div class="confirm-buttons">
+                <button class="btn btn-secondary" onclick="handleConfirm(false)">Prekliči</button>
+                <button class="btn btn-danger" id="confirmActionBtn" onclick="handleConfirm(true)">Potrdi</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
