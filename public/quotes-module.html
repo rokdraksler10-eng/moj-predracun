@@ -930,23 +930,23 @@
                 state.currentQuote = null;
                 state.selectedWorkItems = [];
                 state.selectedMaterials = [];
-            
-            // Reset form
-            document.getElementById('quote-id').value = '';
-            document.getElementById('quote-number').value = '';
-            document.getElementById('quote-status').value = 'draft';
-            document.getElementById('project-name').value = '';
-            document.getElementById('customer').value = '';
-            document.getElementById('address').value = '';
-            initializeDateFields();
-            
-            // Hide delete button for new quotes
-            document.getElementById('btn-delete').classList.add('hidden');
-            
-            renderWorkItems();
-            renderMaterials();
-            updateTotals();
-            switchTab('edit');
+                
+                // Reset form
+                document.getElementById('quote-id').value = '';
+                document.getElementById('quote-number').value = '';
+                document.getElementById('quote-status').value = 'draft';
+                document.getElementById('project-name').value = '';
+                document.getElementById('customer').value = '';
+                document.getElementById('address').value = '';
+                initializeDateFields();
+                
+                // Hide delete button for new quotes
+                document.getElementById('btn-delete').classList.add('hidden');
+                
+                renderWorkItems();
+                renderMaterials();
+                updateTotals();
+                switchTab('edit');
                 console.log('✅ createNewQuote() completed successfully');
             } catch (e) {
                 console.error('❌ Error in createNewQuote():', e);
