@@ -564,11 +564,21 @@
         // ============================================
         // INITIALIZATION
         // ============================================
+        
+        // Global error handler for debugging
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('🚨 Global Error:', msg, 'at line', line, 'in', url);
+            showToast('Napaka: ' + msg, 'error');
+            return false;
+        };
+        
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 quotes-module.html DOM loaded');
             initializeDateFields();
             loadQuotes();
             setupEventListeners();
             checkCalculatorTransfer(); // Check for data from calculator
+            console.log('✅ quotes-module initialized');
         });
 
         // Check if we have data transferred from calculator
@@ -915,9 +925,11 @@
         }
 
         function createNewQuote() {
-            state.currentQuote = null;
-            state.selectedWorkItems = [];
-            state.selectedMaterials = [];
+            console.log('🔘 createNewQuote() clicked');
+            try {
+                state.currentQuote = null;
+                state.selectedWorkItems = [];
+                state.selectedMaterials = [];
             
             // Reset form
             document.getElementById('quote-id').value = '';
@@ -935,6 +947,11 @@
             renderMaterials();
             updateTotals();
             switchTab('edit');
+                console.log('✅ createNewQuote() completed successfully');
+            } catch (e) {
+                console.error('❌ Error in createNewQuote():', e);
+                showToast('Napaka pri ustvarjanju predračuna: ' + e.message, 'error');
+            }
         }
 
         async function editQuote(id) {

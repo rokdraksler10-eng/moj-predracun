@@ -639,9 +639,18 @@
             }
         }
 
+        // Global error handler for debugging
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('🚨 Global Error:', msg, 'at line', line, 'in', url);
+            alert('Napaka: ' + msg + ' (vrstica ' + line + ')');
+            return false;
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('📄 workitems-module.html DOM loaded');
             loadWorkItems();
             setupEventListeners();
+            console.log('✅ workitems-module initialized');
         });
 
         function setupEventListeners() {
@@ -926,16 +935,23 @@
         }
 
         function openModal(item = null) {
-            editingId = item ? item.id : null;
-            document.getElementById('modalTitle').textContent = item ? 'Uredi postavko' : 'Nova postavka';
-            document.getElementById('itemId').value = item ? item.id : '';
-            document.getElementById('name').value = item ? item.name : '';
-            document.getElementById('category').value = item ? item.category : '';
-            document.getElementById('unit').value = item ? item.unit : '';
-            document.getElementById('price').value = item ? item.price : '';
-            difficultyFactors = item?.difficultyFactors || [];
-            renderDifficultyTags();
-            document.getElementById('modal').classList.add('active');
+            console.log('🔘 openModal() called, item:', item);
+            try {
+                editingId = item ? item.id : null;
+                document.getElementById('modalTitle').textContent = item ? 'Uredi postavko' : 'Nova postavka';
+                document.getElementById('itemId').value = item ? item.id : '';
+                document.getElementById('name').value = item ? item.name : '';
+                document.getElementById('category').value = item ? item.category : '';
+                document.getElementById('unit').value = item ? item.unit : '';
+                document.getElementById('price').value = item ? item.price : '';
+                difficultyFactors = item?.difficultyFactors || [];
+                renderDifficultyTags();
+                document.getElementById('modal').classList.add('active');
+                console.log('✅ openModal() completed');
+            } catch (e) {
+                console.error('❌ Error in openModal():', e);
+                alert('Napaka pri odpiranju: ' + e.message);
+            }
         }
 
         function closeModal() {
