@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predračuni - Quotes Module</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        .header { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .header h1 { color: #2563eb; margin-bottom: 10px; }
+        
+        /* Navigation Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; }
+        .tab { padding: 12px 24px; background: none; border: none; cursor: pointer; font-size: 14px; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab:hover { color: #2563eb; }
+        .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+        
+        /* Cards */
+        .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+        .card-header { padding: 16px 20px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-weight: 600; }
+        .card-body { padding: 20px; }
+        
+        /* Forms */
+        .form-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #374151; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #2563eb; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        
+        /* Buttons */
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: #2563eb; color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-success { background: #10b981; color: #fff; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; color: #fff; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #6b7280; color: #fff; }
+        .btn-secondary:hover { background: #4b5563; }
+        .btn-warning { background: #f59e0b; color: #fff; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-outline { background: transparent; border: 1px solid #d1d5db; color: #374151; }
+        .btn-outline:hover { background: #f3f4f6; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        
+        /* Tables */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background: #f9fafb; font-weight: 600; font-size: 12px; text-transform: uppercase; color: #6b7280; }
+        tr:hover { background: #f9fafb; }
+        .table-actions { display: flex; gap: 8px; }
+        
+        /* Search and Filters */
+        .filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .search-box { position: relative; flex: 1; min-width: 250px; }
+        .search-box input { width: 100%; padding: 10px 12px 10px 36px; border: 1px solid #d1d5db; border-radius: 6px; }
+        .search-box::before { content: "🔍"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); }
+        
+        /* Status badges */
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge-draft { background: #fef3c7; color: #92400e; }
+        .badge-sent { background: #dbeafe; color: #1e40af; }
+        .badge-accepted { background: #d1fae5; color: #065f46; }
+        .badge-rejected { background: #fee2e2; color: #991b1b; }
+        .badge-expired { background: #f3f4f6; color: #4b5563; }
+        
+        /* Quote Items */
+        .items-section { margin-top: 20px; }
+        .items-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .items-table { margin-bottom: 16px; }
+        .items-table th { background: #e0e7ff; color: #3730a3; }
+        .item-row td { vertical-align: middle; }
+        .item-row input { padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 4px; width: 100%; }
+        .item-row select { padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 4px; width: 100%; }
+        
+        /* Totals */
+        .totals { background: #f9fafb; padding: 16px 20px; border-radius: 6px; margin-top: 20px; }
+        .total-row { display: flex; justify-content: space-between; padding: 8px 0; }
+        .total-row.grand-total { font-size: 18px; font-weight: 700; color: #2563eb; border-top: 2px solid #e5e7eb; margin-top: 8px; padding-top: 16px; }
+        
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #fff; border-radius: 8px; width: 90%; max-width: 600px; max-height: 90vh; overflow: hidden; }
+        .modal-header { padding: 16px 20px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 20px; overflow-y: auto; max-height: 60vh; }
+        .modal-footer { padding: 16px 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px; }
+        
+        /* Empty state */
+        .empty-state { text-align: center; padding: 60px 20px; color: #6b7280; }
+        .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+        
+        /* Loading */
+        .loading { display: inline-block; width: 20px; height: 20px; border: 2px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Toast notifications */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1100; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 12px 20px; border-radius: 6px; color: #fff; font-weight: 500; animation: slideIn 0.3s ease; max-width: 400px; }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #3b82f6; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        /* Utility */
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mr-2 { margin-right: 8px; }
+        .hidden { display: none !important; }
+        
+        /* Print styles for PDF generation */
+        @media print {
+            body { background: #fff; }
+            .no-print { display: none !important; }
+            .card { box-shadow: none; border: 1px solid #ddd; }
+            .container { max-width: 100%; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📋 Sistem za upravljanje predračunov</h1>
+            <p>Ustvarjajte, upravljajte in sledite predračunom za vaše projekte</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="tabs no-print">
+            <button class="tab active" onclick="switchTab('list')" id="tab-list">Seznam predračunov</button>
+            <button class="tab" onclick="switchTab('edit')" id="tab-edit">Uredi predračun</button>
+        </div>
+
+        <!-- LIST VIEW -->
+        <div id="view-list">
+            <!-- Filters -->
+            <div class="card no-print">
+                <div class="card-body">
+                    <div class="filters">
+                        <div class="search-box">
+                            <input type="text" id="search-input" placeholder="Išči po nazivu, stranki ali številki..." oninput="handleSearch()">
+                        </div>
+                        <select id="status-filter" class="form-group" style="width: auto; min-width: 150px;" onchange="handleFilter()">
+                            <option value="">Vsi statusi</option>
+                            <option value="draft">Osnutek</option>
+                            <option value="sent">Poslano</option>
+                            <option value="accepted">Sprejeto</option>
+                            <option value="rejected">Zavrnjeno</option>
+                            <option value="expired">Poteklo</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="createNewQuote()">
+                            <span>+</span> Nov predračun
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quotes Table -->
+            <div class="card">
+                <div class="card-header">Predračuni</div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table id="quotes-table">
+                            <thead>
+                                <tr>
+                                    <th>Številka</th>
+                                    <th>Naziv projekta</th>
+                                    <th>Stranka</th>
+                                    <th>Datum</th>
+                                    <th>Znesek</th>
+                                    <th>Status</th>
+                                    <th class="no-print">Akcije</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quotes-tbody">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="quotes-empty" class="empty-state hidden">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>Ni najdenih predračunov</h3>
+                        <p>Ustvarite nov predračun za začetek</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDIT VIEW -->
+        <div id="view-edit" class="hidden">
+            <!-- Quote Header Form -->
+            <div class="card">
+                <div class="card-header">Podatki o predračunu</div>
+                <div class="card-body">
+                    <form id="quote-form">
+                        <input type="hidden" id="quote-id">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="quote-number">Številka predračuna</label>
+                                <input type="text" id="quote-number" readonly placeholder="Samodejno generirano">
+                            </div>
+                            <div class="form-group">
+                                <label for="quote-status">Status</label>
+                                <select id="quote-status">
+                                    <option value="draft">Osnutek</option>
+                                    <option value="sent">Poslano</option>
+                                    <option value="accepted">Sprejeto</option>
+                                    <option value="rejected">Zavrnjeno</option>
+                                    <option value="expired">Poteklo</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="quote-date">Datum</label>
+                                <input type="date" id="quote-date" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label for="project-name">Naziv projekta *</label>
+                                <input type="text" id="project-name" required placeholder="Vnesite naziv projekta">
+                            </div>
+                            <div class="form-group" style="flex: 2;">
+                                <label for="customer">Stranka *</label>
+                                <input type="text" id="customer" required placeholder="Ime stranke ali podjetja">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 3;">
+                                <label for="address">Naslov</label>
+                                <textarea id="address" rows="2" placeholder="Naslov stranke"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="valid-until">Veljavno do</label>
+                                <input type="date" id="valid-until">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Work Items Section -->
+            <div class="card">
+                <div class="card-header" style="background: #e0e7ff; color: #3730a3;">Postavke dela</div>
+                <div class="card-body">
+                    <div class="items-header no-print">
+                        <h3>Izbrane postavke</h3>
+                        <button class="btn btn-primary btn-sm" onclick="openWorkItemModal()">+ Dodaj postavko</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="items-table" id="work-items-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%;">Naziv postavke</th>
+                                    <th style="width: 15%;">Enota</th>
+                                    <th style="width: 15%;">Količina</th>
+                                    <th style="width: 15%;">Cena/enota</th>
+                                    <th style="width: 15%;">Znesek</th>
+                                    <th class="no-print" style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="work-items-tbody">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="work-items-empty" class="empty-state">
+                        <div class="empty-state-icon">🔧</div>
+                        <p>Ni dodanih postavk dela</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Materials Section -->
+            <div class="card">
+                <div class="card-header" style="background: #fce7f3; color: #9d174d;">Materiali</div>
+                <div class="card-body">
+                    <div class="items-header no-print">
+                        <h3>Izbrani materiali</h3>
+                        <button class="btn btn-warning btn-sm" onclick="openMaterialModal()">+ Dodaj material</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="items-table" id="materials-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%;">Naziv materiala</th>
+                                    <th style="width: 15%;">Enota</th>
+                                    <th style="width: 15%;">Količina</th>
+                                    <th style="width: 15%;">Cena/enota</th>
+                                    <th style="width: 15%;">Znesek</th>
+                                    <th class="no-print" style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="materials-tbody">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="materials-empty" class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <p>Ni dodanih materialov</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Totals and Actions -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="totals">
+                        <div class="total-row">
+                            <span>Postavke dela:</span>
+                            <span id="total-work">0,00 €</span>
+                        </div>
+                        <div class="total-row">
+                            <span>Materiali:</span>
+                            <span id="total-materials">0,00 €</span>
+                        </div>
+                        <div class="total-row">
+                            <span>Osnova za DDV:</span>
+                            <span id="subtotal">0,00 €</span>
+                        </div>
+                        <div class="total-row">
+                            <span>DDV (22%):</span>
+                            <span id="vat-amount">0,00 €</span>
+                        </div>
+                        <div class="total-row grand-total">
+                            <span>SKUPAJ:</span>
+                            <span id="grand-total">0,00 €</span>
+                        </div>
+                    </div>
+
+                    <div class="form-row no-print" style="margin-top: 20px; justify-content: flex-end;">
+                        <button class="btn btn-outline" onclick="cancelEdit()">Prekliči</button>
+                        <button class="btn btn-secondary" onclick="saveQuote('draft')">Shrani osnutek</button>
+                        <button class="btn btn-success" onclick="saveQuote('sent')">Shrani in pošlji</button>
+                        <button class="btn btn-primary" onclick="generatePDF()">📄 Generiraj PDF</button>
+                        <button class="btn btn-danger" onclick="deleteCurrentQuote()" id="btn-delete">🗑️ Izbriši</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Item Modal -->
+    <div class="modal-overlay" id="work-item-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Dodaj postavko dela</h3>
+                <button class="btn btn-sm btn-outline" onclick="closeModal('work-item-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-4">
+                    <label>Izberi postavko</label>
+                    <select id="work-item-select" class="mb-2">
+                        <option value="">-- Izberite postavko --</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline" onclick="loadWorkItems()">🔄 Osveži seznam</button>
+                </div>
+                <div id="work-item-details" class="hidden">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Naziv</label>
+                            <input type="text" id="wi-name" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Enota</label>
+                            <input type="text" id="wi-unit" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cena na enoto (€)</label>
+                            <input type="number" id="wi-price" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Količina</label>
+                            <input type="number" id="wi-quantity" step="0.01" min="0" value="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('work-item-modal')">Prekliči</button>
+                <button class="btn btn-primary" onclick="addWorkItem()" id="btn-add-work" disabled>Dodaj</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Material Modal -->
+    <div class="modal-overlay" id="material-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Dodaj material</h3>
+                <button class="btn btn-sm btn-outline" onclick="closeModal('material-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-4">
+                    <label>Izberi material</label>
+                    <select id="material-select" class="mb-2">
+                        <option value="">-- Izberite material --</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline" onclick="loadMaterials()">🔄 Osveži seznam</button>
+                </div>
+                <div id="material-details" class="hidden">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Naziv</label>
+                            <input type="text" id="mat-name" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Enota</label>
+                            <input type="text" id="mat-unit" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cena na enoto (€)</label>
+                            <input type="number" id="mat-price" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Količina</label>
+                            <input type="number" id="mat-quantity" step="0.01" min="0" value="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('material-modal')">Prekliči</button>
+                <button class="btn btn-primary" onclick="addMaterial()" id="btn-add-mat" disabled>Dodaj</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // ============================================
+        // STATE MANAGEMENT
+        // ============================================
+        const state = {
+            quotes: [],
+            workItems: [],
+            materials: [],
+            currentQuote: null,
+            selectedWorkItems: [],
+            selectedMaterials: [],
+            filter: {
+                search: '',
+                status: ''
+            }
+        };
+
+        const VAT_RATE = 0.22; // 22% DDV
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDateFields();
+            loadQuotes();
+            setupEventListeners();
+        });
+
+        function initializeDateFields() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('quote-date').value = today;
+            
+            const nextMonth = new Date();
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            document.getElementById('valid-until').value = nextMonth.toISOString().split('T')[0];
+        }
+
+        function setupEventListeners() {
+            // Work item selection
+            document.getElementById('work-item-select').addEventListener('change', function() {
+                const selectedId = this.value;
+                if (selectedId) {
+                    const item = state.workItems.find(wi => wi.id == selectedId);
+                    if (item) {
+                        document.getElementById('wi-name').value = item.name;
+                        document.getElementById('wi-unit').value = item.unit || 'kos';
+                        document.getElementById('wi-price').value = item.price || 0;
+                        document.getElementById('work-item-details').classList.remove('hidden');
+                        document.getElementById('btn-add-work').disabled = false;
+                    }
+                } else {
+                    document.getElementById('work-item-details').classList.add('hidden');
+                    document.getElementById('btn-add-work').disabled = true;
+                }
+            });
+
+            // Material selection
+            document.getElementById('material-select').addEventListener('change', function() {
+                const selectedId = this.value;
+                if (selectedId) {
+                    const item = state.materials.find(m => m.id == selectedId);
+                    if (item) {
+                        document.getElementById('mat-name').value = item.name;
+                        document.getElementById('mat-unit').value = item.unit || 'kos';
+                        document.getElementById('mat-price').value = item.price || 0;
+                        document.getElementById('material-details').classList.remove('hidden');
+                        document.getElementById('btn-add-mat').disabled = false;
+                    }
+                } else {
+                    document.getElementById('material-details').classList.add('hidden');
+                    document.getElementById('btn-add-mat').disabled = true;
+                }
+            });
+        }
+
+        // ============================================
+        // API FUNCTIONS
+        // ============================================
+        async function apiCall(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                showToast('Napaka pri komunikaciji s strežnikom: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        async function loadQuotes() {
+            try {
+                const data = await apiCall('/api/quotes');
+                state.quotes = data.quotes || data || [];
+                renderQuotesList();
+            } catch (error) {
+                // Fallback: show empty list
+                state.quotes = [];
+                renderQuotesList();
+            }
+        }
+
+        async function loadWorkItems() {
+            try {
+                const data = await apiCall('/api/work-items');
+                state.workItems = data.workItems || data || [];
+                populateWorkItemSelect();
+                showToast('Seznam postavk osvežen', 'success');
+            } catch (error) {
+                // Fallback demo data
+                state.workItems = [
+                    { id: 1, name: 'Montaža oken', unit: 'm²', price: 45.00 },
+                    { id: 2, name: 'Montaža vrat', unit: 'kos', price: 120.00 },
+                    { id: 3, name: 'Demontaža', unit: 'ura', price: 35.00 },
+                    { id: 4, name: 'Prevoz', unit: 'km', price: 0.80 },
+                    { id: 5, name: 'Čiščenje', unit: 'ura', price: 25.00 }
+                ];
+                populateWorkItemSelect();
+            }
+        }
+
+        async function loadMaterials() {
+            try {
+                const data = await apiCall('/api/materials');
+                state.materials = data.materials || data || [];
+                populateMaterialSelect();
+                showToast('Seznam materialov osvežen', 'success');
+            } catch (error) {
+                // Fallback demo data
+                state.materials = [
+                    { id: 1, name: 'PVC okno 100x100', unit: 'kos', price: 250.00 },
+                    { id: 2, name: 'PVC okno 120x120', unit: 'kos', price: 320.00 },
+                    { id: 3, name: 'Vhodna vrata', unit: 'kos', price: 450.00 },
+                    { id: 4, name: 'Silikon prozoren', unit: 'tube', price: 8.50 },
+                    { id: 5, name: 'Montažna pena', unit: 'kos', price: 12.00 }
+                ];
+                populateMaterialSelect();
+            }
+        }
+
+        async function loadQuoteById(id) {
+            try {
+                const data = await apiCall(`/api/quotes/${id}`);
+                return data.quote || data;
+            } catch (error) {
+                // Fallback: find in local array
+                return state.quotes.find(q => q.id == id);
+            }
+        }
+
+        async function saveQuoteToAPI(quoteData) {
+            const options = {
+                method: 'POST',
+                body: JSON.stringify(quoteData)
+            };
+            return await apiCall('/api/quotes', options);
+        }
+
+        async function deleteQuoteFromAPI(id) {
+            const options = {
+                method: 'DELETE'
+            };
+            return await apiCall(`/api/quotes/${id}`, options);
+        }
+
+        // ============================================
+        // UI RENDERING
+        // ============================================
+        function renderQuotesList() {
+            const tbody = document.getElementById('quotes-tbody');
+            const emptyState = document.getElementById('quotes-empty');
+            
+            // Filter quotes
+            let filtered = state.quotes.filter(q => {
+                const matchesSearch = !state.filter.search || 
+                    (q.projectName && q.projectName.toLowerCase().includes(state.filter.search.toLowerCase())) ||
+                    (q.customer && q.customer.toLowerCase().includes(state.filter.search.toLowerCase())) ||
+                    (q.quoteNumber && q.quoteNumber.toLowerCase().includes(state.filter.search.toLowerCase()));
+                
+                const matchesStatus = !state.filter.status || q.status === state.filter.status;
+                
+                return matchesSearch && matchesStatus;
+            });
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            tbody.innerHTML = filtered.map(quote => {
+                const statusClass = getStatusBadgeClass(quote.status);
+                const statusText = getStatusText(quote.status);
+                const total = formatCurrency(quote.totalAmount || calculateQuoteTotal(quote));
+                
+                return `
+                    <tr>
+                        <td>${quote.quoteNumber || '-'}</td>
+                        <td>${escapeHtml(quote.projectName || '')}</td>
+                        <td>${escapeHtml(quote.customer || '')}</td>
+                        <td>${formatDate(quote.date)}</td>
+                        <td class="text-right">${total}</td>
+                        <td><span class="badge ${statusClass}">${statusText}</span></td>
+                        <td class="no-print table-actions">
+                            <button class="btn btn-sm btn-primary" onclick="editQuote(${quote.id})">✏️ Uredi</button>
+                            <button class="btn btn-sm btn-outline" onclick="viewQuote(${quote.id})">👁️ Poglej</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteQuote(${quote.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderWorkItems() {
+            const tbody = document.getElementById('work-items-tbody');
+            const emptyState = document.getElementById('work-items-empty');
+            const table = document.getElementById('work-items-table');
+            
+            if (state.selectedWorkItems.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                table.classList.add('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            table.classList.remove('hidden');
+            
+            tbody.innerHTML = state.selectedWorkItems.map((item, index) => `
+                <tr class="item-row">
+                    <td><input type="text" value="${escapeHtml(item.name)}" onchange="updateWorkItem(${index}, 'name', this.value)"></td>
+                    <td><input type="text" value="${escapeHtml(item.unit)}" onchange="updateWorkItem(${index}, 'unit', this.value)"></td>
+                    <td><input type="number" value="${item.quantity}" step="0.01" min="0" onchange="updateWorkItem(${index}, 'quantity', parseFloat(this.value) || 0)"></td>
+                    <td><input type="number" value="${item.price}" step="0.01" min="0" onchange="updateWorkItem(${index}, 'price', parseFloat(this.value) || 0)"></td>
+                    <td class="text-right">${formatCurrency(item.quantity * item.price)}</td>
+                    <td class="no-print"><button class="btn btn-sm btn-danger" onclick="removeWorkItem(${index})">✕</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderMaterials() {
+            const tbody = document.getElementById('materials-tbody');
+            const emptyState = document.getElementById('materials-empty');
+            const table = document.getElementById('materials-table');
+            
+            if (state.selectedMaterials.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                table.classList.add('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            table.classList.remove('hidden');
+            
+            tbody.innerHTML = state.selectedMaterials.map((item, index) => `
+                <tr class="item-row">
+                    <td><input type="text" value="${escapeHtml(item.name)}" onchange="updateMaterial(${index}, 'name', this.value)"></td>
+                    <td><input type="text" value="${escapeHtml(item.unit)}" onchange="updateMaterial(${index}, 'unit', this.value)"></td>
+                    <td><input type="number" value="${item.quantity}" step="0.01" min="0" onchange="updateMaterial(${index}, 'quantity', parseFloat(this.value) || 0)"></td>
+                    <td><input type="number" value="${item.price}" step="0.01" min="0" onchange="updateMaterial(${index}, 'price', parseFloat(this.value) || 0)"></td>
+                    <td class="text-right">${formatCurrency(item.quantity * item.price)}</td>
+                    <td class="no-print"><button class="btn btn-sm btn-danger" onclick="removeMaterial(${index})">✕</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function updateTotals() {
+            const workTotal = state.selectedWorkItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const materialsTotal = state.selectedMaterials.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const subtotal = workTotal + materialsTotal;
+            const vatAmount = subtotal * VAT_RATE;
+            const grandTotal = subtotal + vatAmount;
+            
+            document.getElementById('total-work').textContent = formatCurrency(workTotal);
+            document.getElementById('total-materials').textContent = formatCurrency(materialsTotal);
+            document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+            document.getElementById('vat-amount').textContent = formatCurrency(vatAmount);
+            document.getElementById('grand-total').textContent = formatCurrency(grandTotal);
+        }
+
+        function populateWorkItemSelect() {
+            const select = document.getElementById('work-item-select');
+            select.innerHTML = '<option value="">-- Izberite postavko --</option>' +
+                state.workItems.map(item => `<option value="${item.id}">${escapeHtml(item.name)} (${formatCurrency(item.price)}/${item.unit || 'kos'})</option>`).join('');
+        }
+
+        function populateMaterialSelect() {
+            const select = document.getElementById('material-select');
+            select.innerHTML = '<option value="">-- Izberite material --</option>' +
+                state.materials.map(item => `<option value="${item.id}">${escapeHtml(item.name)} (${formatCurrency(item.price)}/${item.unit || 'kos'})</option>`).join('');
+        }
+
+        // ============================================
+        // NAVIGATION & ACTIONS
+        // ============================================
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            
+            if (tab === 'list') {
+                document.getElementById('view-list').classList.remove('hidden');
+                document.getElementById('view-edit').classList.add('hidden');
+                loadQuotes();
+            } else {
+                document.getElementById('view-list').classList.add('hidden');
+                document.getElementById('view-edit').classList.remove('hidden');
+            }
+        }
+
+        function createNewQuote() {
+            state.currentQuote = null;
+            state.selectedWorkItems = [];
+            state.selectedMaterials = [];
+            
+            // Reset form
+            document.getElementById('quote-id').value = '';
+            document.getElementById('quote-number').value = '';
+            document.getElementById('quote-status').value = 'draft';
+            document.getElementById('project-name').value = '';
+            document.getElementById('customer').value = '';
+            document.getElementById('address').value = '';
+            initializeDateFields();
+            
+            // Hide delete button for new quotes
+            document.getElementById('btn-delete').classList.add('hidden');
+            
+            renderWorkItems();
+            renderMaterials();
+            updateTotals();
+            switchTab('edit');
+        }
+
+        async function editQuote(id) {
+            const quote = await loadQuoteById(id);
+            if (!quote) {
+                showToast('Predračun ni bil najden', 'error');
+                return;
+            }
+            
+            state.currentQuote = quote;
+            state.selectedWorkItems = quote.workItems || [];
+            state.selectedMaterials = quote.materials || [];
+            
+            // Fill form
+            document.getElementById('quote-id').value = quote.id;
+            document.getElementById('quote-number').value = quote.quoteNumber || '';
+            document.getElementById('quote-status').value = quote.status || 'draft';
+            document.getElementById('quote-date').value = quote.date ? quote.date.split('T')[0] : '';
+            document.getElementById('project-name').value = quote.projectName || '';
+            document.getElementById('customer').value = quote.customer || '';
+            document.getElementById('address').value = quote.address || '';
+            document.getElementById('valid-until').value = quote.validUntil ? quote.validUntil.split('T')[0] : '';
+            
+            // Show delete button for existing quotes
+            document.getElementById('btn-delete').classList.remove('hidden');
+            
+            renderWorkItems();
+            renderMaterials();
+            updateTotals();
+            switchTab('edit');
+        }
+
+        function viewQuote(id) {
+            editQuote(id);
+        }
+
+        function cancelEdit() {
+            if (confirm('Ali ste prepričani, da želite preklicati? Neshranjene spremembe bodo izgubljene.')) {
+                switchTab('list');
+            }
+        }
+
+        // ============================================
+        // ITEM MANAGEMENT
+        // ============================================
+        function openWorkItemModal() {
+            loadWorkItems();
+            document.getElementById('work-item-select').value = '';
+            document.getElementById('work-item-details').classList.add('hidden');
+            document.getElementById('btn-add-work').disabled = true;
+            openModal('work-item-modal');
+        }
+
+        function openMaterialModal() {
+            loadMaterials();
+            document.getElementById('material-select').value = '';
+            document.getElementById('material-details').classList.add('hidden');
+            document.getElementById('btn-add-mat').disabled = true;
+            openModal('material-modal');
+        }
+
+        function addWorkItem() {
+            const name = document.getElementById('wi-name').value;
+            const unit = document.getElementById('wi-unit').value;
+            const price = parseFloat(document.getElementById('wi-price').value) || 0;
+            const quantity = parseFloat(document.getElementById('wi-quantity').value) || 1;
+            
+            if (!name) {
+                showToast('Izberite postavko', 'error');
+                return;
+            }
+            
+            state.selectedWorkItems.push({ name, unit, price, quantity });
+            renderWorkItems();
+            updateTotals();
+            closeModal('work-item-modal');
+            showToast('Postavka dodana', 'success');
+        }
+
+        function addMaterial() {
+            const name = document.getElementById('mat-name').value;
+            const unit = document.getElementById('mat-unit').value;
+            const price = parseFloat(document.getElementById('mat-price').value) || 0;
+            const quantity = parseFloat(document.getElementById('mat-quantity').value) || 1;
+            
+            if (!name) {
+                showToast('Izberite material', 'error');
+                return;
+            }
+            
+            state.selectedMaterials.push({ name, unit, price, quantity });
+            renderMaterials();
+            updateTotals();
+            closeModal('material-modal');
+            showToast('Material dodan', 'success');
+        }
+
+        function updateWorkItem(index, field, value) {
+            state.selectedWorkItems[index][field] = value;
+            renderWorkItems();
+            updateTotals();
+        }
+
+        function updateMaterial(index, field, value) {
+            state.selectedMaterials[index][field] = value;
+            renderMaterials();
+            updateTotals();
+        }
+
+        function removeWorkItem(index) {
+            state.selectedWorkItems.splice(index, 1);
+            renderWorkItems();
+            updateTotals();
+        }
+
+        function removeMaterial(index) {
+            state.selectedMaterials.splice(index, 1);
+            renderMaterials();
+            updateTotals();
+        }
+
+        // ============================================
+        // SAVE & DELETE
+        // ============================================
+        async function saveQuote(status) {
+            // Validate
+            const projectName = document.getElementById('project-name').value.trim();
+            const customer = document.getElementById('customer').value.trim();
+            
+            if (!projectName) {
+                showToast('Vnesite naziv projekta', 'error');
+                document.getElementById('project-name').focus();
+                return;
+            }
+            
+            if (!customer) {
+                showToast('Vnesite stranko', 'error');
+                document.getElementById('customer').focus();
+                return;
+            }
+            
+            const quoteData = {
+                id: state.currentQuote ? state.currentQuote.id : null,
+                quoteNumber: document.getElementById('quote-number').value,
+                projectName: projectName,
+                customer: customer,
+                address: document.getElementById('address').value,
+                date: document.getElementById('quote-date').value,
+                validUntil: document.getElementById('valid-until').value,
+                status: status || document.getElementById('quote-status').value,
+                workItems: state.selectedWorkItems,
+                materials: state.selectedMaterials,
+                totalAmount: calculateGrandTotal()
+            };
+            
+            try {
+                const result = await saveQuoteToAPI(quoteData);
+                showToast('Predračun uspešno shranjen!', 'success');
+                
+                // Update local state
+                if (state.currentQuote) {
+                    const index = state.quotes.findIndex(q => q.id === state.currentQuote.id);
+                    if (index >= 0) {
+                        state.quotes[index] = { ...state.quotes[index], ...quoteData, id: state.currentQuote.id };
+                    }
+                } else {
+                    const newId = result.id || Date.now();
+                    state.quotes.push({ ...quoteData, id: newId });
+                    state.currentQuote = { ...quoteData, id: newId };
+                    document.getElementById('quote-id').value = newId;
+                }
+                
+                // Show delete button after save
+                document.getElementById('btn-delete').classList.remove('hidden');
+                
+            } catch (error) {
+                // Fallback: save locally
+                if (!state.currentQuote) {
+                    const newId = Date.now();
+                    state.currentQuote = { ...quoteData, id: newId };
+                    state.quotes.push(state.currentQuote);
+                    document.getElementById('quote-id').value = newId;
+                    document.getElementById('quote-number').value = 'Q-' + newId;
+                } else {
+                    const index = state.quotes.findIndex(q => q.id === state.currentQuote.id);
+                    if (index >= 0) {
+                        state.quotes[index] = { ...quoteData, id: state.currentQuote.id };
+                    }
+                }
+                showToast('Predračun shranjen (lokalno)', 'info');
+                document.getElementById('btn-delete').classList.remove('hidden');
+            }
+        }
+
+        async function deleteQuote(id) {
+            if (!confirm('Ali ste prepričani, da želite izbrisati ta predračun?')) {
+                return;
+            }
+            
+            try {
+                await deleteQuoteFromAPI(id);
+                state.quotes = state.quotes.filter(q => q.id != id);
+                renderQuotesList();
+                showToast('Predračun izbrisan', 'success');
+            } catch (error) {
+                // Fallback: delete locally
+                state.quotes = state.quotes.filter(q => q.id != id);
+                renderQuotesList();
+                showToast('Predračun izbrisan (lokalno)', 'info');
+            }
+        }
+
+        function deleteCurrentQuote() {
+            const id = document.getElementById('quote-id').value;
+            if (id) {
+                deleteQuote(id);
+                switchTab('list');
+            }
+        }
+
+        // ============================================
+        // FILTERS & SEARCH
+        // ============================================
+        function handleSearch() {
+            state.filter.search = document.getElementById('search-input').value;
+            renderQuotesList();
+        }
+
+        function handleFilter() {
+            state.filter.status = document.getElementById('status-filter').value;
+            renderQuotesList();
+        }
+
+        // ============================================
+        // PDF GENERATION
+        // ============================================
+        function generatePDF() {
+            // Create a print-friendly view
+            const printWindow = window.open('', '_blank');
+            
+            const workItemsHtml = state.selectedWorkItems.length > 0 ? `
+                <h3>Postavke dela</h3>
+                <table class="print-table">
+                    <thead>
+                        <tr><th>Naziv</th><th>Enota</th><th>Količina</th><th>Cena</th><th>Znesek</th></tr>
+                    </thead>
+                    <tbody>
+                        ${state.selectedWorkItems.map(item => `
+                            <tr>
+                                <td>${escapeHtml(item.name)}</td>
+                                <td>${escapeHtml(item.unit)}</td>
+                                <td>${item.quantity}</td>
+                                <td class="text-right">${formatCurrency(item.price)}</td>
+                                <td class="text-right">${formatCurrency(item.quantity * item.price)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            ` : '';
+            
+            const materialsHtml = state.selectedMaterials.length > 0 ? `
+                <h3>Materiali</h3>
+                <table class="print-table">
+                    <thead>
+                        <tr><th>Naziv</th><th>Enota</th><th>Količina</th><th>Cena</th><th>Znesek</th></tr>
+                    </thead>
+                    <tbody>
+                        ${state.selectedMaterials.map(item => `
+                            <tr>
+                                <td>${escapeHtml(item.name)}</td>
+                                <td>${escapeHtml(item.unit)}</td>
+                                <td>${item.quantity}</td>
+                                <td class="text-right">${formatCurrency(item.price)}</td>
+                                <td class="text-right">${formatCurrency(item.quantity * item.price)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            ` : '';
+            
+            const workTotal = state.selectedWorkItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const materialsTotal = state.selectedMaterials.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const subtotal = workTotal + materialsTotal;
+            const vatAmount = subtotal * VAT_RATE;
+            const grandTotal = subtotal + vatAmount;
+            
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Predračun ${document.getElementById('quote-number').value}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+                        h1 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+                        h2 { color: #333; margin-top: 30px; }
+                        h3 { color: #666; margin-top: 20px; font-size: 14px; text-transform: uppercase; }
+                        .header-info { display: flex; justify-content: space-between; margin: 20px 0; }
+                        .header-info div { line-height: 1.8; }
+                        .print-table { width: 100%; border-collapse: collapse; margin: 10px 0 20px; }
+                        .print-table th, .print-table td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+                        .print-table th { background: #f5f5f5; font-weight: bold; }
+                        .text-right { text-align: right; }
+                        .totals { margin-top: 30px; border-top: 2px solid #333; padding-top: 20px; }
+                        .total-row { display: flex; justify-content: space-between; padding: 5px 0; }
+                        .grand-total { font-size: 18px; font-weight: bold; color: #2563eb; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; }
+                        .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }
+                        @media print {
+                            body { padding: 0; }
+                            .no-print { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>PREDRAČUN</h1>
+                    
+                    <div class="header-info">
+                        <div>
+                            <strong>Številka:</strong> ${document.getElementById('quote-number').value || '-'}<br>
+                            <strong>Datum:</strong> ${formatDate(document.getElementById('quote-date').value)}<br>
+                            <strong>Veljavno do:</strong> ${formatDate(document.getElementById('valid-until').value)}
+                        </div>
+                        <div style="text-align: right;">
+                            <strong>Status:</strong> ${getStatusText(document.getElementById('quote-status').value)}
+                        </div>
+                    </div>
+                    
+                    <div class="header-info">
+                        <div>
+                            <h2>Projekt</h2>
+                            <strong>${escapeHtml(document.getElementById('project-name').value)}</strong><br>
+                            ${escapeHtml(document.getElementById('address').value).replace(/\n/g, '<br>')}
+                        </div>
+                        <div>
+                            <h2>Stranka</h2>
+                            <strong>${escapeHtml(document.getElementById('customer').value)}</strong>
+                        </div>
+                    </div>
+                    
+                    ${workItemsHtml}
+                    ${materialsHtml}
+                    
+                    <div class="totals">
+                        <div class="total-row"><span>Postavke dela:</span><span>${formatCurrency(workTotal)}</span></div>
+                        <div class="total-row"><span>Materiali:</span><span>${formatCurrency(materialsTotal)}</span></div>
+                        <div class="total-row"><span>Osnova za DDV:</span><span>${formatCurrency(subtotal)}</span></div>
+                        <div class="total-row"><span>DDV (22%):</span><span>${formatCurrency(vatAmount)}</span></div>
+                        <div class="total-row grand-total"><span>SKUPAJ:</span><span>${formatCurrency(grandTotal)}</span></div>
+                    </div>
+                    
+                    <div class="footer">
+                        <p>Ta predračun je informativne narave in ne predstavlja nobene obveznosti.</p>
+                        <p>Za potrditev naročila prosimo kontaktirajte našo službo.</p>
+                    </div>
+                    
+                    <div class="no-print" style="margin-top: 40px; text-align: center;">
+                        <button onclick="window.print()" style="padding: 10px 30px; font-size: 16px; cursor: pointer;">🖨️ Natisni / Shrani kot PDF</button>
+                    </div>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            showToast('PDF pripravljen za tiskanje', 'success');
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function calculateQuoteTotal(quote) {
+            if (!quote) return 0;
+            const workTotal = (quote.workItems || []).reduce((sum, item) => sum + ((item.quantity || 0) * (item.price || 0)), 0);
+            const materialsTotal = (quote.materials || []).reduce((sum, item) => sum + ((item.quantity || 0) * (item.price || 0)), 0);
+            return (workTotal + materialsTotal) * (1 + VAT_RATE);
+        }
+
+        function calculateGrandTotal() {
+            const workTotal = state.selectedWorkItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const materialsTotal = state.selectedMaterials.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            return (workTotal + materialsTotal) * (1 + VAT_RATE);
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('sl-SI', { style: 'currency', currency: 'EUR' }).format(amount || 0);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('sl-SI');
+        }
+
+        function getStatusBadgeClass(status) {
+            const classes = {
+                'draft': 'badge-draft',
+                'sent': 'badge-sent',
+                'accepted': 'badge-accepted',
+                'rejected': 'badge-rejected',
+                'expired': 'badge-expired'
+            };
+            return classes[status] || 'badge-draft';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'draft': 'Osnutek',
+                'sent': 'Poslano',
+                'accepted': 'Sprejeto',
+                'rejected': 'Zavrnjeno',
+                'expired': 'Poteklo'
+            };
+            return texts[status] || status;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

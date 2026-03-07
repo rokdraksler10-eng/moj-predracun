@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mojstrski Kalkulator - Terenski Pomočnik</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 2rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .header p { opacity: 0.9; }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .card-title {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .icon { font-size: 1.5rem; }
+        .form-group { margin-bottom: 15px; }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        input[type="number"], select, input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input[type="number"]:focus, select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; }
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
+        .btn-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(17, 153, 142, 0.4); }
+        .btn-danger { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); color: white; padding: 8px 16px; font-size: 0.85rem; }
+        .btn-secondary { background: #f0f0f0; color: #333; }
+        .btn-secondary:hover { background: #e0e0e0; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+        .result-box {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .result-value { font-size: 2rem; font-weight: 700; color: #667eea; }
+        .result-label { color: #666; font-size: 0.9rem; margin-top: 5px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn {
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .tab-btn.active { background: #667eea; color: white; border-color: #667eea; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .measurement-list { max-height: 400px; overflow-y: auto; }
+        .measurement-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+        }
+        .measurement-info { flex: 1; }
+        .measurement-name { font-weight: 600; color: #333; margin-bottom: 4px; }
+        .measurement-details { font-size: 0.85rem; color: #666; }
+        .measurement-value { font-size: 1.2rem; font-weight: 700; color: #667eea; margin-right: 15px; }
+        .total-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 16px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .total-value { font-size: 2.5rem; font-weight: 700; }
+        .total-label { font-size: 1rem; opacity: 0.9; margin-top: 5px; }
+        .quick-calc { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
+        .quick-btn {
+            padding: 10px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        .quick-btn:hover { background: #667eea; color: white; }
+        .empty-state { text-align: center; padding: 40px; color: #999; }
+        .empty-state-icon { font-size: 3rem; margin-bottom: 10px; }
+        .copy-btn {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+        .copy-btn:hover { background: #667eea; color: white; }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #38ef7d;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            transform: translateX(150%);
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+        .notification.show { transform: translateX(0); }
+        .notification.error { background: #eb3349; }
+        .paint-coverage { background: #e3f2fd; padding: 15px; border-radius: 10px; margin-top: 15px; }
+        @media (max-width: 600px) {
+            .row { grid-template-columns: 1fr; }
+            .quick-calc { grid-template-columns: 1fr; }
+            .measurement-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .btn-group { flex-direction: column; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Mojstrski Kalkulator</h1>
+            <p>Vaš terenski pomočnik za hitre izračune</p>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">📐</span>
+                Izračun
+            </div>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('surface')">Površina</button>
+                <button class="tab-btn" onclick="switchTab('walls')">Stene</button>
+                <button class="tab-btn" onclick="switchTab('volume')">Prostornina</button>
+            </div>
+            
+            <div id="tab-surface" class="tab-content active">
+                <div class="row">
+                    <div class="form-group">
+                        <label>Dolžina (m)</label>
+                        <input type="number" id="surf-length" step="0.01" placeholder="npr. 5.2" oninput="calcSurface()">
+                    </div>
+                    <div class="form-group">
+                        <label>Širina (m)</label>
+                        <input type="number" id="surf-width" step="0.01" placeholder="npr. 4.0" oninput="calcSurface()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Ime meritve (opcijsko)</label>
+                    <input type="text" id="surf-name" placeholder="npr. Dnevna soba">
+                </div>
+                <div class="result-box">
+                    <div class="result-value" id="surf-result">0 m²</div>
+                    <div class="result-label">Površina</div>
+                </div>
+                <div class="paint-coverage">
+                    <label>🎨 Ocena porabe materiala</label>
+                    <div class="row" style="margin-top: 10px;">
+                        <div class="form-group">
+                            <label>Pokrivnost (m²/L)</label>
+                            <input type="number" id="surf-coverage" step="0.1" value="10" oninput="calcSurface()">
+                        </div>
+                        <div class="form-group">
+                            <label>Število slojev</label>
+                            <input type="number" id="surf-layers" value="2" min="1" oninput="calcSurface()">
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; font-weight: 600; color: #667eea;">
+                        Potrebno litrov: <span id="surf-liters">0</span> L
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="addMeasurement('surface')">➕ Dodaj v seznam</button>
+                    <button class="copy-btn" onclick="copyResult('surface')">📋 Kopiraj rezultat</button>
+                </div>
+            </div>
+            
+            <div id="tab-walls" class="tab-content">
+                <div class="row">
+                    <div class="form-group">
+                        <label>Dolžina A (m)</label>
+                        <input type="number" id="wall-a" step="0.01" placeholder="npr. 5.0" oninput="calcWalls()">
+                    </div>
+                    <div class="form-group">
+                        <label>Dolžina B (m)</label>
+                        <input type="number" id="wall-b" step="0.01" placeholder="npr. 4.0" oninput="calcWalls()">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Višina (m)</label>
+                        <input type="number" id="wall-height" step="0.01" placeholder="npr. 2.7" oninput="calcWalls()">
+                    </div>
+                    <div class="form-group">
+                        <label>Odštej okna/vrata (m²)</label>
+                        <input type="number" id="wall-deduct" step="0.01" value="0" oninput="calcWalls()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Ime prostora (opcijsko)</label>
+                    <input type="text" id="wall-name" placeholder="npr. Spalnica">
+                </div>
+                <div class="result-box">
+                    <div class="result-value" id="wall-result">0 m²</div>
+                    <div class="result-label">Površina sten</div>
+                </div>
+                <div class="paint-coverage">
+                    <label>🎨 Ocena porabe barve/ometa</label>
+                    <div class="row" style="margin-top: 10px;">
+                        <div class="form-group">
+                            <label>Pokrivnost (m²/L ali kg/m²)</label>
+                            <input type="number" id="wall-coverage" step="0.1" value="8" oninput="calcWalls()">
+                        </div>
+                        <div class="form-group">
+                            <label>Število slojev</label>
+                            <input type="number" id="wall-layers" value="2" min="1" oninput="calcWalls()">
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; font-weight: 600; color: #667eea;">
+                        Potrebno materiala: <span id="wall-material">0</span> <span id="wall-unit">L</span>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="addMeasurement('walls')">➕ Dodaj v seznam</button>
+                    <button class="copy-btn" onclick="copyResult('walls')">📋 Kopiraj rezultat</button>
+                </div>
+            </div>
+            
+            <div id="tab-volume" class="tab-content">
+                <div class="row">
+                    <div class="form-group">
+                        <label>Dolžina (m)</label>
+                        <input type="number" id="vol-length" step="0.01" placeholder="npr. 5.0" oninput="calcVolume()">
+                    </div>
+                    <div class="form-group">
+                        <label>Širina (m)</label>
+                        <input type="number" id="vol-width" step="0.01" placeholder="npr. 4.0" oninput="calcVolume()">
+                    </div>
+                    <div class="form-group">
+                        <label>Višina/Debelina (m)</label>
+                        <input type="number" id="vol-height" step="0.01" placeholder="npr. 0.1" oninput="calcVolume()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Ime meritve (opcijsko)</label>
+                    <input type="text" id="vol-name" placeholder="npr. Temelji">
+                </div>
+                <div class="result-box">
+                    <div class="result-value" id="vol-result">0 m³</div>
+                    <div class="result-label">Prostornina</div>
+                </div>
+                <div class="paint-coverage">
+                    <label>📊 Pretvorba v druge enote</label>
+                    <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                        <div>Litrov: <strong id="vol-liters">0</strong> L</div>
+                        <div>dm³: <strong id="vol-dm3">0</strong></div>
+                        <div>cm³: <strong id="vol-cm3">0</strong></div>
+                        <div>mm³: <strong id="vol-mm3">0</strong></div>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="addMeasurement('volume')">➕ Dodaj v seznam</button>
+                    <button class="copy-btn" onclick="copyResult('volume')">📋 Kopiraj rezultat</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">🔄</span>
+                Hitri Pretvornik Enot
+            </div>
+            <div class="quick-calc">
+                <button class="quick-btn" onclick="quickConvert(0.0929, 'ft² → m²')">ft² → m²</button>
+                <button class="quick-btn" onclick="quickConvert(10.764, 'm² → ft²')">m² → ft²</button>
+                <button class="quick-btn" onclick="quickConvert(0.0283, 'ft³ → m³')">ft³ → m³</button>
+                <button class="quick-btn" onclick="quickConvert(35.315, 'm³ → ft³')">m³ → ft³</button>
+                <button class="quick-btn" onclick="quickConvert(0.001, 'L → m³')">L → m³</button>
+                <button class="quick-btn" onclick="quickConvert(1000, 'm³ → L')">m³ → L</button>
+                <button class="quick-btn" onclick="quickConvert(0.000001, 'cm³ → m³')">cm³ → m³</button>
+                <button class="quick-btn" onclick="quickConvert(1000000, 'm³ → cm³')">m³ → cm³</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">📋</span>
+                Seznam Meritev
+                <span id="measurement-count" style="margin-left: auto; background: #667eea; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem;">0</span>
+            </div>
+            <div id="measurement-list" class="measurement-list">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📏</div>
+                    <p>Ni shranjenih meritev</p>
+                    <p style="font-size: 0.85rem; margin-top: 5px;">Dodajte meritve z gumbom zgoraj</p>
+                </div>
+            </div>
+            <div id="totals-section" style="display: none;">
+                <div class="total-box">
+                    <div class="total-value" id="total-area">0 m²</div>
+                    <div class="total-label">Skupna površina</div>
+                </div>
+                <div class="total-box" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); margin-top: 10px;">
+                    <div class="total-value" id="total-volume">0 m³</div>
+                    <div class="total-label">Skupna prostornina</div>
+                </div>
+            </div>
+            <div class="btn-group" style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="exportToInvoice()">📝 Dodaj v predračun</button>
+                <button class="btn btn-secondary" onclick="clearAllMeasurements()">🗑️ Počisti vse</button>
+                <button class="copy-btn" onclick="exportToText()">📄 Izvozi v tekst</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span class="icon">💡</span>
+                Standardne Pokrivnosti Materialov
+            </div>
+            <div style="display: grid; gap: 10px;">
+                <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                    <strong>🎨 Barva za stene:</strong> 8-12 m²/L na sloj
+                </div>
+                <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                    <strong>🧱 Omet:</strong> ~1.5 kg/m² na mm debeline
+                </div>
+                <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                    <strong>🏠 Keramične ploščice:</strong> ~1.2-1.5 kg lepila/m²
+                </div>
+                <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                    <strong>🌳 Lak za les:</strong> 12-15 m²/L
+                </div>
+                <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                    <strong>🛡️ Temeljni premaz:</strong> 8-10 m²/L
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        let measurements = [];
+        
+        function loadMeasurements() {
+            const saved = localStorage.getItem('mojsterMeasurements');
+            if (saved) {
+                measurements = JSON.parse(saved);
+                renderMeasurements();
+            }
+        }
+        
+        function saveMeasurements() {
+            localStorage.setItem('mojsterMeasurements', JSON.stringify(measurements));
+        }
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+        
+        function calcSurface() {
+            const length = parseFloat(document.getElementById('surf-length').value) || 0;
+            const width = parseFloat(document.getElementById('surf-width').value) || 0;
+            const area = length * width;
+            document.getElementById('surf-result').textContent = area.toFixed(2) + ' m²';
+            const coverage = parseFloat(document.getElementById('surf-coverage').value) || 10;
+            const layers = parseInt(document.getElementById('surf-layers').value) || 1;
+            const liters = (area / coverage) * layers;
+            document.getElementById('surf-liters').textContent = liters.toFixed(2);
+            return area;
+        }
+        
+        function calcWalls() {
+            const a = parseFloat(document.getElementById('wall-a').value) || 0;
+            const b = parseFloat(document.getElementById('wall-b').value) || 0;
+            const height = parseFloat(document.getElementById('wall-height').value) || 0;
+            const deduct = parseFloat(document.getElementById('wall-deduct').value) || 0;
+            const perimeter = 2 * (a + b);
+            const area = (perimeter * height) - deduct;
+            document.getElementById('wall-result').textContent = Math.max(0, area).toFixed(2) + ' m²';
+            const coverage = parseFloat(document.getElementById('wall-coverage').value) || 8;
+            const layers = parseInt(document.getElementById('wall-layers').value) || 1;
+            const material = (Math.max(0, area) / coverage) * layers;
+            document.getElementById('wall-material').textContent = material.toFixed(2);
+            return Math.max(0, area);
+        }
+        
+        function calcVolume() {
+            const length = parseFloat(document.getElementById('vol-length').value) || 0;
+            const width = parseFloat(document.getElementById('vol-width').value) || 0;
+            const height = parseFloat(document.getElementById('vol-height').value) || 0;
+            const volume = length * width * height;
+            document.getElementById('vol-result').textContent = volume.toFixed(3) + ' m³';
+            document.getElementById('vol-liters').textContent = (volume * 1000).toFixed(1);
+            document.getElementById('vol-dm3').textContent = (volume * 1000).toFixed(1);
+            document.getElementById('vol-cm3').textContent = (volume * 1000000).toFixed(0);
+            document.getElementById('vol-mm3').textContent = (volume * 1000000000).toFixed(0);
+            return volume;
+        }
+        
+        function addMeasurement(type) {
+            let value, name, unit, details;
+            if (type === 'surface') {
+                value = calcSurface();
+                name = document.getElementById('surf-name').value || 'Površina #' + (measurements.length + 1);
+                unit = 'm²';
+                const length = document.getElementById('surf-length').value || 0;
+                const width = document.getElementById('surf-width').value || 0;
+                details = length + 'm × ' + width + 'm';
+            } else if (type === 'walls') {
+                value = calcWalls();
+                name = document.getElementById('wall-name').value || 'Stene #' + (measurements.length + 1);
+                unit = 'm²';
+                const a = parseFloat(document.getElementById('wall-a').value) || 0;
+                const b = parseFloat(document.getElementById('wall-b').value) || 0;
+                const h = document.getElementById('wall-height').value || 0;
+                details = 'Obseg: ' + (2*(a+b)).toFixed(1) + 'm × ' + h + 'm višina';
+            } else if (type === 'volume') {
+                value = calcVolume();
+                name = document.getElementById('vol-name').value || 'Prostornina #' + (measurements.length + 1);
+                unit = 'm³';
+                const length = document.getElementById('vol-length').value || 0;
+                const width = document.getElementById('vol-width').value || 0;
+                const height = document.getElementById('vol-height').value || 0;
+                details = length + 'm × ' + width + 'm × ' + height + 'm';
+            }
+            
+            if (value <= 0) {
+                showNotification('Prosim vnesite veljavne vrednosti!', 'error');
+                return;
+            }
+            
+            measurements.push({
+                id: Date.now(),
+                type: type,
+                name: name,
+                value: value,
+                unit: unit,
+                details: details,
+                timestamp: new Date().toLocaleString('sl-SI')
+            });
+            
+            saveMeasurements();
+            renderMeasurements();
+            showNotification('Meritev dodana!');
+        }
+        
+        function renderMeasurements() {
+            const listEl = document.getElementById('measurement-list');
+            const countEl = document.getElementById('measurement-count');
+            const totalsSection = document.getElementById('totals-section');
+            
+            countEl.textContent = measurements.length;
+            
+            if (measurements.length === 0) {
+                listEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📏</div><p>Ni shranjenih meritev</p><p style="font-size: 0.85rem; margin-top: 5px;">Dodajte meritve z gumbom zgoraj</p></div>';
+                totalsSection.style.display = 'none';
+                return;
+            }
+            
+            let totalArea = 0;
+            let totalVolume = 0;
+            
+            listEl.innerHTML = measurements.map(m => {
+                if (m.unit === 'm²') totalArea += m.value;
+                if (m.unit === 'm³') totalVolume += m.value;
+                const icon = m.type === 'surface' ? '📐' : m.type === 'walls' ? '🧱' : '📦';
+                return '<div class="measurement-item"><div class="measurement-info"><div class="measurement-name">' + icon + ' ' + m.name + '</div><div class="measurement-details">' + m.details + ' • ' + m.timestamp + '</div></div><div class="measurement-value">' + m.value.toFixed(m.unit === 'm³' ? 3 : 2) + ' ' + m.unit + '</div><button class="btn btn-danger" onclick="deleteMeasurement(' + m.id + ')">🗑️</button></div>';
+            }).join('');
+            
+            document.getElementById('total-area').textContent = totalArea.toFixed(2) + ' m²';
+            document.getElementById('total-volume').textContent = totalVolume.toFixed(3) + ' m³';
+            totalsSection.style.display = 'block';
+        }
+        
+        function deleteMeasurement(id) {
+            measurements = measurements.filter(m => m.id !== id);
+            saveMeasurements();
+            renderMeasurements();
+            showNotification('Meritev izbrisana!');
+        }
+        
+        function clearAllMeasurements() {
+            if (confirm('Ali ste prepričani, da želite izbrisati vse meritve?')) {
+                measurements = [];
+                saveMeasurements();
+                renderMeasurements();
+                showNotification('Vse meritve pobrisane!');
+            }
+        }
+        
+        function copyResult(type) {
+            let text;
+            if (type === 'surface') {
+                text = document.getElementById('surf-result').textContent;
+            } else if (type === 'walls') {
+                text = document.getElementById('wall-result').textContent;
+            } else if (type === 'volume') {
+                text = document.getElementById('vol-result').textContent;
+            }
+            navigator.clipboard.writeText(text).then(() => showNotification('Rezultat kopiran!'));
+        }
+        
+        function showNotification(message, type) {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.className = 'notification' + (type === 'error' ? ' error' : '');
+            notif.classList.add('show');
+            setTimeout(() => notif.classList.remove('show'), 3000);
+        }
+        
+        function exportToInvoice() {
+            const data = JSON.stringify(measurements);
+            const encoded = encodeURIComponent(data);
+            window.location.href = 'invoice-module.html?data=' + encoded;
+        }
+        
+        function exportToText() {
+            let text = 'MOJSTERSKE MERITVE\\n';
+            text += '==================\\n\\n';
+            measurements.forEach(m => {
+                const icon = m.type === 'surface' ? '[POVRŠINA]' : m.type === 'walls' ? '[STENE]' : '[PROSTORNINA]';
+                text += icon + ' ' + m.name + '\\n';
+                text += '  Vrednost: ' + m.value.toFixed(m.unit === 'm³' ? 3 : 2) + ' ' + m.unit + '\\n';
+                text += '  Podrobnosti: ' + m.details + '\\n';
+                text += '  Čas: ' + m.timestamp + '\\n\\n';
+            });
+            
+            let totalArea = 0, totalVolume = 0;
+            measurements.forEach(m => {
+                if (m.unit === 'm²') totalArea += m.value;
+                if (m.unit === 'm³') totalVolume += m.value;
+            });
+            
+            text += '==================\\n';
+            text += 'SKUPAJ:\\n';
+            text += '  Površina: ' + totalArea.toFixed(2) + ' m²\\n';
+            text += '  Prostornina: ' + totalVolume.toFixed(3) + ' m³
+            text += '  Površina: ' + totalArea.toFixed(2) + ' m²\n';
+            text += '  Prostornina: ' + totalVolume.toFixed(3) + ' m³\n';
+            
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'meritve-' + new Date().toISOString().slice(0, 10) + '.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Meritve izvožene!');
+        }
+        
+        function quickConvert(factor, label) {
+            const value = prompt('Vnesite vrednost za pretvorbo ' + label + ':');
+            if (value && !isNaN(value)) {
+                const result = parseFloat(value) * factor;
+                showNotification(value + ' → ' + result.toFixed(4));
+            }
+        }
+        
+        window.onload = loadMeasurements;
+    </script>
+</body>
+</html>
