@@ -564,7 +564,7 @@
             }
         }
         
-        function copyResult(type) {
+        async function copyResult(type) {
             let text;
             if (type === 'surface') {
                 text = document.getElementById('surf-result').textContent;
@@ -573,7 +573,27 @@
             } else if (type === 'volume') {
                 text = document.getElementById('vol-result').textContent;
             }
-            navigator.clipboard.writeText(text).then(() => showToast('Rezultat kopiran!'));
+            
+            // Try modern clipboard API first, fallback to legacy method
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    showToast('Rezultat kopiran!');
+                } else {
+                    // Fallback for older browsers
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showToast('Rezultat kopiran!');
+                }
+            } catch (err) {
+                showToast('Kopiranje ni uspelo', 'error');
+            }
         }
         
         function exportToInvoice() {

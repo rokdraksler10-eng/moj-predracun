@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Predračuni - Quotes Module</title>
     <script src="utils.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --ios-blue: #007AFF;
@@ -795,7 +797,7 @@
                 
                 return `
                     <tr>
-                        <td>${quote.quoteNumber || '-'}</td>
+                        <td>${escapeHtml(quote.quoteNumber) || '-'}</td>
                         <td>${escapeHtml(quote.projectName || '')}</td>
                         <td>${escapeHtml(quote.customer || '')}</td>
                         <td>${formatDate(quote.date)}</td>
@@ -1245,133 +1247,142 @@
         // ============================================
         // PDF GENERATION
         // ============================================
-        function generatePDF() {
-            // Create a print-friendly view
-            const printWindow = window.open('', '_blank');
+        async function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
             
-            const workItemsHtml = state.selectedWorkItems.length > 0 ? `
-                <h3>Postavke dela</h3>
-                <table class="print-table">
-                    <thead>
-                        <tr><th>Naziv</th><th>Enota</th><th>Količina</th><th>Cena</th><th>Znesek</th></tr>
-                    </thead>
-                    <tbody>
-                        ${state.selectedWorkItems.map(item => `
-                            <tr>
-                                <td>${escapeHtml(item.name)}</td>
-                                <td>${escapeHtml(item.unit)}</td>
-                                <td>${item.quantity}</td>
-                                <td class="text-right">${formatCurrency(item.price)}</td>
-                                <td class="text-right">${formatCurrency(item.quantity * item.price)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            ` : '';
+            // Header
+            doc.setFontSize(20);
+            doc.setTextColor(0, 122, 255);
+            doc.text('PREDRAČUN', 20, 30);
             
-            const materialsHtml = state.selectedMaterials.length > 0 ? `
-                <h3>Materiali</h3>
-                <table class="print-table">
-                    <thead>
-                        <tr><th>Naziv</th><th>Enota</th><th>Količina</th><th>Cena</th><th>Znesek</th></tr>
-                    </thead>
-                    <tbody>
-                        ${state.selectedMaterials.map(item => `
-                            <tr>
-                                <td>${escapeHtml(item.name)}</td>
-                                <td>${escapeHtml(item.unit)}</td>
-                                <td>${item.quantity}</td>
-                                <td class="text-right">${formatCurrency(item.price)}</td>
-                                <td class="text-right">${formatCurrency(item.quantity * item.price)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            ` : '';
+            // Quote info
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            const quoteNumber = document.getElementById('quote-number').value || '-';
+            const quoteDate = formatDate(document.getElementById('quote-date').value);
+            const validUntil = formatDate(document.getElementById('valid-until').value);
             
+            doc.text(`Številka: ${escapeHtml(quoteNumber)}`, 20, 45);
+            doc.text(`Datum: ${quoteDate}`, 20, 50);
+            doc.text(`Veljavno do: ${validUntil}`, 20, 55);
+            
+            // Project & Customer
+            doc.setFontSize(12);
+            doc.setTextColor(0);
+            doc.text('Projekt:', 20, 70);
+            doc.setFontSize(10);
+            const projectName = escapeHtml(document.getElementById('project-name').value || '');
+            doc.text(projectName, 20, 77);
+            
+            doc.setFontSize(12);
+            doc.text('Stranka:', 110, 70);
+            doc.setFontSize(10);
+            const customer = escapeHtml(document.getElementById('customer').value || '');
+            doc.text(customer, 110, 77);
+            
+            let yPos = 90;
+            
+            // Work Items Table
+            if (state.selectedWorkItems.length > 0) {
+                doc.setFontSize(11);
+                doc.setTextColor(0, 122, 255);
+                doc.text('Postavke dela', 20, yPos);
+                yPos += 5;
+                
+                const workData = state.selectedWorkItems.map(item => [
+                    escapeHtml(item.name),
+                    escapeHtml(item.unit),
+                    item.quantity.toString(),
+                    formatCurrency(item.price),
+                    formatCurrency(item.quantity * item.price)
+                ]);
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Naziv', 'Enota', 'Kol.', 'Cena', 'Znesek']],
+                    body: workData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [0, 122, 255], textColor: 255 },
+                    styles: { fontSize: 9 },
+                    columnStyles: {
+                        3: { halign: 'right' },
+                        4: { halign: 'right' }
+                    }
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+            
+            // Materials Table
+            if (state.selectedMaterials.length > 0) {
+                doc.setFontSize(11);
+                doc.setTextColor(0, 122, 255);
+                doc.text('Materiali', 20, yPos);
+                yPos += 5;
+                
+                const matData = state.selectedMaterials.map(item => [
+                    escapeHtml(item.name),
+                    escapeHtml(item.unit),
+                    item.quantity.toString(),
+                    formatCurrency(item.price),
+                    formatCurrency(item.quantity * item.price)
+                ]);
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Naziv', 'Enota', 'Kol.', 'Cena', 'Znesek']],
+                    body: matData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [0, 122, 255], textColor: 255 },
+                    styles: { fontSize: 9 },
+                    columnStyles: {
+                        3: { halign: 'right' },
+                        4: { halign: 'right' }
+                    }
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+            
+            // Totals
             const workTotal = state.selectedWorkItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
             const materialsTotal = state.selectedMaterials.reduce((sum, item) => sum + (item.quantity * item.price), 0);
             const subtotal = workTotal + materialsTotal;
             const vatAmount = subtotal * VAT_RATE;
             const grandTotal = subtotal + vatAmount;
             
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Predračun ${document.getElementById('quote-number').value}</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-                        h1 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
-                        h2 { color: #333; margin-top: 30px; }
-                        h3 { color: #666; margin-top: 20px; font-size: 14px; text-transform: uppercase; }
-                        .header-info { display: flex; justify-content: space-between; margin: 20px 0; }
-                        .header-info div { line-height: 1.8; }
-                        .print-table { width: 100%; border-collapse: collapse; margin: 10px 0 20px; }
-                        .print-table th, .print-table td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-                        .print-table th { background: #f5f5f5; font-weight: bold; }
-                        .text-right { text-align: right; }
-                        .totals { margin-top: 30px; border-top: 2px solid #333; padding-top: 20px; }
-                        .total-row { display: flex; justify-content: space-between; padding: 5px 0; }
-                        .grand-total { font-size: 18px; font-weight: bold; color: #2563eb; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; }
-                        .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }
-                        @media print {
-                            body { padding: 0; }
-                            .no-print { display: none; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <h1>PREDRAČUN</h1>
-                    
-                    <div class="header-info">
-                        <div>
-                            <strong>Številka:</strong> ${document.getElementById('quote-number').value || '-'}<br>
-                            <strong>Datum:</strong> ${formatDate(document.getElementById('quote-date').value)}<br>
-                            <strong>Veljavno do:</strong> ${formatDate(document.getElementById('valid-until').value)}
-                        </div>
-                        <div style="text-align: right;">
-                            <strong>Status:</strong> ${getStatusText(document.getElementById('quote-status').value)}
-                        </div>
-                    </div>
-                    
-                    <div class="header-info">
-                        <div>
-                            <h2>Projekt</h2>
-                            <strong>${escapeHtml(document.getElementById('project-name').value)}</strong><br>
-                            ${escapeHtml(document.getElementById('address').value).replace(/\n/g, '<br>')}
-                        </div>
-                        <div style="text-align: right; background: #f8f9fa; padding: 15px; border-radius: 8px;">
-                            <h2 style="margin-top: 0; color: #2563eb;">Stranka</h2>
-                            <strong style="font-size: 16px;">${escapeHtml(document.getElementById('customer').value)}</strong>
-                        </div>
-                    </div>
-                    
-                    ${workItemsHtml}
-                    ${materialsHtml}
-                    
-                    <div class="totals">
-                        <div class="total-row"><span>Postavke dela:</span><span>${formatCurrency(workTotal)}</span></div>
-                        <div class="total-row"><span>Materiali:</span><span>${formatCurrency(materialsTotal)}</span></div>
-                        <div class="total-row"><span>Osnova za DDV:</span><span>${formatCurrency(subtotal)}</span></div>
-                        <div class="total-row"><span>DDV (22%):</span><span>${formatCurrency(vatAmount)}</span></div>
-                        <div class="total-row grand-total"><span>SKUPAJ:</span><span>${formatCurrency(grandTotal)}</span></div>
-                    </div>
-                    
-                    <div class="footer">
-                        <p>Ta predračun je informativne narave in ne predstavlja nobene obveznosti.</p>
-                        <p>Za potrditev naročila prosimo kontaktirajte našo službo.</p>
-                    </div>
-                    
-                    <div class="no-print" style="margin-top: 40px; text-align: center;">
-                        <button onclick="window.print()" style="padding: 10px 30px; font-size: 16px; cursor: pointer;">🖨️ Natisni / Shrani kot PDF</button>
-                    </div>
-                </body>
-                </html>
-            `);
+            yPos += 5;
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Postavke dela: ${formatCurrency(workTotal)}`, 130, yPos);
+            yPos += 5;
+            doc.text(`Materiali: ${formatCurrency(materialsTotal)}`, 130, yPos);
+            yPos += 5;
+            doc.text(`Osnova za DDV: ${formatCurrency(subtotal)}`, 130, yPos);
+            yPos += 5;
+            doc.text(`DDV (22%): ${formatCurrency(vatAmount)}`, 130, yPos);
+            yPos += 7;
+            doc.setFontSize(12);
+            doc.setTextColor(0, 122, 255);
+            doc.setFont(undefined, 'bold');
+            doc.text(`SKUPAJ: ${formatCurrency(grandTotal)}`, 130, yPos);
             
-            printWindow.document.close();
-            showToast('PDF pripravljen za tiskanje', 'success');
+            // Footer
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text('Ta predračun je informativne narave in ne predstavlja nobene obveznosti.', 105, 280, { align: 'center' });
+            
+            // Save
+            const filename = `predracun-${quoteNumber.replace(/[^a-z0-9]/gi, '_') || 'nov'}.pdf`;
+            doc.save(filename);
+            showToast('PDF uspešno generiran', 'success');
+        }
+        
+        // Fallback print function for browsers without PDF support
+        function printQuote() {
+            window.print();
         }
 
         // ============================================
