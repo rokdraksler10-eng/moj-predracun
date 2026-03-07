@@ -7,6 +7,24 @@
     <script src="utils.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- CRITICAL: Define functions globally before DOM -->
+    <script>
+        // Placeholder functions - will be overridden by main script
+        window.createNewQuote = function() { console.log('Loading...'); };
+        window.switchTab = function(tab) { console.log('Loading...'); };
+        window.saveQuote = function(status) { console.log('Loading...'); };
+        window.generatePDF = function() { console.log('Loading...'); };
+        window.openWorkItemModal = function() { console.log('Loading...'); };
+        window.openMaterialModal = function() { console.log('Loading...'); };
+        window.addWorkItem = function() { console.log('Loading...'); };
+        window.addMaterial = function() { console.log('Loading...'); };
+        window.deleteCurrentQuote = function() { console.log('Loading...'); };
+        window.closeModal = function(id) { console.log('Loading...'); };
+        window.handleSearch = function() { console.log('Loading...'); };
+        window.handleFilter = function() { console.log('Loading...'); };
+    </script>
+    
     <style>
         :root {
             --ios-blue: #007AFF;
@@ -1475,6 +1493,34 @@
         function hideLoading() {
             document.getElementById('loadingOverlay').classList.remove('active');
         }
+        
+        // ============================================
+        // EXPORT FUNCTIONS TO WINDOW (for iframe compatibility)
+        // ============================================
+        window.createNewQuote = createNewQuote;
+        window.switchTab = switchTab;
+        window.saveQuote = saveQuote;
+        window.generatePDF = generatePDF;
+        window.openWorkItemModal = openWorkItemModal;
+        window.openMaterialModal = openMaterialModal;
+        window.addWorkItem = addWorkItem;
+        window.addMaterial = addMaterial;
+        window.deleteCurrentQuote = deleteCurrentQuote;
+        window.closeModal = closeModal;
+        window.handleSearch = handleSearch;
+        window.handleFilter = handleFilter;
+        window.editQuote = editQuote;
+        window.viewQuote = viewQuote;
+        window.deleteQuote = deleteQuote;
+        window.cancelEdit = cancelEdit;
+        window.removeWorkItem = removeWorkItem;
+        window.removeMaterial = removeMaterial;
+        window.updateWorkItem = updateWorkItem;
+        window.updateMaterial = updateMaterial;
+        window.loadWorkItems = loadWorkItems;
+        window.loadMaterials = loadMaterials;
+        
+        console.log('✅ All functions exported to window');
     </script>
 
     <!-- Loading Overlay -->
