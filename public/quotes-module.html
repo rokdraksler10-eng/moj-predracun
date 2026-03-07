@@ -541,9 +541,12 @@
             }
         }
 
+        // Base URL for API calls (relative to support subdirectory deployment)
+        const API_BASE = 'api';
+
         async function loadQuotes() {
             try {
-                const data = await apiCall('/api/quotes');
+                const data = await apiCall(`${API_BASE}/quotes`);
                 state.quotes = data.quotes || data || [];
                 renderQuotesList();
             } catch (error) {
@@ -555,7 +558,7 @@
 
         async function loadWorkItems() {
             try {
-                const data = await apiCall('/api/work-items');
+                const data = await apiCall(`${API_BASE}/work-items`);
                 state.workItems = data.workItems || data || [];
                 populateWorkItemSelect();
                 showToast('Seznam postavk osvežen', 'success');
@@ -574,7 +577,7 @@
 
         async function loadMaterials() {
             try {
-                const data = await apiCall('/api/materials');
+                const data = await apiCall(`${API_BASE}/materials`);
                 state.materials = data.materials || data || [];
                 populateMaterialSelect();
                 showToast('Seznam materialov osvežen', 'success');
@@ -593,7 +596,7 @@
 
         async function loadQuoteById(id) {
             try {
-                const data = await apiCall(`/api/quotes/${id}`);
+                const data = await apiCall(`${API_BASE}/quotes/${id}`);
                 return data.quote || data;
             } catch (error) {
                 // Fallback: find in local array
@@ -606,14 +609,14 @@
                 method: 'POST',
                 body: JSON.stringify(quoteData)
             };
-            return await apiCall('/api/quotes', options);
+            return await apiCall(`${API_BASE}/quotes`, options);
         }
 
         async function deleteQuoteFromAPI(id) {
             const options = {
                 method: 'DELETE'
             };
-            return await apiCall(`/api/quotes/${id}`, options);
+            return await apiCall(`${API_BASE}/quotes/${id}`, options);
         }
 
         // ============================================
@@ -683,11 +686,11 @@
             
             tbody.innerHTML = state.selectedWorkItems.map((item, index) => `
                 <tr class="item-row">
-                    <td><input type="text" value="${escapeHtml(item.name)}" onchange="updateWorkItem(${index}, 'name', this.value)"></td>
-                    <td><input type="text" value="${escapeHtml(item.unit)}" onchange="updateWorkItem(${index}, 'unit', this.value)"></td>
-                    <td><input type="number" value="${item.quantity}" step="0.01" min="0" onchange="updateWorkItem(${index}, 'quantity', parseFloat(this.value) || 0)"></td>
-                    <td><input type="number" value="${item.price}" step="0.01" min="0" onchange="updateWorkItem(${index}, 'price', parseFloat(this.value) || 0)"></td>
-                    <td class="text-right">${formatCurrency(item.quantity * item.price)}</td>
+                    <td><input type="text" id="wi-name-${index}" value="${escapeHtml(item.name)}" onchange="updateWorkItem(${index}, 'name', this.value)"></td>
+                    <td><input type="text" id="wi-unit-${index}" value="${escapeHtml(item.unit)}" onchange="updateWorkItem(${index}, 'unit', this.value)"></td>
+                    <td><input type="number" id="wi-qty-${index}" value="${item.quantity}" step="0.01" min="0" onchange="updateWorkItem(${index}, 'quantity', parseFloat(this.value) || 0)"></td>
+                    <td><input type="number" id="wi-price-${index}" value="${item.price}" step="0.01" min="0" onchange="updateWorkItem(${index}, 'price', parseFloat(this.value) || 0)"></td>
+                    <td class="text-right" id="wi-total-${index}">${formatCurrency(item.quantity * item.price)}</td>
                     <td class="no-print"><button class="btn btn-sm btn-danger" onclick="removeWorkItem(${index})">✕</button></td>
                 </tr>
             `).join('');
@@ -710,11 +713,11 @@
             
             tbody.innerHTML = state.selectedMaterials.map((item, index) => `
                 <tr class="item-row">
-                    <td><input type="text" value="${escapeHtml(item.name)}" onchange="updateMaterial(${index}, 'name', this.value)"></td>
-                    <td><input type="text" value="${escapeHtml(item.unit)}" onchange="updateMaterial(${index}, 'unit', this.value)"></td>
-                    <td><input type="number" value="${item.quantity}" step="0.01" min="0" onchange="updateMaterial(${index}, 'quantity', parseFloat(this.value) || 0)"></td>
-                    <td><input type="number" value="${item.price}" step="0.01" min="0" onchange="updateMaterial(${index}, 'price', parseFloat(this.value) || 0)"></td>
-                    <td class="text-right">${formatCurrency(item.quantity * item.price)}</td>
+                    <td><input type="text" id="mat-name-${index}" value="${escapeHtml(item.name)}" onchange="updateMaterial(${index}, 'name', this.value)"></td>
+                    <td><input type="text" id="mat-unit-${index}" value="${escapeHtml(item.unit)}" onchange="updateMaterial(${index}, 'unit', this.value)"></td>
+                    <td><input type="number" id="mat-qty-${index}" value="${item.quantity}" step="0.01" min="0" onchange="updateMaterial(${index}, 'quantity', parseFloat(this.value) || 0)"></td>
+                    <td><input type="number" id="mat-price-${index}" value="${item.price}" step="0.01" min="0" onchange="updateMaterial(${index}, 'price', parseFloat(this.value) || 0)"></td>
+                    <td class="text-right" id="mat-total-${index}">${formatCurrency(item.quantity * item.price)}</td>
                     <td class="no-print"><button class="btn btn-sm btn-danger" onclick="removeMaterial(${index})">✕</button></td>
                 </tr>
             `).join('');
@@ -882,15 +885,65 @@
         }
 
         function updateWorkItem(index, field, value) {
+            // Store active element info before update
+            const activeElement = document.activeElement;
+            const activeId = activeElement ? activeElement.id : null;
+            const cursorPos = activeElement && activeElement.selectionStart ? activeElement.selectionStart : 0;
+            
             state.selectedWorkItems[index][field] = value;
-            renderWorkItems();
+            
+            // Update only the row total without full re-render
+            const rowTotal = (state.selectedWorkItems[index].price || 0) * (state.selectedWorkItems[index].quantity || 0);
+            const totalCell = document.getElementById(`wi-total-${index}`);
+            if (totalCell) {
+                totalCell.textContent = formatPrice(rowTotal) + ' €';
+            }
+            
             updateTotals();
+            
+            // Restore focus after a short delay
+            if (activeId) {
+                setTimeout(() => {
+                    const element = document.getElementById(activeId);
+                    if (element) {
+                        element.focus();
+                        if (element.setSelectionRange) {
+                            element.setSelectionRange(cursorPos, cursorPos);
+                        }
+                    }
+                }, 0);
+            }
         }
 
         function updateMaterial(index, field, value) {
+            // Store active element info before update
+            const activeElement = document.activeElement;
+            const activeId = activeElement ? activeElement.id : null;
+            const cursorPos = activeElement && activeElement.selectionStart ? activeElement.selectionStart : 0;
+            
             state.selectedMaterials[index][field] = value;
-            renderMaterials();
+            
+            // Update only the row total without full re-render
+            const rowTotal = (state.selectedMaterials[index].price || 0) * (state.selectedMaterials[index].quantity || 0);
+            const totalCell = document.getElementById(`mat-total-${index}`);
+            if (totalCell) {
+                totalCell.textContent = formatPrice(rowTotal) + ' €';
+            }
+            
             updateTotals();
+            
+            // Restore focus after a short delay
+            if (activeId) {
+                setTimeout(() => {
+                    const element = document.getElementById(activeId);
+                    if (element) {
+                        element.focus();
+                        if (element.setSelectionRange) {
+                            element.setSelectionRange(cursorPos, cursorPos);
+                        }
+                    }
+                }, 0);
+            }
         }
 
         function removeWorkItem(index) {
