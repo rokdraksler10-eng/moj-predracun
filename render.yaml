@@ -1,8 +1,11 @@
 # Render.com deploy configuration
+# One-click deploy: https://dashboard.render.com/blueprint/new?repo=https://github.com/rokdraksler10-eng/moj-predracun
+
 services:
   - type: web
     name: moj-predracun
     runtime: node
+    repo: https://github.com/rokdraksler10-eng/moj-predracun
     buildCommand: npm install && npm run init-db
     startCommand: npm start
     envVars:
