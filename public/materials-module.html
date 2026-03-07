@@ -9,6 +9,7 @@
   <meta name="theme-color" content="#007AFF">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script src="utils.js"></script>
   
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -857,18 +858,6 @@
       renderMaterials();
     }
     
-    function escapeHtml(text) {
-      if (!text) return '';
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-    
-    function formatPrice(price) {
-      if (price === null || price === undefined) return '0.00';
-      return parseFloat(price).toFixed(2);
-    }
-    
     function renderMaterials() {
       const container = document.getElementById('materialsList');
       
@@ -1174,37 +1163,6 @@
       document.getElementById('selectedWorkItemContainer').style.display = 'none';
     }
     
-    function showToast(message, type) {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.style.background = type === 'error' ? '#FF3B30' : '#34C759';
-      toast.classList.add('show');
-      
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 3000);
-    }
-
-    // Loading state functions
-    function showLoading() {
-      document.getElementById('loadingOverlay').classList.add('active');
-    }
-    function hideLoading() {
-      document.getElementById('loadingOverlay').classList.remove('active');
-    }
-
-    // Debounce function
-    function debounce(func, wait) {
-      let timeout;
-      return function executedFunction(...args) {
-        const later = () => {
-          clearTimeout(timeout);
-          func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-      };
-    }
   </script>
 
   <!-- Loading Overlay -->

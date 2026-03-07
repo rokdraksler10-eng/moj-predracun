@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mojstrski Kalkulator - Terenski Pomočnik</title>
+    <script src="utils.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -487,7 +488,7 @@
             }
             
             if (value <= 0) {
-                showNotification('Prosim vnesite veljavne vrednosti!', 'error');
+                showToast('Prosim vnesite veljavne vrednosti!', 'error');
                 return;
             }
             
@@ -503,7 +504,7 @@
             
             saveMeasurements();
             renderMeasurements();
-            showNotification('Meritev dodana!');
+            showToast('Meritev dodana!');
         }
         
         function renderMeasurements() {
@@ -538,7 +539,7 @@
             measurements = measurements.filter(m => m.id !== id);
             saveMeasurements();
             renderMeasurements();
-            showNotification('Meritev izbrisana!');
+            showToast('Meritev izbrisana!');
         }
         
         function clearAllMeasurements() {
@@ -546,7 +547,7 @@
                 measurements = [];
                 saveMeasurements();
                 renderMeasurements();
-                showNotification('Vse meritve pobrisane!');
+                showToast('Vse meritve pobrisane!');
             }
         }
         
@@ -559,20 +560,12 @@
             } else if (type === 'volume') {
                 text = document.getElementById('vol-result').textContent;
             }
-            navigator.clipboard.writeText(text).then(() => showNotification('Rezultat kopiran!'));
-        }
-        
-        function showNotification(message, type) {
-            const notif = document.getElementById('notification');
-            notif.textContent = message;
-            notif.className = 'notification' + (type === 'error' ? ' error' : '');
-            notif.classList.add('show');
-            setTimeout(() => notif.classList.remove('show'), 3000);
+            navigator.clipboard.writeText(text).then(() => showToast('Rezultat kopiran!'));
         }
         
         function exportToInvoice() {
             if (measurements.length === 0) {
-                showNotification('Ni meritev za prenos', 'error');
+                showToast('Ni meritev za prenos', 'error');
                 return;
             }
             
@@ -622,14 +615,14 @@
             a.download = 'meritve-' + new Date().toISOString().slice(0, 10) + '.txt';
             a.click();
             URL.revokeObjectURL(url);
-            showNotification('Meritve izvožene!');
+            showToast('Meritve izvožene!');
         }
         
         function quickConvert(factor, label) {
             const value = prompt('Vnesite vrednost za pretvorbo ' + label + ':');
             if (value && !isNaN(value)) {
                 const result = parseFloat(value) * factor;
-                showNotification(value + ' → ' + result.toFixed(4));
+                showToast(value + ' → ' + result.toFixed(4));
             }
         }
         
