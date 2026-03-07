@@ -1007,12 +1007,326 @@ app.get('/api/quotes/:id/pdf/:type', (req, res) => {
   }
 });
 
+// ============================================
+// FAZA 5: PROFESSIONAL - CRM & PAYMENTS
+// ============================================
+
+// ========== CRM ENDPOINTS ==========
+
+// Get client with full details (CRM view)
+app.get('/api/clients/:id/crm', (req, res) => {
+  try {
+    const clientId = parseInt(req.params.id);
+    
+    // Get client
+    const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(clientId);
+    if (!client) return res.status(404).json({ error: 'Stranka ne obstaja' });
+    
+    // Get all quotes for client
+    const quotes = db.prepare('SELECT * FROM quotes WHERE client_id = ? ORDER BY created_at DESC').all(clientId);
+    
+    // Get total revenue
+    const revenue = db.prepare(`
+      SELECT COALESCE(SUM(total), 0) as total_revenue,
+             COUNT(*) as total_quotes,
+             COALESCE(SUM(CASE WHEN status = 'accepted' THEN total ELSE 0 END), 0) as accepted_value
+      FROM quotes WHERE client_id = ?
+    `).get(clientId);
+    
+    // Get notes
+    const notes = db.prepare('SELECT * FROM client_notes WHERE client_id = ? ORDER BY created_at DESC').all(clientId);
+    
+    // Get interactions
+    const interactions = db.prepare('SELECT * FROM client_interactions WHERE client_id = ? ORDER BY date DESC').all(clientId);
+    
+    // Get reminders
+    const reminders = db.prepare(`
+      SELECT * FROM client_reminders 
+      WHERE client_id = ? AND (is_completed = 0 OR reminder_date >= date('now', '-7 days'))
+      ORDER BY reminder_date ASC
+    `).all(clientId);
+    
+    // Get tags
+    const tags = db.prepare('SELECT tag FROM client_tags WHERE client_id = ?').all(clientId);
+    
+    res.json({
+      ...client,
+      quotes,
+      revenue,
+      notes,
+      interactions,
+      reminders,
+      tags: tags.map(t => t.tag)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add client note
+app.post('/api/clients/:id/notes', (req, res) => {
+  try {
+    const clientId = parseInt(req.params.id);
+    const note = sanitizeInput(validateRequired(req.body.note, 'Zapis'));
+    const createdBy = sanitizeInput(req.body.created_by || '');
+    
+    const stmt = db.prepare('INSERT INTO client_notes (client_id, note, created_by) VALUES (?, ?, ?)');
+    const result = stmt.run(clientId, note, createdBy);
+    
+    res.json({ id: result.lastInsertRowid, client_id: clientId, note });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Add client interaction
+app.post('/api/clients/:id/interactions', (req, res) => {
+  try {
+    const clientId = parseInt(req.params.id);
+    const type = req.body.type;
+    const description = sanitizeInput(req.body.description || '');
+    const date = req.body.date || new Date().toISOString().split('T')[0];
+    const followUpDate = req.body.follow_up_date || null;
+    
+    if (!['call', 'email', 'meeting', 'site_visit', 'other'].includes(type)) {
+      return res.status(400).json({ error: 'Neveljaven tip interakcije' });
+    }
+    
+    const stmt = db.prepare(`
+      INSERT INTO client_interactions (client_id, type, description, date, follow_up_date)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(clientId, type, description, date, followUpDate);
+    
+    res.json({ id: result.lastInsertRowid, client_id: clientId, type, date });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Add client reminder
+app.post('/api/clients/:id/reminders', (req, res) => {
+  try {
+    const clientId = parseInt(req.params.id);
+    const title = sanitizeInput(validateRequired(req.body.title, 'Naslov'));
+    const description = sanitizeInput(req.body.description || '');
+    const reminderDate = validateRequired(req.body.reminder_date, 'Datum');
+    
+    const stmt = db.prepare(`
+      INSERT INTO client_reminders (client_id, title, description, reminder_date)
+      VALUES (?, ?, ?, ?)
+    `);
+    const result = stmt.run(clientId, title, description, reminderDate);
+    
+    res.json({ id: result.lastInsertRowid, client_id: clientId, title, reminder_date: reminderDate });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Complete reminder
+app.patch('/api/reminders/:id/complete', (req, res) => {
+  try {
+    const reminderId = parseInt(req.params.id);
+    const stmt = db.prepare('UPDATE client_reminders SET is_completed = 1 WHERE id = ?');
+    stmt.run(reminderId);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== PAYMENT ENDPOINTS ==========
+
+// Get payments for quote
+app.get('/api/quotes/:id/payments', (req, res) => {
+  try {
+    const quoteId = parseInt(req.params.id);
+    const payments = db.prepare('SELECT * FROM payments WHERE quote_id = ? ORDER BY payment_date DESC').all(quoteId);
+    
+    // Calculate totals
+    const total = db.prepare('SELECT total FROM quotes WHERE id = ?').get(quoteId);
+    const paid = db.prepare('SELECT COALESCE(SUM(amount), 0) as paid FROM payments WHERE quote_id = ?').get(quoteId);
+    const deposits = db.prepare('SELECT COALESCE(SUM(amount), 0) as deposits FROM payments WHERE quote_id = ? AND is_deposit = 1').get(quoteId);
+    
+    res.json({
+      payments,
+      total_amount: total?.total || 0,
+      paid_amount: paid?.paid || 0,
+      deposit_amount: deposits?.deposits || 0,
+      remaining: (total?.total || 0) - (paid?.paid || 0)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add payment
+app.post('/api/quotes/:id/payments', (req, res) => {
+  try {
+    const quoteId = parseInt(req.params.id);
+    const amount = parseFloat(req.body.amount);
+    const paymentDate = req.body.payment_date || new Date().toISOString().split('T')[0];
+    const method = req.body.payment_method || 'bank_transfer';
+    const reference = sanitizeInput(req.body.reference_number || '');
+    const notes = sanitizeInput(req.body.notes || '');
+    const isDeposit = req.body.is_deposit || false;
+    
+    if (amount <= 0) {
+      return res.status(400).json({ error: 'Znesek mora biti pozitiven' });
+    }
+    
+    const stmt = db.prepare(`
+      INSERT INTO payments (quote_id, amount, payment_date, payment_method, reference_number, notes, is_deposit)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(quoteId, amount, paymentDate, method, reference, notes, isDeposit ? 1 : 0);
+    
+    res.json({ id: result.lastInsertRowid, quote_id: quoteId, amount });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Get payment schedule
+app.get('/api/quotes/:id/payment-schedule', (req, res) => {
+  try {
+    const quoteId = parseInt(req.params.id);
+    const schedule = db.prepare('SELECT * FROM payment_schedules WHERE quote_id = ? ORDER BY installment_number').all(quoteId);
+    res.json(schedule);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create payment schedule
+app.post('/api/quotes/:id/payment-schedule', (req, res) => {
+  try {
+    const quoteId = parseInt(req.params.id);
+    const schedules = req.body.schedules;
+    
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+      return res.status(400).json({ error: 'Neveljaven urnik plačil' });
+    }
+    
+    // Delete existing schedule
+    db.prepare('DELETE FROM payment_schedules WHERE quote_id = ?').run(quoteId);
+    
+    // Insert new schedule
+    const stmt = db.prepare(`
+      INSERT INTO payment_schedules (quote_id, installment_number, amount, due_date, description)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    
+    schedules.forEach((item, idx) => {
+      stmt.run(quoteId, idx + 1, parseFloat(item.amount), item.due_date, sanitizeInput(item.description || ''));
+    });
+    
+    res.json({ success: true, installments: schedules.length });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ========== EMAIL ENDPOINTS ==========
+
+// Get email templates
+app.get('/api/email-templates', (req, res) => {
+  try {
+    const templates = db.prepare('SELECT * FROM email_templates ORDER BY type, name').all();
+    res.json(templates);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Log email (for tracking)
+app.post('/api/email-log', (req, res) => {
+  try {
+    const quoteId = req.body.quote_id ? parseInt(req.body.quote_id) : null;
+    const clientId = req.body.client_id ? parseInt(req.body.client_id) : null;
+    const emailType = req.body.email_type || 'quote';
+    const recipient = sanitizeInput(validateRequired(req.body.recipient_email, 'Email naslov'));
+    const subject = sanitizeInput(validateRequired(req.body.subject, 'Zadeva'));
+    const body = sanitizeInput(req.body.body || '');
+    
+    const stmt = db.prepare(`
+      INSERT INTO email_log (quote_id, client_id, email_type, recipient_email, subject, body, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'sent')
+    `);
+    const result = stmt.run(quoteId, clientId, emailType, recipient, subject, body);
+    
+    res.json({ id: result.lastInsertRowid, status: 'sent' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Get email history for client
+app.get('/api/clients/:id/emails', (req, res) => {
+  try {
+    const clientId = parseInt(req.params.id);
+    const emails = db.prepare('SELECT * FROM email_log WHERE client_id = ? ORDER BY sent_at DESC').all(clientId);
+    res.json(emails);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== DASHBOARD ENDPOINTS ==========
+
+// Dashboard stats
+app.get('/api/dashboard/stats', (req, res) => {
+  try {
+    // Overall stats
+    const stats = db.prepare(`
+      SELECT 
+        (SELECT COUNT(*) FROM quotes) as total_quotes,
+        (SELECT COUNT(*) FROM quotes WHERE status = 'accepted') as accepted_quotes,
+        (SELECT COUNT(*) FROM clients) as total_clients,
+        (SELECT COALESCE(SUM(total), 0) FROM quotes WHERE status = 'accepted') as total_revenue,
+        (SELECT COALESCE(SUM(amount), 0) FROM payments) as total_payments,
+        (SELECT COUNT(*) FROM quotes WHERE created_at >= date('now', '-30 days')) as quotes_last_30_days
+    `).get();
+    
+    // Upcoming reminders
+    const upcomingReminders = db.prepare(`
+      SELECT cr.*, c.first_name, c.last_name, c.company_name
+      FROM client_reminders cr
+      JOIN clients c ON cr.client_id = c.id
+      WHERE cr.is_completed = 0 AND cr.reminder_date <= date('now', '+7 days')
+      ORDER BY cr.reminder_date ASC
+      LIMIT 5
+    `).all();
+    
+    // Recent activity
+    const recentActivity = db.prepare(`
+      SELECT 'quote' as type, q.id, q.project_name, q.created_at, c.first_name, c.last_name
+      FROM quotes q
+      JOIN clients c ON q.client_id = c.id
+      ORDER BY q.created_at DESC
+      LIMIT 5
+    `).all();
+    
+    res.json({
+      stats,
+      upcoming_reminders: upcomingReminders,
+      recent_activity: recentActivity
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
 // Start server
+// ============================================
 app.listen(PORT, HOST, () => {
   console.log(`🚀 Gradbeni app teče na:`);
   console.log(`   http://localhost:${PORT} (lokalno)`);
   console.log(`   http://0.0.0.0:${PORT} (omrežje)`);
   console.log(`📁 Podatkovna baza: ${path.join(dataDir, 'quotes.db')}`);
+  console.log(`✅ Faza 5: Professional CRM & Payments aktivna`);
 });
 
 module.exports = app;
