@@ -47,9 +47,36 @@ app.get('/api/company', (req, res) => {
   }
 });
 
+// Input sanitization helper
+function sanitizeInput(input) {
+  if (typeof input !== 'string') return input;
+  // Remove potentially dangerous characters
+  return input.replace(/[<>\"']/g, '');
+}
+
+function validateRequired(value, fieldName) {
+  if (!value || value.toString().trim() === '') {
+    throw new Error(`${fieldName} je obvezen podatek`);
+  }
+  return value;
+}
+
 app.post('/api/company', (req, res) => {
   try {
-    const { name, address, phone, email, tax_id, bank_account, logo_path } = req.body;
+    // Sanitize and validate inputs
+    const name = sanitizeInput(validateRequired(req.body.name, 'Naziv podjetja'));
+    const address = sanitizeInput(req.body.address || '');
+    const phone = sanitizeInput(req.body.phone || '');
+    const email = sanitizeInput(req.body.email || '');
+    const tax_id = sanitizeInput(req.body.tax_id || '');
+    const bank_account = sanitizeInput(req.body.bank_account || '');
+    const logo_path = sanitizeInput(req.body.logo_path || '');
+    
+    // Validate email format if provided
+    if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return res.status(400).json({ error: 'Neveljaven email naslov' });
+    }
+    
     const stmt = db.prepare(`
       INSERT INTO company_settings (name, address, phone, email, tax_id, bank_account, logo_path)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -65,7 +92,7 @@ app.post('/api/company', (req, res) => {
     stmt.run(name, address, phone, email, tax_id, bank_account, logo_path);
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -91,7 +118,21 @@ app.get('/api/work-items', (req, res) => {
 
 app.post('/api/work-items', (req, res) => {
   try {
-    const { name, category, unit, base_price, difficulty_easy_factor, difficulty_medium_factor, difficulty_hard_factor, description } = req.body;
+    // Sanitize and validate inputs
+    const name = sanitizeInput(validateRequired(req.body.name, 'Naziv postavke'));
+    const category = sanitizeInput(validateRequired(req.body.category, 'Kategorija'));
+    const unit = sanitizeInput(validateRequired(req.body.unit, 'Enota'));
+    const base_price = parseFloat(req.body.base_price) || 0;
+    const difficulty_easy_factor = parseFloat(req.body.difficulty_easy_factor) || 0.8;
+    const difficulty_medium_factor = parseFloat(req.body.difficulty_medium_factor) || 1.0;
+    const difficulty_hard_factor = parseFloat(req.body.difficulty_hard_factor) || 1.3;
+    const description = sanitizeInput(req.body.description || '');
+    
+    // Validate price is non-negative
+    if (base_price < 0) {
+      return res.status(400).json({ error: 'Cena ne more biti negativna' });
+    }
+    
     const stmt = db.prepare(`
       INSERT INTO work_items (name, category, unit, base_price, difficulty_easy_factor, difficulty_medium_factor, difficulty_hard_factor, description)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -99,7 +140,7 @@ app.post('/api/work-items', (req, res) => {
     const result = stmt.run(name, category, unit, base_price, difficulty_easy_factor, difficulty_medium_factor, difficulty_hard_factor, description);
     res.json({ id: result.lastInsertRowid });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -125,7 +166,18 @@ app.get('/api/materials', (req, res) => {
 
 app.post('/api/materials', (req, res) => {
   try {
-    const { name, category, unit, unit_price, description } = req.body;
+    // Sanitize and validate inputs
+    const name = sanitizeInput(validateRequired(req.body.name, 'Naziv materiala'));
+    const category = sanitizeInput(validateRequired(req.body.category, 'Kategorija'));
+    const unit = sanitizeInput(validateRequired(req.body.unit, 'Enota'));
+    const unit_price = parseFloat(req.body.unit_price) || 0;
+    const description = sanitizeInput(req.body.description || '');
+    
+    // Validate price is non-negative
+    if (unit_price < 0) {
+      return res.status(400).json({ error: 'Cena ne more biti negativna' });
+    }
+    
     const stmt = db.prepare(`
       INSERT INTO materials (name, category, unit, unit_price, description)
       VALUES (?, ?, ?, ?, ?)
@@ -133,7 +185,7 @@ app.post('/api/materials', (req, res) => {
     const result = stmt.run(name, category, unit, unit_price, description);
     res.json({ id: result.lastInsertRowid });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -244,20 +296,32 @@ app.get('/api/quotes/:id', (req, res) => {
 
 app.post('/api/quotes', (req, res) => {
   try {
-    const { client_id, project_name, project_address, valid_until, items, subtotal, tax_rate, tax_amount, total, labor_total, material_total } = req.body;
+    // Sanitize and validate inputs
+    const client_id = parseInt(req.body.client_id) || null;
+    const project_name = sanitizeInput(validateRequired(req.body.project_name, 'Naziv projekta'));
+    const project_address = sanitizeInput(req.body.project_address || '');
+    const valid_until = req.body.valid_until || new Date().toISOString().split('T')[0];
     
-    let finalSubtotal = subtotal || 0;
-    let finalLaborTotal = labor_total || 0;
-    let finalMaterialTotal = material_total || 0;
-    let finalTaxRate = tax_rate || 22;
-    let finalTaxAmount = tax_amount || 0;
-    let finalTotal = total || 0;
+    // Validate items array
+    const items = Array.isArray(req.body.items) ? req.body.items : [];
+    if (items.length > 1000) {
+      return res.status(400).json({ error: 'Predračun ima preveč postavk (max 1000)' });
+    }
     
-    if (!subtotal && items && items.length > 0) {
+    let finalSubtotal = parseFloat(req.body.subtotal) || 0;
+    let finalLaborTotal = parseFloat(req.body.labor_total) || 0;
+    let finalMaterialTotal = parseFloat(req.body.material_total) || 0;
+    let finalTaxRate = parseFloat(req.body.tax_rate) || 22;
+    let finalTaxAmount = parseFloat(req.body.tax_amount) || 0;
+    let finalTotal = parseFloat(req.body.total) || 0;
+    
+    if (!finalSubtotal && items.length > 0) {
       finalSubtotal = 0;
       finalLaborTotal = 0;
       items.forEach(item => {
-        const itemSubtotal = (item.quantity || 0) * (item.price_per_unit || 0);
+        const quantity = parseFloat(item.quantity) || 0;
+        const price = parseFloat(item.price_per_unit) || 0;
+        const itemSubtotal = quantity * price;
         finalLaborTotal += itemSubtotal;
         finalSubtotal += itemSubtotal;
       });
@@ -269,35 +333,45 @@ app.post('/api/quotes', (req, res) => {
       INSERT INTO quotes (client_id, project_name, project_address, valid_until, subtotal, tax_rate, tax_amount, total, labor_total, material_total)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    const quoteResult = quoteStmt.run(client_id, project_name, project_address, valid_until || new Date().toISOString().split('T')[0], finalSubtotal, finalTaxRate, finalTaxAmount, finalTotal, finalLaborTotal, finalMaterialTotal);
+    const quoteResult = quoteStmt.run(client_id, project_name, project_address, valid_until, finalSubtotal, finalTaxRate, finalTaxAmount, finalTotal, finalLaborTotal, finalMaterialTotal);
     const quote_id = quoteResult.lastInsertRowid;
     
-    if (items && items.length > 0) {
+    if (items.length > 0) {
       const itemStmt = db.prepare(`
         INSERT INTO quote_items (quote_id, work_item_id, quantity, price_per_unit, difficulty, notes, subtotal)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
       
       items.forEach(item => {
-        const itemSubtotal = (item.quantity || 0) * (item.price_per_unit || 0);
-        itemStmt.run(quote_id, item.work_item_id, item.quantity || 0, item.price_per_unit || 0, item.difficulty || 'medium', item.notes || '', itemSubtotal);
+        const quantity = parseFloat(item.quantity) || 0;
+        const price = parseFloat(item.price_per_unit) || 0;
+        const work_item_id = parseInt(item.work_item_id) || null;
+        const difficulty = ['easy', 'medium', 'hard'].includes(item.difficulty) ? item.difficulty : 'medium';
+        const notes = sanitizeInput(item.notes || '');
+        const itemSubtotal = quantity * price;
+        itemStmt.run(quote_id, work_item_id, quantity, price, difficulty, notes, itemSubtotal);
       });
     }
     
-    res.json({ id: quote_id, total });
+    res.json({ id: quote_id, total: finalTotal });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 
 // Update quote status
 app.patch('/api/quotes/:id/status', (req, res) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
+    const id = parseInt(req.params.id);
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ error: 'Neveljaven ID predračuna' });
+    }
     
-    if (!['pending', 'accepted', 'rejected'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
+    const status = req.body.status;
+    const validStatuses = ['pending', 'accepted', 'rejected', 'sent', 'expired'];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Neveljaven status' });
     }
     
     const stmt = db.prepare('UPDATE quotes SET status = ? WHERE id = ?');
