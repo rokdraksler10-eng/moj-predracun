@@ -139,6 +139,9 @@
    BASE STYLES
    ============================================ */
 
+/* Alpine.js cloak - hide elements until initialized */
+[x-cloak] { display: none !important; }
+
 * {
   margin: 0;
   padding: 0;

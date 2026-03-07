@@ -1291,7 +1291,11 @@ app.get('/api/dashboard/stats', (req, res) => {
     
     // Upcoming reminders
     const upcomingReminders = db.prepare(`
-      SELECT cr.*, c.first_name, c.last_name, c.company_name
+      SELECT cr.*, c.client_type, 
+        CASE 
+          WHEN c.client_type = 'individual' THEN c.first_name || ' ' || c.last_name
+          ELSE c.company_name
+        END as client_name
       FROM client_reminders cr
       JOIN clients c ON cr.client_id = c.id
       WHERE cr.is_completed = 0 AND cr.reminder_date <= date('now', '+7 days')
@@ -1301,9 +1305,13 @@ app.get('/api/dashboard/stats', (req, res) => {
     
     // Recent activity
     const recentActivity = db.prepare(`
-      SELECT 'quote' as type, q.id, q.project_name, q.created_at, c.first_name, c.last_name
+      SELECT 'quote' as type, q.id, q.project_name, q.created_at,
+        CASE 
+          WHEN c.client_type = 'individual' THEN c.first_name || ' ' || c.last_name
+          ELSE c.company_name
+        END as client_name
       FROM quotes q
-      JOIN clients c ON q.client_id = c.id
+      LEFT JOIN clients c ON q.client_id = c.id
       ORDER BY q.created_at DESC
       LIMIT 5
     `).all();
