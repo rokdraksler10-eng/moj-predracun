@@ -111,7 +111,44 @@
       background: var(--ios-blue);
       color: white;
     }
-    
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .loading-overlay.active { display: flex; }
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--ios-border);
+      border-top-color: var(--ios-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Input validation error */
+    .input-error {
+      border: 2px solid var(--ios-red) !important;
+      box-shadow: 0 0 0 3px rgba(255,59,48,0.1) !important;
+    }
+    .error-message {
+      color: var(--ios-red);
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+    }
+    .error-message.show { display: block; }
+
     .content {
       padding: 20px;
       max-width: 600px;
@@ -726,9 +763,14 @@
     });
     
     function setupEventListeners() {
-      document.getElementById('searchInput').addEventListener('input', function(e) {
-        searchQuery = e.target.value.toLowerCase();
+      // Debounced search for better performance with large datasets
+      const debouncedSearch = debounce(function(value) {
+        searchQuery = value.toLowerCase();
         renderMaterials();
+      }, 300);
+
+      document.getElementById('searchInput').addEventListener('input', function(e) {
+        debouncedSearch(e.target.value);
       });
       
       document.getElementById('workItemSearch').addEventListener('input', function(e) {
@@ -954,8 +996,18 @@
       const description = document.getElementById('materialDescription').value.trim();
       const id = document.getElementById('materialId').value;
       
+      // Clear previous errors
+      document.getElementById('materialPrice').classList.remove('input-error');
+      
       if (!name || !category || !unit || isNaN(unitPrice)) {
         showToast('Prosimo izpolnite vsa obvezna polja', 'error');
+        return;
+      }
+
+      // Validate price - must be non-negative
+      if (unitPrice < 0) {
+        document.getElementById('materialPrice').classList.add('input-error');
+        showToast('Cena ne sme biti negativna', 'error');
         return;
       }
       
@@ -969,6 +1021,7 @@
         work_item_id: selectedWorkItemId
       };
       
+      showLoading();
       try {
         let response;
         if (id) {
@@ -993,6 +1046,8 @@
       } catch (error) {
         console.error('Error saving material:', error);
         showToast('Napaka pri shranjevanju', 'error');
+      } finally {
+        hideLoading();
       }
     }
     
@@ -1009,6 +1064,7 @@
     async function confirmDelete() {
       if (!materialToDelete) return;
       
+      showLoading();
       try {
         const response = await fetch('/api/materials/' + materialToDelete, {
           method: 'DELETE'
@@ -1022,6 +1078,8 @@
       } catch (error) {
         console.error('Error deleting material:', error);
         showToast('Napaka pri brisanju', 'error');
+      } finally {
+        hideLoading();
       }
     }
     
@@ -1075,32 +1133,38 @@
       selectedWorkItemId = workItemId;
       
       if (linkingMaterialId) {
-        const material = materials.find(m => m.id === linkingMaterialId);
-        if (material) {
-          try {
-            const response = await fetch('/api/materials/' + linkingMaterialId, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                name: material.name,
-                category: material.category,
-                unit: material.unit,
-                unit_price: material.unit_price,
-                supplier: material.supplier,
-                description: material.description,
-                work_item_id: workItemId
-              })
-            });
-            
-            if (!response.ok) throw new Error('Failed to link material');
-            
-            closeLinkModal();
-            showToast('Material povezan s postavko', 'success');
-            await loadMaterials();
-          } catch (error) {
-            console.error('Error linking material:', error);
-            showToast('Napaka pri povezovanju', 'error');
-          }
+        showLoading();
+        try {
+          // Fetch fresh material data to avoid race condition
+          const freshResponse = await fetch('/api/materials/' + linkingMaterialId);
+          if (!freshResponse.ok) throw new Error('Failed to fetch material');
+          const freshMaterial = await freshResponse.json();
+          
+          // Update with fresh data + new work_item_id
+          const response = await fetch('/api/materials/' + linkingMaterialId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: freshMaterial.name,
+              category: freshMaterial.category,
+              unit: freshMaterial.unit,
+              unit_price: freshMaterial.unit_price,
+              supplier: freshMaterial.supplier,
+              description: freshMaterial.description,
+              work_item_id: workItemId
+            })
+          });
+          
+          if (!response.ok) throw new Error('Failed to link material');
+          
+          closeLinkModal();
+          showToast('Material povezan s postavko', 'success');
+          await loadMaterials();
+        } catch (error) {
+          console.error('Error linking material:', error);
+          showToast('Napaka pri povezovanju', 'error');
+        } finally {
+          hideLoading();
         }
       }
     }
@@ -1120,6 +1184,32 @@
         toast.classList.remove('show');
       }, 3000);
     }
+
+    // Loading state functions
+    function showLoading() {
+      document.getElementById('loadingOverlay').classList.add('active');
+    }
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.remove('active');
+    }
+
+    // Debounce function
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
   </script>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+  </div>
 </body>
 </html>
