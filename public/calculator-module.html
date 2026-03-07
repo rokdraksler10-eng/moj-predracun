@@ -596,9 +596,7 @@
             text += '==================\\n';
             text += 'SKUPAJ:\\n';
             text += '  Površina: ' + totalArea.toFixed(2) + ' m²\\n';
-            text += '  Prostornina: ' + totalVolume.toFixed(3) + ' m³
-            text += '  Površina: ' + totalArea.toFixed(2) + ' m²\n';
-            text += '  Prostornina: ' + totalVolume.toFixed(3) + ' m³\n';
+            text += '  Prostornina: ' + totalVolume.toFixed(3) + ' m³\\n';
             
             const blob = new Blob([text], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
