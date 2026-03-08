@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moj Predračun | Professional</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --ios-blue: #007AFF;
+            --ios-green: #34C759;
+            --ios-red: #FF3B30;
+            --ios-bg: #F2F2F7;
+            --ios-card: #FFFFFF;
+            --ios-text: #000000;
+            --ios-text-secondary: #8E8E93;
+            --ios-border: #E5E5EA;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: var(--ios-bg); 
+            color: var(--ios-text); 
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(20px); 
+            border-top: 1px solid rgba(0,0,0,0.1); 
+            display: flex; 
+            justify-content: space-around; 
+            padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); 
+            z-index: 1000; 
+        }
+        .nav button { 
+            background: none; 
+            border: none; 
+            padding: 8px 16px; 
+            font-size: 12px; 
+            font-weight: 600; 
+            color: #8E8E93; 
+            cursor: pointer; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 4px;
+        }
+        .nav button.active { color: var(--ios-blue); }
+        .nav button svg { width: 28px; height: 28px; }
+        .main-content { padding: 20px 20px 100px 20px; max-width: 1200px; margin: 0 auto; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .card { 
+            background: var(--ios-card); 
+            border-radius: 16px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            margin-bottom: 20px; 
+        }
+        .card-body { padding: 20px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--ios-border); }
+        .tab { 
+            padding: 12px 24px; 
+            background: none; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: 600; 
+            color: var(--ios-text-secondary); 
+            border-bottom: 2px solid transparent; 
+        }
+        .tab.active { color: var(--ios-blue); border-bottom-color: var(--ios-blue); }
+        .btn {
+            background: var(--ios-blue);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-success { background: var(--ios-green); }
+        .btn-outline { background: transparent; border: 2px solid var(--ios-blue); color: var(--ios-blue); }
+        .form-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 250px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--ios-text-secondary); }
+        .form-group input { 
+            width: 100%; 
+            padding: 12px 16px; 
+            border: 1px solid var(--ios-border); 
+            border-radius: 12px; 
+            font-size: 16px; 
+        }
+        .hidden { display: none !important; }
+        .totals { background: var(--ios-bg); padding: 16px; border-radius: 12px; margin-top: 20px; }
+        .total-row { display: flex; justify-content: space-between; padding: 8px 0; }
+        .grand-total { font-size: 20px; font-weight: 700; color: var(--ios-blue); border-top: 2px solid var(--ios-border); padding-top: 12px; }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <div id="page-quotes" class="page active">
+            <h1 style="margin-bottom: 20px;">📋 Predračuni</h1>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('list')">Seznam</button>
+                <button class="tab" onclick="switchTab('edit')">Urejanje</button>
+            </div>
+
+            <div id="view-list">
+                <div class="card">
+                    <div class="card-body">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2>Seznam predračunov</h2>
+                            <button class="btn" onclick="createNewQuote()">+ Nov predračun</button>
+                        </div>
+                        <p style="color: var(--ios-text-secondary); text-align: center; padding: 40px;">
+                            📭 Ni najdenih predračunov<br>
+                            <small>Klikni "Nov predračun" za začetek</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-edit" class="hidden">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 style="margin-bottom: 20px;">Nov predračun</h2>
+                        <form onsubmit="event.preventDefault();">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Naziv projekta *</label>
+                                    <input type="text" id="project-name" placeholder="npr. Prenova kopalnice">
+                                </div>
+                                <div class="form-group">
+                                    <label>Stranka *</label>
+                                    <input type="text" id="customer" placeholder="Ime in priimek stranke">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Datum</label>
+                                    <input type="date" id="quote-date">
+                                </div>
+                            </div>
+                            <div style="margin-top: 30px; display: flex; gap: 10px;">
+                                <button type="button" class="btn" onclick="saveQuote()">Shrani predračun</button>
+                                <button type="button" class="btn btn-outline" onclick="cancelEdit()">Prekliči</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <button onclick="showPage('quotes')" class="active">📋 Predračuni</button>
+    </nav>
+
+    <script>
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + page).classList.add('active');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (tab === 'list') {
+                document.getElementById('view-list').classList.remove('hidden');
+                document.getElementById('view-edit').classList.add('hidden');
+            } else {
+                document.getElementById('view-list').classList.add('hidden');
+                document.getElementById('view-edit').classList.remove('hidden');
+            }
+        }
+
+        function createNewQuote() {
+            console.log('Creating new quote...');
+            document.getElementById('project-name').value = '';
+            document.getElementById('customer').value = '';
+            document.getElementById('quote-date').value = new Date().toISOString().split('T')[0];
+            
+            document.getElementById('view-list').classList.add('hidden');
+            document.getElementById('view-edit').classList.remove('hidden');
+            
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.tab[onclick="switchTab(\'edit\')"]').classList.add('active');
+            
+            document.getElementById('project-name').focus();
+            alert('✅ Obrazec za nov predračun je odprt!');
+        }
+
+        function saveQuote() {
+            const projectName = document.getElementById('project-name').value.trim();
+            const customer = document.getElementById('customer').value.trim();
+            
+            if (!projectName) {
+                alert('Vnesite naziv projekta');
+                return;
+            }
+            if (!customer) {
+                alert('Vnesite stranko');
+                return;
+            }
+            
+            alert('✅ Predračun "' + projectName + '" je bil shranjen!');
+            
+            document.getElementById('view-list').classList.remove('hidden');
+            document.getElementById('view-edit').classList.add('hidden');
+            
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.tab[onclick="switchTab(\'list\')"]').classList.add('active');
+        }
+
+        function cancelEdit() {
+            if (confirm('Ali ste prepričani?')) {
+                document.getElementById('view-list').classList.remove('hidden');
+                document.getElementById('view-edit').classList.add('hidden');
+                
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelector('.tab[onclick="switchTab(\'list\')"]').classList.add('active');
+            }
+        }
+
+        // Initialize date
+        document.getElementById('quote-date').value = new Date().toISOString().split('T')[0];
+        
+        console.log('✅ App initialized');
+    </script>
+</body>
+</html>
