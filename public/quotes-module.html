@@ -2,18 +2,25 @@
 <html lang="sl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Predračuni - Moj Predračun</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background: #F2F2F7; 
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html {
+            overflow-x: hidden;
+            height: 100%;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #F2F2F7;
             color: #000;
             min-height: 100vh;
             padding-bottom: 100px;
+            overflow-x: hidden;
+            touch-action: pan-y;
+            -webkit-overflow-scrolling: touch;
         }
         
         /* Header */
@@ -76,6 +83,15 @@
             cursor: pointer;
             width: 100%;
             margin-bottom: 10px;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            min-height: 48px;
+        }
+        .btn:active {
+            transform: scale(0.98);
+            opacity: 0.9;
         }
         .btn-secondary { background: #8E8E93; }
         .btn-success { background: #34C759; }
@@ -116,6 +132,13 @@
             border: 1px solid #E5E5EA;
             border-radius: 10px;
             font-size: 16px;
+            touch-action: manipulation;
+        }
+        /* Prevent zoom on focus for iOS */
+        @supports (-webkit-touch-callout: none) {
+            .form-group input, .form-group select, .search-box input, .search-box select {
+                font-size: 16px !important;
+            }
         }
         .form-row { display: flex; gap: 16px; }
         .form-row .form-group { flex: 1; }

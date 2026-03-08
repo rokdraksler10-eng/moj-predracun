@@ -2,7 +2,7 @@
 <html lang="sl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Moj Predračun | Professional</title>
   <style>
     :root {
@@ -12,11 +12,15 @@
       --ios-text: #000000;
       --ios-text-secondary: #8E8E93;
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { overflow-x: hidden; height: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--ios-bg);
       min-height: 100vh;
+      overflow-x: hidden;
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
     }
     .page { display: none; height: calc(100vh - 80px); }
     .page.active { display: block; }
