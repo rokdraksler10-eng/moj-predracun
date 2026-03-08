@@ -1133,20 +1133,30 @@
             doc.setTextColor(60, 60, 60);
             doc.setFont(undefined, 'normal');
             
+            // NASLOV PODJETJA - bolj poudarjen
             if (companySettings.address) {
                 const addressLines = companySettings.address.split('\n');
                 addressLines.forEach(line => {
-                    doc.text(line, 14, yPos);
-                    yPos += 4.5;
+                    if (line.trim()) {
+                        doc.text(line.trim(), 14, yPos);
+                        yPos += 4.5;
+                    }
                 });
             }
+            
+            // Davčna številka s predpono SI
             if (companySettings.taxNumber) {
-                doc.text('Davčna št.: ' + companySettings.taxNumber, 14, yPos);
+                const vatNumber = companySettings.taxNumber.startsWith('SI') 
+                    ? companySettings.taxNumber 
+                    : 'SI' + companySettings.taxNumber;
+                doc.text('ID za DDV: ' + vatNumber, 14, yPos);
                 yPos += 4.5;
             }
+            
+            // Kontakti
             if (companySettings.phone || companySettings.email) {
                 let contact = '';
-                if (companySettings.phone) contact += companySettings.phone;
+                if (companySettings.phone) contact += 'Tel: ' + companySettings.phone;
                 if (companySettings.phone && companySettings.email) contact += ' | ';
                 if (companySettings.email) contact += companySettings.email;
                 doc.text(contact, 14, yPos);
@@ -1156,7 +1166,6 @@
             // --- LOGO (Top Right) ---
             if (companySettings.logo) {
                 try {
-                    // Check if logo is base64 data URL
                     let imgData = companySettings.logo;
                     let imgFormat = 'JPEG';
                     
@@ -1166,22 +1175,40 @@
                         imgFormat = 'JPEG';
                     }
                     
-                    // Add logo to PDF
                     doc.addImage(imgData, imgFormat, 160, 15, 36, 28);
                 } catch (e) {
                     console.log('Logo could not be added to PDF:', e);
                 }
             }
 
-            // --- DOCUMENT TITLE (Center) ---
-            yPos = 52;
-            doc.setFontSize(11);
-            doc.setTextColor(100, 100, 100);
-            doc.text('PREDRAČUN št.: ' + (currentQuote ? currentQuote.id : Date.now()), 14, yPos);
+            // --- DOCUMENT TITLE ---
+            yPos = 55;
+            doc.setFontSize(16);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'bold');
+            doc.text('PREDRAČUN', 14, yPos);
+            doc.setFont(undefined, 'normal');
             
-            // --- DATE (Right) ---
-            doc.text('Datum: ' + document.getElementById('quote-date').value, 160, yPos);
-            yPos += 10;
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text('št.: ' + (currentQuote ? currentQuote.id : Date.now()), 70, yPos);
+            
+            // --- KRAJ IN DATUM (Right) ---
+            const quoteDate = document.getElementById('quote-date').value;
+            const formattedDate = quoteDate ? new Date(quoteDate).toLocaleDateString('sl-SI') : '';
+            const city = companySettings.address ? companySettings.address.split('\n').pop().trim() : 'Kranj';
+            doc.text(city + ', ' + formattedDate, 160, yPos, { align: 'right' });
+            yPos += 12;
+            
+            // --- VELJAVNOST PONUDBE ---
+            const validUntil = document.getElementById('valid-until').value;
+            if (validUntil) {
+                doc.setFontSize(9);
+                doc.setTextColor(150, 0, 0);
+                doc.text('Ponudba velja do: ' + new Date(validUntil).toLocaleDateString('sl-SI'), 14, yPos);
+                doc.setTextColor(0, 0, 0);
+                yPos += 6;
+            }
 
             // --- CUSTOMER INFO BOX ---
             doc.setDrawColor(0, 0, 0);
@@ -1194,11 +1221,23 @@
             
             doc.setFontSize(10);
             doc.setTextColor(0, 0, 0);
-            doc.text(customer, 18, yPos + 14);
+            // Velike začetnice za ime
+            const properCustomer = customer.split(' ').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            ).join(' ');
+            doc.text(properCustomer, 18, yPos + 14);
             
-            if (document.getElementById('address').value) {
+            const projectAddress = document.getElementById('address').value;
+            if (projectAddress) {
                 doc.setFontSize(9);
-                doc.text(document.getElementById('address').value, 18, yPos + 22);
+                // Velike začetnice za naslov
+                const properAddress = projectAddress.split(' ').map((word, index) => {
+                    if (index === 0 || word.length > 2) {
+                        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                    }
+                    return word.toLowerCase();
+                }).join(' ');
+                doc.text(properAddress, 18, yPos + 22);
             }
             yPos += 40;
 
@@ -1212,6 +1251,12 @@
 
             // --- WORK ITEMS TABLE ---
             if (workItems.length > 0) {
+                // Preveri prostor na strani
+                if (yPos > 200) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
                 const workData = workItems.map(item => [
                     item.name,
                     item.unit,
@@ -1243,14 +1288,21 @@
                         2: { cellWidth: 18, halign: 'center' },
                         3: { cellWidth: 28, halign: 'right' },
                         4: { cellWidth: 30, halign: 'right' }
-                    }
+                    },
+                    margin: { top: 10 }
                 });
 
-                yPos = doc.lastAutoTable.finalY + 6;
+                yPos = doc.lastAutoTable.finalY + 10;
             }
 
             // --- MATERIALS TABLE ---
             if (materials.length > 0) {
+                // Preveri prostor na strani
+                if (yPos > 200) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
                 const matData = materials.map(item => [
                     item.name,
                     item.unit,
@@ -1282,10 +1334,11 @@
                         2: { cellWidth: 18, halign: 'center' },
                         3: { cellWidth: 28, halign: 'right' },
                         4: { cellWidth: 30, halign: 'right' }
-                    }
+                    },
+                    margin: { top: 10 }
                 });
 
-                yPos = doc.lastAutoTable.finalY + 8;
+                yPos = doc.lastAutoTable.finalY + 10;
             }
 
             // --- TOTALS SECTION ---
@@ -1295,54 +1348,76 @@
             const vat = subtotal * 0.22;
             const grandTotal = subtotal + vat;
 
-            // Draw totals box
+            // Preveri če je dovolj prostora, sicer dodaj novo stran
+            if (yPos > 220) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            // Draw totals box - večji prostor
+            const totalBoxY = yPos + 10;
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(0.3);
-            doc.line(120, yPos, 196, yPos);
+            doc.line(120, totalBoxY, 196, totalBoxY);
             
-            yPos += 6;
+            let totalY = totalBoxY + 8;
             doc.setFontSize(9);
             doc.setTextColor(80, 80, 80);
-            doc.text('Postavke dela:', 125, yPos);
-            doc.text(workTotal.toFixed(2) + ' EUR', 192, yPos, { align: 'right' });
-            yPos += 5;
+            doc.text('Postavke dela:', 125, totalY);
+            doc.text(workTotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
+            totalY += 7;
             
-            doc.text('Materiali:', 125, yPos);
-            doc.text(materialsTotal.toFixed(2) + ' EUR', 192, yPos, { align: 'right' });
-            yPos += 5;
+            doc.text('Materiali:', 125, totalY);
+            doc.text(materialsTotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
+            totalY += 7;
             
-            doc.text('Skupaj brez DDV:', 125, yPos);
-            doc.text(subtotal.toFixed(2) + ' EUR', 192, yPos, { align: 'right' });
-            yPos += 5;
+            doc.text('Skupaj brez DDV:', 125, totalY);
+            doc.text(subtotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
+            totalY += 7;
             
-            doc.text('DDV 22%:', 125, yPos);
-            doc.text(vat.toFixed(2) + ' EUR', 192, yPos, { align: 'right' });
-            yPos += 7;
+            doc.text('DDV 22%:', 125, totalY);
+            doc.text(vat.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
+            totalY += 10;
 
             // Bold total line
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(0.5);
-            doc.line(120, yPos - 3, 196, yPos - 3);
+            doc.line(120, totalY - 4, 196, totalY - 4);
             
-            doc.setFontSize(11);
+            // SKUPAJ - večji font in večji prostor
+            doc.setFontSize(12);
             doc.setTextColor(0, 0, 0);
             doc.setFont(undefined, 'bold');
-            doc.text('SKUPAJ ZA PLAČILO:', 125, yPos);
-            doc.text(grandTotal.toFixed(2) + ' EUR', 192, yPos, { align: 'right' });
+            doc.text('SKUPAJ ZA PLAČILO:', 125, totalY + 2);
+            doc.text(grandTotal.toFixed(2) + ' EUR', 192, totalY + 2, { align: 'right' });
             doc.setFont(undefined, 'normal');
 
             // --- FOOTER ---
-            yPos = 270;
+            let footerY = 270;
+            if (totalY + 30 > 270) {
+                footerY = totalY + 40;
+            }
+            
+            // Preveri če je prostor za footer
+            if (footerY > 280) {
+                doc.addPage();
+                footerY = 20;
+            }
+            
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(0.5);
-            doc.line(14, yPos, 196, yPos);
+            doc.line(14, footerY, 196, footerY);
             
             doc.setFontSize(8);
             doc.setTextColor(100, 100, 100);
-            doc.text('Predračun je informativne narave in ne predstavlja računa.', 105, yPos + 6, { align: 'center' });
+            doc.text('Predračun je informativne narave in ne predstavlja računa.', 105, footerY + 6, { align: 'center' });
             
-            if (companySettings.bankName) {
-                doc.text('Plačilo na TRR: ' + companySettings.bankName + ' | IBAN: ' + (companySettings.bankIban || '-'), 105, yPos + 11, { align: 'center' });
+            // TRR podatki
+            if (companySettings.bankName || companySettings.bankIban) {
+                let bankText = 'Plačilo:';
+                if (companySettings.bankName) bankText += ' ' + companySettings.bankName;
+                if (companySettings.bankIban) bankText += ' | TRR: ' + companySettings.bankIban;
+                doc.text(bankText, 105, footerY + 12, { align: 'center' });
             }
 
             // Save PDF
