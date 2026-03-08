@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predračuni - Quotes Module</title>
+    <script src="utils.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        :root {
+            --ios-blue: #007AFF;
+            --ios-green: #34C759;
+            --ios-red: #FF3B30;
+            --ios-orange: #FF9500;
+            --ios-bg: #F2F2F7;
+            --ios-card: #FFFFFF;
+            --ios-text: #000000;
+            --ios-text-secondary: #8E8E93;
+            --ios-border: #E5E5EA;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--ios-bg); color: var(--ios-text); line-height: 1.6; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        .header { background: var(--ios-card); padding: 20px; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .header h1 { color: var(--ios-blue); margin-bottom: 10px; font-size: 28px; font-weight: 700; }
+        
+        /* Navigation Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--ios-border); }
+        .tab { padding: 12px 24px; background: none; border: none; cursor: pointer; font-size: 16px; font-weight: 600; color: var(--ios-text-secondary); border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab:hover { color: var(--ios-blue); }
+        .tab.active { color: var(--ios-blue); border-bottom-color: var(--ios-blue); }
+        
+        /* Cards */
+        .card { background: var(--ios-card); border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+        .card-header { padding: 16px 20px; background: var(--ios-bg); border-bottom: 1px solid var(--ios-border); font-weight: 600; }
+        .card-body { padding: 20px; }
+        
+        /* Forms */
+        .form-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--ios-text-secondary); }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px 16px; border: 1px solid var(--ios-border); border-radius: 12px; font-size: 16px; background: var(--ios-card); transition: border-color 0.2s, box-shadow 0.2s; min-height: 48px; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--ios-blue); box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        
+        /* Buttons */
+        .btn { padding: 12px 20px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--ios-blue); color: #fff; }
+        .btn-success { background: var(--ios-green); color: #fff; }
+        .btn-danger { background: var(--ios-red); color: #fff; }
+        .btn-secondary { background: var(--ios-bg); color: var(--ios-blue); border: 1px solid var(--ios-border); }
+        .btn-warning { background: var(--ios-orange); color: #fff; }
+        .btn-outline { background: transparent; border: 1px solid var(--ios-border); color: var(--ios-blue); }
+        .btn-sm { padding: 8px 16px; font-size: 14px; }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .loading-overlay.active { display: flex; }
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--ios-border);
+            border-top-color: var(--ios-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Tab Transitions */
+        .tab-content {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .tab-content.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Mobile Responsive Tables */
+        @media (max-width: 768px) {
+            .table-responsive {
+                display: block;
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .form-row {
+                flex-direction: column;
+            }
+            .form-group {
+                min-width: 100%;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .btn {
+                width: 100%;
+                margin-bottom: 8px;
+            }
+        }
+
+        /* Modal Animation */
+        .modal {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            transform: scale(0.9) translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        /* Date Validation Error */
+        .input-error {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+        }
+        .error-message {
+            color: #ef4444;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+        
+        /* Tables */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background: #f9fafb; font-weight: 600; font-size: 12px; text-transform: uppercase; color: #6b7280; }
+        tr:hover { background: #f9fafb; }
+        .table-actions { display: flex; gap: 8px; }
+        
+        /* Search and Filters */
+        .filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .search-box { position: relative; flex: 1; min-width: 250px; }
+        .search-box input { width: 100%; padding: 10px 12px 10px 36px; border: 1px solid #d1d5db; border-radius: 6px; }
+        .search-box::before { content: "🔍"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); }
+        
+        /* Status badges */
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .badge-draft { background: #fef3c7; color: #92400e; }
+        .badge-sent { background: #dbeafe; color: #1e40af; }
+        .badge-accepted { background: #d1fae5; color: #065f46; }
+        .badge-rejected { background: #fee2e2; color: #991b1b; }
+        .badge-expired { background: #f3f4f6; color: #4b5563; }
+        
+        /* Quote Items */
+        .items-section { margin-top: 20px; }
+        .items-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .items-table { margin-bottom: 16px; }
+        .items-table th { background: #e0e7ff; color: #3730a3; }
+        .item-row td { vertical-align: middle; }
+        .item-row input { padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 4px; width: 100%; }
+        .item-row select { padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 4px; width: 100%; }
+        
+        /* Totals */
+        .totals { background: #f9fafb; padding: 16px 20px; border-radius: 6px; margin-top: 20px; }
+        .total-row { display: flex; justify-content: space-between; padding: 8px 0; }
+        .total-row.grand-total { font-size: 18px; font-weight: 700; color: #2563eb; border-top: 2px solid #e5e7eb; margin-top: 8px; padding-top: 16px; }
+        
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #fff; border-radius: 8px; width: 90%; max-width: 600px; max-height: 90vh; overflow: hidden; }
+        .modal-header { padding: 16px 20px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 20px; overflow-y: auto; max-height: 60vh; }
+        .modal-footer { padding: 16px 20px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px; }
+        
+        /* Empty state */
+        .empty-state { text-align: center; padding: 60px 20px; color: #6b7280; }
+        .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+        
+        /* Loading */
+        .loading { display: inline-block; width: 20px; height: 20px; border: 2px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Toast notifications */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1100; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 12px 20px; border-radius: 6px; color: #fff; font-weight: 500; animation: slideIn 0.3s ease; max-width: 400px; }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #3b82f6; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        /* Utility */
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mr-2 { margin-right: 8px; }
+        .hidden { display: none !important; }
+        
+        /* Print styles for PDF generation */
+        @media print {
+            body { background: #fff; }
+            .no-print { display: none !important; }
+            .card { box-shadow: none; border: 1px solid #ddd; }
+            .container { max-width: 100%; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📋 Sistem za upravljanje predračunov</h1>
+            <p>Ustvarjajte, upravljajte in sledite predračunom za vaše projekte</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="tabs no-print">
+            <button class="tab active" id="tab-list">Seznam predračunov</button>
+            <button class="tab" id="tab-edit">Uredi predračun</button>
+        </div>
+
+        <!-- LIST VIEW -->
+        <div id="view-list">
+            <!-- Filters -->
+            <div class="card no-print">
+                <div class="card-body">
+                    <div class="filters">
+                        <div class="search-box">
+                            <input type="text" id="search-input" placeholder="Išči po nazivu, stranki ali številki..." oninput="handleSearch()">
+                        </div>
+                        <select id="status-filter" class="form-group" style="width: auto; min-width: 150px;" onchange="handleFilter()">
+                            <option value="">Vsi statusi</option>
+                            <option value="draft">Osnutek</option>
+                            <option value="sent">Poslano</option>
+                            <option value="accepted">Sprejeto</option>
+                            <option value="rejected">Zavrnjeno</option>
+                            <option value="expired">Poteklo</option>
+                        </select>
+                        <button class="btn btn-primary" id="btn-new-quote">
+                            <span>+</span> Nov predračun
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quotes Table -->
+            <div class="card">
+                <div class="card-header">Predračuni</div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table id="quotes-table">
+                            <thead>
+                                <tr>
+                                    <th>Številka</th>
+                                    <th>Naziv projekta</th>
+                                    <th>Stranka</th>
+                                    <th>Datum</th>
+                                    <th>Znesek</th>
+                                    <th>Status</th>
+                                    <th class="no-print">Akcije</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quotes-tbody">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="quotes-empty" class="empty-state hidden">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>Ni najdenih predračunov</h3>
+                        <p>Ustvarite nov predračun za začetek</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDIT VIEW -->
+        <div id="view-edit" class="hidden">
+            <!-- Quote Header Form -->
+            <div class="card">
+                <div class="card-header">Podatki o predračunu</div>
+                <div class="card-body">
+                    <form id="quote-form">
+                        <input type="hidden" id="quote-id">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="quote-number">Številka predračuna</label>
+                                <input type="text" id="quote-number" readonly placeholder="Samodejno generirano">
+                            </div>
+                            <div class="form-group">
+                                <label for="quote-status">Status</label>
+                                <select id="quote-status">
+                                    <option value="draft">Osnutek</option>
+                                    <option value="sent">Poslano</option>
+                                    <option value="accepted">Sprejeto</option>
+                                    <option value="rejected">Zavrnjeno</option>
+                                    <option value="expired">Poteklo</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="quote-date">Datum</label>
+                                <input type="date" id="quote-date" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label for="project-name">Naziv projekta *</label>
+                                <input type="text" id="project-name" required placeholder="Vnesite naziv projekta">
+                            </div>
+                            <div class="form-group" style="flex: 2;">
+                                <label for="customer">Stranka *</label>
+                                <input type="text" id="customer" required placeholder="Ime stranke ali podjetja">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 3;">
+                                <label for="address">Naslov</label>
+                                <textarea id="address" rows="2" placeholder="Naslov stranke"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="valid-until">Veljavno do</label>
+                                <input type="date" id="valid-until">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Work Items Section -->
+            <div class="card">
+                <div class="card-header" style="background: #e0e7ff; color: #3730a3;">Postavke dela</div>
+                <div class="card-body">
+                    <div class="items-header no-print">
+                        <h3>Izbrane postavke</h3>
+                        <button class="btn btn-primary btn-sm" onclick="openWorkItemModal()">+ Dodaj postavko</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="items-table" id="work-items-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%;">Naziv postavke</th>
+                                    <th style="width: 15%;">Enota</th>
+                                    <th style="width: 15%;">Količina</th>
+                                    <th style="width: 15%;">Cena/enota</th>
+                                    <th style="width: 15%;">Znesek</th>
+                                    <th class="no-print" style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="work-items-tbody">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="work-items-empty" class="empty-state">
+                        <div class="empty-state-icon">🔧</div>
+                        <p>Ni dodanih postavk dela</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Materials Section -->
+            <div class="card">
+                <div class="card-header" style="background: #fce7f3; color: #9d174d;">Materiali</div>
+                <div class="card-body">
+                    <div class="items-header no-print">
+                        <h3>Izbrani materiali</h3>
+                        <button class="btn btn-warning btn-sm" onclick="openMaterialModal()">+ Dodaj material</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="items-table" id="materials-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%;">Naziv materiala</th>
+                                    <th style="width: 15%;">Enota</th>
+                                    <th style="width: 15%;">Količina</th>
+                                    <th style="width: 15%;">Cena/enota</th>
+                                    <th style="width: 15%;">Znesek</th>
+                                    <th class="no-print" style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="materials-tbody">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="materials-empty" class="empty-state">
+                        <div class="empty-state-icon">📦</div>
+                        <p>Ni dodanih materialov</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Totals and Actions -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="totals">
+                        <div class="total-row">
+                            <span>Postavke dela:</span>
+                            <span id="total-work">0,00 €</span>
+                        </div>
+                        <div class="total-row">
+                            <span>Materiali:</span>
+                            <span id="total-materials">0,00 €</span>
+                        </div>
+                        <div class="total-row">
+                            <span>Osnova za DDV:</span>
+                            <span id="subtotal">0,00 €</span>
+                        </div>
+                        <div class="total-row">
+                            <span>DDV (22%):</span>
+                            <span id="vat-amount">0,00 €</span>
+                        </div>
+                        <div class="total-row grand-total">
+                            <span>SKUPAJ:</span>
+                            <span id="grand-total">0,00 €</span>
+                        </div>
+                    </div>
+
+                    <div class="form-row no-print" style="margin-top: 20px; justify-content: flex-end;">
+                        <button class="btn btn-outline" onclick="cancelEdit()">Prekliči</button>
+                        <button class="btn btn-secondary" onclick="saveQuote('draft')">Shrani osnutek</button>
+                        <button class="btn btn-success" onclick="saveQuote('sent')">Shrani in pošlji</button>
+                        <button class="btn btn-primary" onclick="generatePDF()">📄 Generiraj PDF</button>
+                        <button class="btn btn-danger" onclick="deleteCurrentQuote()" id="btn-delete">🗑️ Izbriši</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Item Modal -->
+    <div class="modal-overlay" id="work-item-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Dodaj postavko dela</h3>
+                <button class="btn btn-sm btn-outline" onclick="closeModal('work-item-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-4">
+                    <label>Izberi postavko</label>
+                    <select id="work-item-select" class="mb-2">
+                        <option value="">-- Izberite postavko --</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline" onclick="loadWorkItems()">🔄 Osveži seznam</button>
+                </div>
+                <div id="work-item-details" class="hidden">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Naziv</label>
+                            <input type="text" id="wi-name" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Enota</label>
+                            <input type="text" id="wi-unit" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cena na enoto (€)</label>
+                            <input type="number" id="wi-price" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Količina</label>
+                            <input type="number" id="wi-quantity" step="0.01" min="0" value="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('work-item-modal')">Prekliči</button>
+                <button class="btn btn-primary" onclick="addWorkItem()" id="btn-add-work" disabled>Dodaj</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Material Modal -->
+    <div class="modal-overlay" id="material-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Dodaj material</h3>
+                <button class="btn btn-sm btn-outline" onclick="closeModal('material-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-4">
+                    <label>Izberi material</label>
+                    <select id="material-select" class="mb-2">
+                        <option value="">-- Izberite material --</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline" onclick="loadMaterials()">🔄 Osveži seznam</button>
+                </div>
+                <div id="material-details" class="hidden">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Naziv</label>
+                            <input type="text" id="mat-name" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Enota</label>
+                            <input type="text" id="mat-unit" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cena na enoto (€)</label>
+                            <input type="number" id="mat-price" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Količina</label>
+                            <input type="number" id="mat-quantity" step="0.01" min="0" value="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('material-modal')">Prekliči</button>
+                <button class="btn btn-primary" onclick="addMaterial()" id="btn-add-mat" disabled>Dodaj</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // ============================================
+        // STATE MANAGEMENT
+        // ============================================
+        const state = {
+            quotes: [],
+            workItems: [],
+            materials: [],
+            currentQuote: null,
+            selectedWorkItems: [],
+            selectedMaterials: [],
+            filter: {
+                search: '',
+                status: ''
+            }
+        };
+
+        const VAT_RATE = 0.22; // 22% DDV
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        
+        // Global error handler for debugging
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('🚨 Global Error:', msg, 'at line', line, 'in', url);
+            showToast('Napaka: ' + msg, 'error');
+            return false;
+        };
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 quotes-module.html DOM loaded');
+            console.log('🔧 Functions available:', typeof createNewQuote, typeof switchTab, typeof editQuote);
+            
+            // Attach event listeners programmatically
+            const newQuoteBtn = document.getElementById('btn-new-quote');
+            if (newQuoteBtn) {
+                newQuoteBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🔘 Nov predračun button clicked');
+                    createNewQuote();
+                });
+                console.log('✅ Nov predračun button listener attached');
+            } else {
+                console.error('❌ btn-new-quote not found');
+            }
+            
+            // Attach tab listeners
+            const editTab = document.getElementById('tab-edit');
+            if (editTab) {
+                editTab.addEventListener('click', function() {
+                    console.log('🔘 Uredi predračun tab clicked');
+                    switchTab('edit');
+                });
+                console.log('✅ Uredi predračun tab listener attached');
+            }
+            
+            const listTab = document.getElementById('tab-list');
+            if (listTab) {
+                listTab.addEventListener('click', function() {
+                    console.log('🔘 Seznam predračunov tab clicked');
+                    switchTab('list');
+                });
+                console.log('✅ Seznam predračunov tab listener attached');
+            }
+            
+            initializeDateFields();
+            loadQuotes();
+            setupEventListeners();
+            checkCalculatorTransfer(); // Check for data from calculator
+            console.log('✅ quotes-module initialized');
+        });
+
+        // Check if we have data transferred from calculator
+        function checkCalculatorTransfer() {
+            const transferData = localStorage.getItem('calculatorTransfer');
+            if (transferData) {
+                try {
+                    const data = JSON.parse(transferData);
+                    if (data.measurements && data.measurements.length > 0) {
+                        // Auto-create new quote with calculator data
+                        createNewQuote();
+                        
+                        // Add measurements as work items
+                        data.measurements.forEach(m => {
+                            const workItem = {
+                                name: m.name || (m.type === 'surface' ? 'Površina' : m.type === 'walls' ? 'Stene' : 'Prostornina'),
+                                unit: m.unit,
+                                price: 0, // User needs to set price
+                                quantity: m.value,
+                                description: m.details
+                            };
+                            state.selectedWorkItems.push(workItem);
+                        });
+                        
+                        renderWorkItems();
+                        updateTotals();
+                        
+                        // Show notification
+                        showToast(`Preneseno ${data.measurements.length} meritev iz kalkulatorja`, 'success');
+                        
+                        // Clear transfer data
+                        localStorage.removeItem('calculatorTransfer');
+                    }
+                } catch (e) {
+                    console.error('Error parsing calculator transfer:', e);
+                }
+            }
+        }
+
+        function initializeDateFields() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('quote-date').value = today;
+            
+            const nextMonth = new Date();
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            document.getElementById('valid-until').value = nextMonth.toISOString().split('T')[0];
+        }
+
+        function setupEventListeners() {
+            // Work item selection
+            document.getElementById('work-item-select').addEventListener('change', function() {
+                const selectedId = this.value;
+                if (selectedId) {
+                    const item = state.workItems.find(wi => wi.id == selectedId);
+                    if (item) {
+                        document.getElementById('wi-name').value = item.name;
+                        document.getElementById('wi-unit').value = item.unit || 'kos';
+                        document.getElementById('wi-price').value = item.price || 0;
+                        document.getElementById('work-item-details').classList.remove('hidden');
+                        document.getElementById('btn-add-work').disabled = false;
+                    }
+                } else {
+                    document.getElementById('work-item-details').classList.add('hidden');
+                    document.getElementById('btn-add-work').disabled = true;
+                }
+            });
+
+            // Material selection
+            document.getElementById('material-select').addEventListener('change', function() {
+                const selectedId = this.value;
+                if (selectedId) {
+                    const item = state.materials.find(m => m.id == selectedId);
+                    if (item) {
+                        document.getElementById('mat-name').value = item.name;
+                        document.getElementById('mat-unit').value = item.unit || 'kos';
+                        document.getElementById('mat-price').value = item.price || 0;
+                        document.getElementById('material-details').classList.remove('hidden');
+                        document.getElementById('btn-add-mat').disabled = false;
+                    }
+                } else {
+                    document.getElementById('material-details').classList.add('hidden');
+                    document.getElementById('btn-add-mat').disabled = true;
+                }
+            });
+        }
+
+        // ============================================
+        // API FUNCTIONS
+        // ============================================
+        async function apiCall(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                showToast('Napaka pri komunikaciji s strežnikom: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // Base URL for API calls (relative to support subdirectory deployment)
+        const API_BASE = 'api';
+
+        async function loadQuotes() {
+            showLoading();
+            try {
+                const data = await apiCall(`${API_BASE}/quotes`);
+                state.quotes = data.quotes || data || [];
+                renderQuotesList();
+            } catch (error) {
+                // Fallback: show empty list
+                state.quotes = [];
+                renderQuotesList();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function loadWorkItems() {
+            try {
+                const data = await apiCall(`${API_BASE}/work-items`);
+                state.workItems = data.workItems || data || [];
+                populateWorkItemSelect();
+                showToast('Seznam postavk osvežen', 'success');
+            } catch (error) {
+                // Fallback demo data
+                state.workItems = [
+                    { id: 1, name: 'Montaža oken', unit: 'm²', price: 45.00 },
+                    { id: 2, name: 'Montaža vrat', unit: 'kos', price: 120.00 },
+                    { id: 3, name: 'Demontaža', unit: 'ura', price: 35.00 },
+                    { id: 4, name: 'Prevoz', unit: 'km', price: 0.80 },
+                    { id: 5, name: 'Čiščenje', unit: 'ura', price: 25.00 }
+                ];
+                populateWorkItemSelect();
+            }
+        }
+
+        async function loadMaterials() {
+            try {
+                const data = await apiCall(`${API_BASE}/materials`);
+                state.materials = data.materials || data || [];
+                populateMaterialSelect();
+                showToast('Seznam materialov osvežen', 'success');
+            } catch (error) {
+                // Fallback demo data
+                state.materials = [
+                    { id: 1, name: 'PVC okno 100x100', unit: 'kos', price: 250.00 },
+                    { id: 2, name: 'PVC okno 120x120', unit: 'kos', price: 320.00 },
+                    { id: 3, name: 'Vhodna vrata', unit: 'kos', price: 450.00 },
+                    { id: 4, name: 'Silikon prozoren', unit: 'tube', price: 8.50 },
+                    { id: 5, name: 'Montažna pena', unit: 'kos', price: 12.00 }
+                ];
+                populateMaterialSelect();
+            }
+        }
+
+        async function loadQuoteById(id) {
+            showLoading();
+            try {
+                const data = await apiCall(`${API_BASE}/quotes/${id}`);
+                return data.quote || data;
+            } catch (error) {
+                // Fallback: find in local array
+                return state.quotes.find(q => q.id == id);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function saveQuoteToAPI(quoteData) {
+            const options = {
+                method: 'POST',
+                body: JSON.stringify(quoteData)
+            };
+            return await apiCall(`${API_BASE}/quotes`, options);
+        }
+
+        async function deleteQuoteFromAPI(id) {
+            const options = {
+                method: 'DELETE'
+            };
+            return await apiCall(`${API_BASE}/quotes/${id}`, options);
+        }
+
+        // ============================================
+        // UI RENDERING
+        // ============================================
+        function renderQuotesList() {
+            const tbody = document.getElementById('quotes-tbody');
+            const emptyState = document.getElementById('quotes-empty');
+            
+            // Filter quotes
+            let filtered = state.quotes.filter(q => {
+                const matchesSearch = !state.filter.search || 
+                    (q.projectName && q.projectName.toLowerCase().includes(state.filter.search.toLowerCase())) ||
+                    (q.customer && q.customer.toLowerCase().includes(state.filter.search.toLowerCase())) ||
+                    (q.quoteNumber && q.quoteNumber.toLowerCase().includes(state.filter.search.toLowerCase()));
+                
+                const matchesStatus = !state.filter.status || q.status === state.filter.status;
+                
+                return matchesSearch && matchesStatus;
+            });
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            tbody.innerHTML = filtered.map(quote => {
+                const statusClass = getStatusBadgeClass(quote.status);
+                const statusText = getStatusText(quote.status);
+                const total = formatCurrency(quote.totalAmount || calculateQuoteTotal(quote));
+                
+                return `
+                    <tr>
+                        <td>${escapeHtml(quote.quoteNumber) || '-'}</td>
+                        <td>${escapeHtml(quote.projectName || '')}</td>
+                        <td>${escapeHtml(quote.customer || '')}</td>
+                        <td>${formatDate(quote.date)}</td>
+                        <td class="text-right">${total}</td>
+                        <td><span class="badge ${statusClass}">${statusText}</span></td>
+                        <td class="no-print table-actions">
+                            <button class="btn btn-sm btn-primary" onclick="editQuote(${quote.id})">✏️ Uredi</button>
+                            <button class="btn btn-sm btn-outline" onclick="viewQuote(${quote.id})">👁️ Poglej</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteQuote(${quote.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderWorkItems() {
+            const tbody = document.getElementById('work-items-tbody');
+            const emptyState = document.getElementById('work-items-empty');
+            const table = document.getElementById('work-items-table');
+            
+            if (state.selectedWorkItems.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                table.classList.add('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            table.classList.remove('hidden');
+            
+            tbody.innerHTML = state.selectedWorkItems.map((item, index) => `
+                <tr class="item-row">
+                    <td><input type="text" id="wi-name-${index}" value="${escapeHtml(item.name)}" onchange="updateWorkItem(${index}, 'name', this.value)"></td>
+                    <td><input type="text" id="wi-unit-${index}" value="${escapeHtml(item.unit)}" onchange="updateWorkItem(${index}, 'unit', this.value)"></td>
+                    <td><input type="number" id="wi-qty-${index}" value="${item.quantity}" step="0.01" min="0" onchange="updateWorkItem(${index}, 'quantity', parseFloat(this.value) || 0)"></td>
+                    <td><input type="number" id="wi-price-${index}" value="${item.price}" step="0.01" min="0" onchange="updateWorkItem(${index}, 'price', parseFloat(this.value) || 0)"></td>
+                    <td class="text-right" id="wi-total-${index}">${formatCurrency(item.quantity * item.price)}</td>
+                    <td class="no-print"><button class="btn btn-sm btn-danger" onclick="removeWorkItem(${index})">✕</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderMaterials() {
+            const tbody = document.getElementById('materials-tbody');
+            const emptyState = document.getElementById('materials-empty');
+            const table = document.getElementById('materials-table');
+            
+            if (state.selectedMaterials.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                table.classList.add('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            table.classList.remove('hidden');
+            
+            tbody.innerHTML = state.selectedMaterials.map((item, index) => `
+                <tr class="item-row">
+                    <td><input type="text" id="mat-name-${index}" value="${escapeHtml(item.name)}" onchange="updateMaterial(${index}, 'name', this.value)"></td>
+                    <td><input type="text" id="mat-unit-${index}" value="${escapeHtml(item.unit)}" onchange="updateMaterial(${index}, 'unit', this.value)"></td>
+                    <td><input type="number" id="mat-qty-${index}" value="${item.quantity}" step="0.01" min="0" onchange="updateMaterial(${index}, 'quantity', parseFloat(this.value) || 0)"></td>
+                    <td><input type="number" id="mat-price-${index}" value="${item.price}" step="0.01" min="0" onchange="updateMaterial(${index}, 'price', parseFloat(this.value) || 0)"></td>
+                    <td class="text-right" id="mat-total-${index}">${formatCurrency(item.quantity * item.price)}</td>
+                    <td class="no-print"><button class="btn btn-sm btn-danger" onclick="removeMaterial(${index})">✕</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function updateTotals() {
+            // Use roundToCents for each calculation step to avoid floating point errors
+            const workTotal = roundToCents(state.selectedWorkItems.reduce((sum, item) => 
+                sum + roundToCents(item.quantity * item.price), 0));
+            const materialsTotal = roundToCents(state.selectedMaterials.reduce((sum, item) => 
+                sum + roundToCents(item.quantity * item.price), 0));
+            const subtotal = roundToCents(workTotal + materialsTotal);
+            const vatAmount = roundToCents(subtotal * VAT_RATE);
+            const grandTotal = roundToCents(subtotal + vatAmount);
+            
+            document.getElementById('total-work').textContent = formatCurrency(workTotal);
+            document.getElementById('total-materials').textContent = formatCurrency(materialsTotal);
+            document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+            document.getElementById('vat-amount').textContent = formatCurrency(vatAmount);
+            document.getElementById('grand-total').textContent = formatCurrency(grandTotal);
+        }
+
+        function populateWorkItemSelect() {
+            const select = document.getElementById('work-item-select');
+            select.innerHTML = '<option value="">-- Izberite postavko --</option>' +
+                state.workItems.map(item => `<option value="${item.id}">${escapeHtml(item.name)} (${formatCurrency(item.price)}/${item.unit || 'kos'})</option>`).join('');
+        }
+
+        function populateMaterialSelect() {
+            const select = document.getElementById('material-select');
+            select.innerHTML = '<option value="">-- Izberite material --</option>' +
+                state.materials.map(item => `<option value="${item.id}">${escapeHtml(item.name)} (${formatCurrency(item.price)}/${item.unit || 'kos'})</option>`).join('');
+        }
+
+        // ============================================
+        // NAVIGATION & ACTIONS
+        // ============================================
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            
+            if (tab === 'list') {
+                document.getElementById('view-list').classList.remove('hidden');
+                document.getElementById('view-edit').classList.add('hidden');
+                loadQuotes();
+            } else {
+                document.getElementById('view-list').classList.add('hidden');
+                document.getElementById('view-edit').classList.remove('hidden');
+            }
+        }
+
+        function createNewQuote() {
+            console.log('🔘 createNewQuote() clicked');
+            try {
+                state.currentQuote = null;
+                state.selectedWorkItems = [];
+                state.selectedMaterials = [];
+                
+                // Reset form
+                document.getElementById('quote-id').value = '';
+                document.getElementById('quote-number').value = '';
+                document.getElementById('quote-status').value = 'draft';
+                document.getElementById('project-name').value = '';
+                document.getElementById('customer').value = '';
+                document.getElementById('address').value = '';
+                initializeDateFields();
+                
+                // Hide delete button for new quotes
+                document.getElementById('btn-delete').classList.add('hidden');
+                
+                renderWorkItems();
+                renderMaterials();
+                updateTotals();
+                switchTab('edit');
+                console.log('✅ createNewQuote() completed successfully');
+            } catch (e) {
+                console.error('❌ Error in createNewQuote():', e);
+                showToast('Napaka pri ustvarjanju predračuna: ' + e.message, 'error');
+            }
+        }
+
+        async function editQuote(id) {
+            const quote = await loadQuoteById(id);
+            if (!quote) {
+                showToast('Predračun ni bil najden', 'error');
+                return;
+            }
+            
+            state.currentQuote = quote;
+            state.selectedWorkItems = quote.workItems || [];
+            state.selectedMaterials = quote.materials || [];
+            
+            // Fill form
+            document.getElementById('quote-id').value = quote.id;
+            document.getElementById('quote-number').value = quote.quoteNumber || '';
+            document.getElementById('quote-status').value = quote.status || 'draft';
+            document.getElementById('quote-date').value = quote.date ? quote.date.split('T')[0] : '';
+            document.getElementById('project-name').value = quote.projectName || '';
+            document.getElementById('customer').value = quote.customer || '';
+            document.getElementById('address').value = quote.address || '';
+            document.getElementById('valid-until').value = quote.validUntil ? quote.validUntil.split('T')[0] : '';
+            
+            // Show delete button for existing quotes
+            document.getElementById('btn-delete').classList.remove('hidden');
+            
+            renderWorkItems();
+            renderMaterials();
+            updateTotals();
+            switchTab('edit');
+        }
+
+        function viewQuote(id) {
+            editQuote(id);
+        }
+
+        function cancelEdit() {
+            if (confirm('Ali ste prepričani, da želite preklicati? Neshranjene spremembe bodo izgubljene.')) {
+                switchTab('list');
+            }
+        }
+
+        // ============================================
+        // ITEM MANAGEMENT
+        // ============================================
+        function openWorkItemModal() {
+            loadWorkItems();
+            document.getElementById('work-item-select').value = '';
+            document.getElementById('work-item-details').classList.add('hidden');
+            document.getElementById('btn-add-work').disabled = true;
+            openModal('work-item-modal');
+        }
+
+        function openMaterialModal() {
+            loadMaterials();
+            document.getElementById('material-select').value = '';
+            document.getElementById('material-details').classList.add('hidden');
+            document.getElementById('btn-add-mat').disabled = true;
+            openModal('material-modal');
+        }
+
+        function addWorkItem() {
+            const name = document.getElementById('wi-name').value;
+            const unit = document.getElementById('wi-unit').value;
+            const price = parseFloat(document.getElementById('wi-price').value) || 0;
+            const quantity = parseFloat(document.getElementById('wi-quantity').value) || 1;
+            
+            if (!name) {
+                showToast('Izberite postavko', 'error');
+                return;
+            }
+            
+            state.selectedWorkItems.push({ name, unit, price, quantity });
+            renderWorkItems();
+            updateTotals();
+            closeModal('work-item-modal');
+            showToast('Postavka dodana', 'success');
+        }
+
+        function addMaterial() {
+            const name = document.getElementById('mat-name').value;
+            const unit = document.getElementById('mat-unit').value;
+            const price = parseFloat(document.getElementById('mat-price').value) || 0;
+            const quantity = parseFloat(document.getElementById('mat-quantity').value) || 1;
+            
+            if (!name) {
+                showToast('Izberite material', 'error');
+                return;
+            }
+            
+            state.selectedMaterials.push({ name, unit, price, quantity });
+            renderMaterials();
+            updateTotals();
+            closeModal('material-modal');
+            showToast('Material dodan', 'success');
+        }
+
+        function updateWorkItem(index, field, value) {
+            // Store active element info before update
+            const activeElement = document.activeElement;
+            const activeId = activeElement ? activeElement.id : null;
+            const cursorPos = activeElement && activeElement.selectionStart ? activeElement.selectionStart : 0;
+            
+            state.selectedWorkItems[index][field] = value;
+            
+            // Update only the row total without full re-render
+            const rowTotal = (state.selectedWorkItems[index].price || 0) * (state.selectedWorkItems[index].quantity || 0);
+            const totalCell = document.getElementById(`wi-total-${index}`);
+            if (totalCell) {
+                totalCell.textContent = formatPrice(rowTotal) + ' €';
+            }
+            
+            updateTotals();
+            
+            // Restore focus after a short delay
+            if (activeId) {
+                setTimeout(() => {
+                    const element = document.getElementById(activeId);
+                    if (element) {
+                        element.focus();
+                        if (element.setSelectionRange) {
+                            element.setSelectionRange(cursorPos, cursorPos);
+                        }
+                    }
+                }, 0);
+            }
+        }
+
+        function updateMaterial(index, field, value) {
+            // Store active element info before update
+            const activeElement = document.activeElement;
+            const activeId = activeElement ? activeElement.id : null;
+            const cursorPos = activeElement && activeElement.selectionStart ? activeElement.selectionStart : 0;
+            
+            state.selectedMaterials[index][field] = value;
+            
+            // Update only the row total without full re-render
+            const rowTotal = (state.selectedMaterials[index].price || 0) * (state.selectedMaterials[index].quantity || 0);
+            const totalCell = document.getElementById(`mat-total-${index}`);
+            if (totalCell) {
+                totalCell.textContent = formatPrice(rowTotal) + ' €';
+            }
+            
+            updateTotals();
+            
+            // Restore focus after a short delay
+            if (activeId) {
+                setTimeout(() => {
+                    const element = document.getElementById(activeId);
+                    if (element) {
+                        element.focus();
+                        if (element.setSelectionRange) {
+                            element.setSelectionRange(cursorPos, cursorPos);
+                        }
+                    }
+                }, 0);
+            }
+        }
+
+        function removeWorkItem(index) {
+            state.selectedWorkItems.splice(index, 1);
+            renderWorkItems();
+            updateTotals();
+        }
+
+        function removeMaterial(index) {
+            state.selectedMaterials.splice(index, 1);
+            renderMaterials();
+            updateTotals();
+        }
+
+        // ============================================
+        // SAVE & DELETE
+        // ============================================
+        async function saveQuote(status) {
+            // Validate
+            const projectName = document.getElementById('project-name').value.trim();
+            const customer = document.getElementById('customer').value.trim();
+            const quoteDate = document.getElementById('quote-date').value;
+            const validUntil = document.getElementById('valid-until').value;
+            
+            if (!projectName) {
+                showToast('Vnesite naziv projekta', 'error');
+                document.getElementById('project-name').focus();
+                return;
+            }
+            
+            if (!customer) {
+                showToast('Vnesite stranko', 'error');
+                document.getElementById('customer').focus();
+                return;
+            }
+
+            // Validate dates
+            if (quoteDate && validUntil) {
+                const qDate = new Date(quoteDate);
+                const vDate = new Date(validUntil);
+                if (vDate < qDate) {
+                    showToast('Datum veljavnosti mora biti po datumu predračuna', 'error');
+                    document.getElementById('valid-until').classList.add('input-error');
+                    document.getElementById('valid-until').focus();
+                    return;
+                }
+            }
+            document.getElementById('valid-until').classList.remove('input-error');
+
+            // Update status dropdown if status parameter provided
+            if (status) {
+                document.getElementById('quote-status').value = status;
+            }
+            
+            showLoading();
+            
+            const quoteData = {
+                id: state.currentQuote ? state.currentQuote.id : null,
+                quoteNumber: document.getElementById('quote-number').value,
+                projectName: projectName,
+                customer: customer,
+                address: document.getElementById('address').value,
+                date: quoteDate,
+                validUntil: validUntil,
+                status: status || document.getElementById('quote-status').value,
+                workItems: state.selectedWorkItems,
+                materials: state.selectedMaterials,
+                totalAmount: calculateGrandTotal()
+            };
+            
+            try {
+                const result = await saveQuoteToAPI(quoteData);
+                showToast('Predračun uspešno shranjen!', 'success');
+                
+                // Update local state
+                if (state.currentQuote) {
+                    const index = state.quotes.findIndex(q => q.id === state.currentQuote.id);
+                    if (index >= 0) {
+                        state.quotes[index] = { ...state.quotes[index], ...quoteData, id: state.currentQuote.id };
+                    }
+                } else {
+                    const newId = result.id || Date.now();
+                    state.quotes.push({ ...quoteData, id: newId });
+                    state.currentQuote = { ...quoteData, id: newId };
+                    document.getElementById('quote-id').value = newId;
+                }
+                
+                // Show delete button after save
+                document.getElementById('btn-delete').classList.remove('hidden');
+                
+            } catch (error) {
+                // Fallback: save locally
+                if (!state.currentQuote) {
+                    const newId = Date.now();
+                    state.currentQuote = { ...quoteData, id: newId };
+                    state.quotes.push(state.currentQuote);
+                    document.getElementById('quote-id').value = newId;
+                    document.getElementById('quote-number').value = 'Q-' + newId;
+                } else {
+                    const index = state.quotes.findIndex(q => q.id === state.currentQuote.id);
+                    if (index >= 0) {
+                        state.quotes[index] = { ...quoteData, id: state.currentQuote.id };
+                    }
+                }
+                showToast('Predračun shranjen (lokalno)', 'info');
+                document.getElementById('btn-delete').classList.remove('hidden');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteQuote(id) {
+            if (!confirm('Ali ste prepričani, da želite izbrisati ta predračun?')) {
+                return;
+            }
+            
+            showLoading();
+            try {
+                await deleteQuoteFromAPI(id);
+                state.quotes = state.quotes.filter(q => q.id != id);
+                renderQuotesList();
+                showToast('Predračun izbrisan', 'success');
+            } catch (error) {
+                // Fallback: delete locally
+                state.quotes = state.quotes.filter(q => q.id != id);
+                renderQuotesList();
+                showToast('Predračun izbrisan (lokalno)', 'info');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function deleteCurrentQuote() {
+            const id = document.getElementById('quote-id').value;
+            if (id) {
+                deleteQuote(id);
+                switchTab('list');
+            }
+        }
+
+        // ============================================
+        // FILTERS & SEARCH
+        // ============================================
+        function handleSearch() {
+            state.filter.search = document.getElementById('search-input').value;
+            renderQuotesList();
+        }
+
+        function handleFilter() {
+            state.filter.status = document.getElementById('status-filter').value;
+            renderQuotesList();
+        }
+
+        // ============================================
+        // PDF GENERATION
+        // ============================================
+        async function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFontSize(20);
+            doc.setTextColor(0, 122, 255);
+            doc.text('PREDRAČUN', 20, 30);
+            
+            // Quote info
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            const quoteNumber = document.getElementById('quote-number').value || '-';
+            const quoteDate = formatDate(document.getElementById('quote-date').value);
+            const validUntil = formatDate(document.getElementById('valid-until').value);
+            
+            doc.text(`Številka: ${escapeHtml(quoteNumber)}`, 20, 45);
+            doc.text(`Datum: ${quoteDate}`, 20, 50);
+            doc.text(`Veljavno do: ${validUntil}`, 20, 55);
+            
+            // Project & Customer
+            doc.setFontSize(12);
+            doc.setTextColor(0);
+            doc.text('Projekt:', 20, 70);
+            doc.setFontSize(10);
+            const projectName = escapeHtml(document.getElementById('project-name').value || '');
+            doc.text(projectName, 20, 77);
+            
+            doc.setFontSize(12);
+            doc.text('Stranka:', 110, 70);
+            doc.setFontSize(10);
+            const customer = escapeHtml(document.getElementById('customer').value || '');
+            doc.text(customer, 110, 77);
+            
+            let yPos = 90;
+            
+            // Work Items Table
+            if (state.selectedWorkItems.length > 0) {
+                doc.setFontSize(11);
+                doc.setTextColor(0, 122, 255);
+                doc.text('Postavke dela', 20, yPos);
+                yPos += 5;
+                
+                const workData = state.selectedWorkItems.map(item => [
+                    escapeHtml(item.name),
+                    escapeHtml(item.unit),
+                    item.quantity.toString(),
+                    formatCurrency(item.price),
+                    formatCurrency(item.quantity * item.price)
+                ]);
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Naziv', 'Enota', 'Kol.', 'Cena', 'Znesek']],
+                    body: workData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [0, 122, 255], textColor: 255 },
+                    styles: { fontSize: 9 },
+                    columnStyles: {
+                        3: { halign: 'right' },
+                        4: { halign: 'right' }
+                    }
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+            
+            // Materials Table
+            if (state.selectedMaterials.length > 0) {
+                doc.setFontSize(11);
+                doc.setTextColor(0, 122, 255);
+                doc.text('Materiali', 20, yPos);
+                yPos += 5;
+                
+                const matData = state.selectedMaterials.map(item => [
+                    escapeHtml(item.name),
+                    escapeHtml(item.unit),
+                    item.quantity.toString(),
+                    formatCurrency(item.price),
+                    formatCurrency(item.quantity * item.price)
+                ]);
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Naziv', 'Enota', 'Kol.', 'Cena', 'Znesek']],
+                    body: matData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [0, 122, 255], textColor: 255 },
+                    styles: { fontSize: 9 },
+                    columnStyles: {
+                        3: { halign: 'right' },
+                        4: { halign: 'right' }
+                    }
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+            
+            // Totals
+            const workTotal = state.selectedWorkItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const materialsTotal = state.selectedMaterials.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const subtotal = workTotal + materialsTotal;
+            const vatAmount = subtotal * VAT_RATE;
+            const grandTotal = subtotal + vatAmount;
+            
+            yPos += 5;
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Postavke dela: ${formatCurrency(workTotal)}`, 130, yPos);
+            yPos += 5;
+            doc.text(`Materiali: ${formatCurrency(materialsTotal)}`, 130, yPos);
+            yPos += 5;
+            doc.text(`Osnova za DDV: ${formatCurrency(subtotal)}`, 130, yPos);
+            yPos += 5;
+            doc.text(`DDV (22%): ${formatCurrency(vatAmount)}`, 130, yPos);
+            yPos += 7;
+            doc.setFontSize(12);
+            doc.setTextColor(0, 122, 255);
+            doc.setFont(undefined, 'bold');
+            doc.text(`SKUPAJ: ${formatCurrency(grandTotal)}`, 130, yPos);
+            
+            // Footer
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text('Ta predračun je informativne narave in ne predstavlja nobene obveznosti.', 105, 280, { align: 'center' });
+            
+            // Save
+            const filename = `predracun-${quoteNumber.replace(/[^a-z0-9]/gi, '_') || 'nov'}.pdf`;
+            doc.save(filename);
+            showToast('PDF uspešno generiran', 'success');
+        }
+        
+        // Fallback print function for browsers without PDF support
+        function printQuote() {
+            window.print();
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function calculateQuoteTotal(quote) {
+            if (!quote) return 0;
+            const workTotal = (quote.workItems || []).reduce((sum, item) => sum + ((item.quantity || 0) * (item.price || 0)), 0);
+            const materialsTotal = (quote.materials || []).reduce((sum, item) => sum + ((item.quantity || 0) * (item.price || 0)), 0);
+            return (workTotal + materialsTotal) * (1 + VAT_RATE);
+        }
+
+        function calculateGrandTotal() {
+            const workTotal = roundToCents(state.selectedWorkItems.reduce((sum, item) => 
+                sum + roundToCents(item.quantity * item.price), 0));
+            const materialsTotal = roundToCents(state.selectedMaterials.reduce((sum, item) => 
+                sum + roundToCents(item.quantity * item.price), 0));
+            return roundToCents((workTotal + materialsTotal) * (1 + VAT_RATE));
+        }
+
+        function getStatusBadgeClass(status) {
+            const classes = {
+                'draft': 'badge-draft',
+                'sent': 'badge-sent',
+                'accepted': 'badge-accepted',
+                'rejected': 'badge-rejected',
+                'expired': 'badge-expired'
+            };
+            return classes[status] || 'badge-draft';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'draft': 'Osnutek',
+                'sent': 'Poslano',
+                'accepted': 'Sprejeto',
+                'rejected': 'Zavrnjeno',
+                'expired': 'Poteklo'
+            };
+            return texts[status] || status;
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+
+        // Keyboard navigation - Escape to close modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(modal => {
+                    modal.classList.remove('active');
+                });
+            }
+        });
+
+        // Loading functions
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+        
+        // ============================================
+        // EXPORT FUNCTIONS TO WINDOW (for iframe compatibility)
+        // ============================================
+        window.createNewQuote = createNewQuote;
+        window.switchTab = switchTab;
+        window.saveQuote = saveQuote;
+        window.generatePDF = generatePDF;
+        window.openWorkItemModal = openWorkItemModal;
+        window.openMaterialModal = openMaterialModal;
+        window.addWorkItem = addWorkItem;
+        window.addMaterial = addMaterial;
+        window.deleteCurrentQuote = deleteCurrentQuote;
+        window.closeModal = closeModal;
+        window.handleSearch = handleSearch;
+        window.handleFilter = handleFilter;
+        window.editQuote = editQuote;
+        window.viewQuote = viewQuote;
+        window.deleteQuote = deleteQuote;
+        window.cancelEdit = cancelEdit;
+        window.removeWorkItem = removeWorkItem;
+        window.removeMaterial = removeMaterial;
+        window.updateWorkItem = updateWorkItem;
+        window.updateMaterial = updateMaterial;
+        window.loadWorkItems = loadWorkItems;
+        window.loadMaterials = loadMaterials;
+        
+        console.log('✅ All functions exported to window');
+    </script>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+</body>
+</html>
