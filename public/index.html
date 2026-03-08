@@ -41,14 +41,15 @@
     .nav button {
       background: none;
       border: none;
-      padding: 12px 16px;
-      font-size: 16px;
+      padding: 5px 10px;
+      font-size: 12px;
       font-weight: 600;
       color: #8E8E93;
       cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: center;
+      flex: 1;
       gap: 8px;
       min-width: 80px;
     }
@@ -57,7 +58,7 @@
       background: rgba(0,122,255,0.1);
       border-radius: 12px;
     }
-    .nav button svg { width: 32px; height: 32px; stroke-width: 2; }
+    .nav button svg { width: 24px; height: 24px; stroke-width: 2; }
     .nav button#nav-help { color: var(--ios-orange); }
     .nav button#nav-help.active { background: rgba(255,149,0,0.1); }
   </style>
@@ -163,6 +164,18 @@
       document.getElementById('page-' + page).classList.add('active');
       document.getElementById('nav-' + page).classList.add('active');
     }
+
+    // Handle URL parameters for direct page access
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const page = urlParams.get('page');
+      
+      if (page === 'items') {
+        show('items');
+      } else if (page === 'quotes') {
+        show('quotes');
+      }
+    });
   </script>
 </body>
 </html>
