@@ -201,18 +201,79 @@
         .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
         
         /* Items table */
-        .items-table { width: 100%; margin: 20px 0; }
+        .items-table { 
+            width: 100%; 
+            margin: 20px 0; 
+            table-layout: fixed;
+            border-collapse: collapse;
+        }
         .items-table th, .items-table td {
-            padding: 12px;
+            padding: 12px 8px;
             text-align: left;
             border-bottom: 1px solid #E5E5EA;
+            vertical-align: middle;
         }
-        .items-table th { color: #8E8E93; font-weight: 500; }
+        .items-table th { 
+            color: #8E8E93; 
+            font-weight: 500; 
+            font-size: 13px;
+        }
+        .items-table th:nth-child(1),
+        .items-table td:nth-child(1) { width: 45%; }
+        .items-table th:nth-child(2),
+        .items-table td:nth-child(2) { width: 15%; }
+        .items-table th:nth-child(3),
+        .items-table td:nth-child(3) { width: 12%; }
+        .items-table th:nth-child(4),
+        .items-table td:nth-child(4) { width: 18%; }
+        .items-table th:nth-child(5),
+        .items-table td:nth-child(5) { width: 10%; text-align: center; }
+        
         .items-table input {
             width: 100%;
-            padding: 8px;
+            padding: 10px 8px;
             border: 1px solid #E5E5EA;
             border-radius: 6px;
+            font-size: 15px;
+            min-height: 40px;
+        }
+        .items-table input:focus {
+            border-color: #007AFF;
+            outline: none;
+        }
+        /* Naziv input - expandable on focus */
+        .items-table td:first-child input {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .items-table td:first-child input:focus {
+            position: relative;
+            z-index: 10;
+            min-width: 200px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        /* Mobile optimizations */
+        @media (max-width: 600px) {
+            .items-table th, .items-table td {
+                padding: 8px 4px;
+                font-size: 14px;
+            }
+            .items-table th:nth-child(1),
+            .items-table td:nth-child(1) { width: 40%; }
+            .items-table th:nth-child(2),
+            .items-table td:nth-child(2) { width: 15%; }
+            .items-table th:nth-child(3),
+            .items-table td:nth-child(3) { width: 12%; }
+            .items-table th:nth-child(4),
+            .items-table td:nth-child(4) { width: 20%; }
+            .items-table th:nth-child(5),
+            .items-table td:nth-child(5) { width: 13%; }
+            .items-table input {
+                padding: 8px 6px;
+                font-size: 14px;
+                min-height: 36px;
+            }
         }
         
         /* Totals */
@@ -942,16 +1003,16 @@
             container.innerHTML = `
                 <table class="items-table">
                     <thead>
-                        <tr><th>Naziv</th><th>Enota</th><th>Kol.</th><th>Cena</th><th></th></tr>
+                        <tr><th>Naziv</th><th>Enota</th><th>Kol.</th><th>Cena (€)</th><th></th></tr>
                     </thead>
                     <tbody>
                         ${workItems.map((item, i) => `
                             <tr>
-                                <td><input type="text" value="${item.name}" onchange="updateWorkItem(${i}, 'name', this.value)" placeholder="Postavka"></td>
-                                <td><input type="text" value="${item.unit}" onchange="updateWorkItem(${i}, 'unit', this.value)" style="width: 80px;"></td>
-                                <td><input type="number" value="${item.quantity}" onchange="updateWorkItem(${i}, 'quantity', this.value)" style="width: 70px;"></td>
-                                <td><input type="number" value="${item.price}" onchange="updateWorkItem(${i}, 'price', this.value)" style="width: 100px;"></td>
-                                <td><button onclick="removeWorkItem(${i})" style="background: #FF3B30; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">🗑️</button></td>
+                                <td><input type="text" value="${item.name}" onchange="updateWorkItem(${i}, 'name', this.value)" placeholder="Vnesi naziv postavke..." title="${item.name}"></td>
+                                <td><input type="text" value="${item.unit}" onchange="updateWorkItem(${i}, 'unit', this.value)" placeholder="kos"></td>
+                                <td><input type="number" value="${item.quantity}" onchange="updateWorkItem(${i}, 'quantity', this.value)" min="0" step="0.1"></td>
+                                <td><input type="number" value="${item.price}" onchange="updateWorkItem(${i}, 'price', this.value)" min="0" step="0.01" placeholder="0.00"></td>
+                                <td><button onclick="removeWorkItem(${i})" style="background: #FF3B30; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 16px;">🗑️</button></td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -969,16 +1030,16 @@
             container.innerHTML = `
                 <table class="items-table">
                     <thead>
-                        <tr><th>Naziv</th><th>Enota</th><th>Kol.</th><th>Cena</th><th></th></tr>
+                        <tr><th>Naziv</th><th>Enota</th><th>Kol.</th><th>Cena (€)</th><th></th></tr>
                     </thead>
                     <tbody>
                         ${materials.map((item, i) => `
                             <tr>
-                                <td><input type="text" value="${item.name}" onchange="updateMaterial(${i}, 'name', this.value)" placeholder="Material"></td>
-                                <td><input type="text" value="${item.unit}" onchange="updateMaterial(${i}, 'unit', this.value)" style="width: 80px;"></td>
-                                <td><input type="number" value="${item.quantity}" onchange="updateMaterial(${i}, 'quantity', this.value)" style="width: 70px;"></td>
-                                <td><input type="number" value="${item.price}" onchange="updateMaterial(${i}, 'price', this.value)" style="width: 100px;"></td>
-                                <td><button onclick="removeMaterial(${i})" style="background: #FF3B30; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">🗑️</button></td>
+                                <td><input type="text" value="${item.name}" onchange="updateMaterial(${i}, 'name', this.value)" placeholder="Vnesi naziv materiala..." title="${item.name}"></td>
+                                <td><input type="text" value="${item.unit}" onchange="updateMaterial(${i}, 'unit', this.value)" placeholder="kos"></td>
+                                <td><input type="number" value="${item.quantity}" onchange="updateMaterial(${i}, 'quantity', this.value)" min="0" step="0.1"></td>
+                                <td><input type="number" value="${item.price}" onchange="updateMaterial(${i}, 'price', this.value)" min="0" step="0.01" placeholder="0.00"></td>
+                                <td><button onclick="removeMaterial(${i})" style="background: #FF3B30; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 16px;">🗑️</button></td>
                             </tr>
                         `).join('')}
                     </tbody>
