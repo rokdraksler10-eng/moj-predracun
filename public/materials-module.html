@@ -538,11 +538,11 @@
             const categories = [...new Set(templates.map(t => t.category))].sort();
             const container = document.getElementById('template-categories');
             
-            let html = `<button onclick="filterTemplatesByCategory('all')" style="padding: 8px 16px; border-radius: 20px; border: none; background: ${templateCategoryFilter === 'all' ? '#007AFF' : '#E5E5EA'}; color: ${templateCategoryFilter === 'all' ? 'white' : 'black'}; cursor: pointer;">📋 Vse</button>`;
+            let html = `<div class="category-tab ${templateCategoryFilter === 'all' ? 'active' : ''}" onclick="filterTemplatesByCategory('all')" data-cat="all"><span class="category-icon">📋</span> Vse kategorije</div>`;
             
             categories.forEach(cat => {
-                const isActive = templateCategoryFilter === cat;
-                html += `<button onclick="filterTemplatesByCategory('${cat}')" style="padding: 8px 16px; border-radius: 20px; border: none; background: ${isActive ? '#007AFF' : '#E5E5EA'}; color: ${isActive ? 'white' : 'black'}; cursor: pointer;">${getCategoryIcon(cat)} ${cat}</button>`;
+                const icon = getCategoryIcon(cat);
+                html += `<div class="category-tab ${templateCategoryFilter === cat ? 'active' : ''}" onclick="filterTemplatesByCategory('${cat}')" data-cat="${escapeHtml(cat)}"><span class="category-icon">${icon}</span> ${escapeHtml(cat)}</div>`;
             });
             
             container.innerHTML = html;
@@ -805,23 +805,20 @@
             const categories = [...new Set(materials.map(i => i.category))].sort();
             const container = document.getElementById('category-tabs');
             
-            let html = `<div class="category-tab ${currentCategory === 'all' ? 'active' : ''}" data-category="all"><span class="category-icon">📋</span> Vse kategorije</div>`;
+            let html = `<div class="category-tab ${currentCategory === 'all' ? 'active' : ''}" onclick="filterByCategory('all')" data-category="all"><span class="category-icon">📋</span> Vse kategorije</div>`;
             
             categories.forEach(cat => {
                 const icon = getCategoryIcon(cat);
-                html += `<div class="category-tab ${currentCategory === cat ? 'active' : ''}" data-category="${escapeHtml(cat)}"><span class="category-icon">${icon}</span> ${escapeHtml(cat)}</div>`;
+                html += `<div class="category-tab ${currentCategory === cat ? 'active' : ''}" onclick="filterByCategory('${escapeHtml(cat)}')" data-category="${escapeHtml(cat)}"><span class="category-icon">${icon}</span> ${escapeHtml(cat)}</div>`;
             });
             
             container.innerHTML = html;
-            
-            // Attach click handlers
-            container.querySelectorAll('.category-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    currentCategory = this.dataset.category;
-                    renderCategories();
-                    renderItems();
-                });
-            });
+        }
+
+        function filterByCategory(category) {
+            currentCategory = category;
+            renderCategories();
+            renderItems();
         }
         
         function getCategoryIcon(category) {
@@ -854,6 +851,7 @@
         window.toggleTemplateSelection = toggleTemplateSelection;
         window.filterTemplatesByCategory = filterTemplatesByCategory;
         window.addSelectedTemplates = addSelectedTemplates;
+        window.filterByCategory = filterByCategory;
 
         console.log('✅ All functions loaded');
     </script>
