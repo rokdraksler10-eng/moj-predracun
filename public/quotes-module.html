@@ -282,7 +282,8 @@
                     <!-- Work Items -->
                     <h3 style="margin: 30px 0 16px;">🔧 Postavke dela</h3>
                     <div id="work-items-list"></div>
-                    <button type="button" class="btn btn-outline" id="btn-add-work" style="margin-top: 10px;">+ Dodaj postavko</button>
+                    <button type="button" class="btn btn-outline" id="btn-add-work" style="margin-top: 10px;">+ Dodaj postavko iz seznama</button>
+                    <button type="button" class="btn btn-outline" id="btn-add-work-custom" style="margin-top: 10px; background: transparent; border: 2px solid #8E8E93; color: #8E8E93;">✏️ Vnesi ročno</button>
                     
                     <!-- Materials -->
                     <h3 style="margin: 30px 0 16px;">📦 Materiali</h3>
@@ -324,6 +325,24 @@
         </div>
     </div>
 
+    <!-- Modal - Select Work Item -->
+    <div class="modal-overlay" id="workitem-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+        <div class="modal" style="background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+            <div style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Izberi postavko</div>
+            <p style="color: #8E8E93; margin-bottom: 16px;">Poišči postavko ali izberi iz seznama:</p>
+            
+            <input type="text" id="workitem-search" placeholder="🔍 Išči postavko..." style="width: 100%; padding: 12px 16px; border: 1px solid #E5E5EA; border-radius: 10px; font-size: 16px; margin-bottom: 16px;">
+            
+            <div id="workitem-categories" style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap;"></div>
+            
+            <div id="workitem-list" style="max-height: 400px; overflow-y: auto;"></div>
+            
+            <div style="margin-top: 20px; text-align: center;">
+                <button type="button" class="btn btn-secondary" id="btn-close-workitem-modal" style="width: auto; padding: 10px 30px;">Prekliči</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Bottom Navigation -->
     <nav class="nav">
         <a href="index.html" class="active"><span>📋</span>Predračuni</a>
@@ -357,8 +376,16 @@
             document.getElementById('btn-cancel').addEventListener('click', cancelEdit);
             document.getElementById('btn-save-draft').addEventListener('click', () => saveQuote('draft'));
             document.getElementById('btn-save-send').addEventListener('click', () => saveQuote('sent'));
-            document.getElementById('btn-add-work').addEventListener('click', addWorkItem);
+            document.getElementById('btn-add-work').addEventListener('click', showWorkItemSelector);
+            document.getElementById('btn-add-work-custom').addEventListener('click', addWorkItemManual);
             document.getElementById('btn-add-material').addEventListener('click', addMaterial);
+            document.getElementById('btn-close-workitem-modal').addEventListener('click', closeWorkItemModal);
+            document.getElementById('workitem-search').addEventListener('input', filterWorkItems);
+            
+            // Close modal on overlay click
+            document.getElementById('workitem-modal').addEventListener('click', function(e) {
+                if (e.target === this) closeWorkItemModal();
+            });
             
             // Search and filter
             document.getElementById('search-input').addEventListener('input', renderQuotes);
@@ -528,7 +555,135 @@
         // ============================================
         // WORK ITEMS & MATERIALS
         // ============================================
-        function addWorkItem() {
+        let workItemCategoryFilter = 'all';
+        let availableWorkItems = [];
+
+        function loadAvailableWorkItems() {
+            // Load from workitems-module localStorage
+            const saved = localStorage.getItem('workItems');
+            if (saved) {
+                try {
+                    availableWorkItems = JSON.parse(saved);
+                } catch (e) {
+                    availableWorkItems = [];
+                }
+            }
+            // If empty, use default templates
+            if (availableWorkItems.length === 0) {
+                availableWorkItems = getDefaultWorkItems();
+            }
+            return availableWorkItems;
+        }
+
+        function getDefaultWorkItems() {
+            return [
+                { name: 'Rušenje nosilne stene', category: 'Gradbena dela', unit: 'm²', price: 35.00 },
+                { name: 'Rušenje predelne stene', category: 'Gradbena dela', unit: 'm²', price: 22.00 },
+                { name: 'Zidarsko delo (opeka)', category: 'Gradbena dela', unit: 'm²', price: 38.00 },
+                { name: 'Zidarsko delo (YTONG)', category: 'Gradbena dela', unit: 'm²', price: 32.00 },
+                { name: 'Izdelava cementnega estriha', category: 'Gradbena dela', unit: 'm²', price: 16.00 },
+                { name: 'Montaža knauf plošč', category: 'Gradbena dela', unit: 'm²', price: 18.00 },
+                { name: 'Vgradnja vtičnice', category: 'Elektroinštalacije', unit: 'kos', price: 35.00 },
+                { name: 'Vgradnja stikala', category: 'Elektroinštalacije', unit: 'kos', price: 32.00 },
+                { name: 'Polaganje stenskih ploščic', category: 'Keramika', unit: 'm²', price: 48.00 },
+                { name: 'Polaganje talnih ploščic', category: 'Keramika', unit: 'm²', price: 42.00 },
+                { name: 'Priklop umivalnika', category: 'Vodovodne inštalacije', unit: 'kos', price: 55.00 },
+                { name: 'Priklop WC školjke', category: 'Vodovodne inštalacije', unit: 'kos', price: 85.00 },
+                { name: 'Pleskanje sten', category: 'Pleskarska dela', unit: 'm²', price: 12.00 },
+                { name: 'Montaža kuhinje', category: 'Mizarstvo', unit: 'kos', price: 320.00 }
+            ];
+        }
+
+        function showWorkItemSelector() {
+            loadAvailableWorkItems();
+            workItemCategoryFilter = 'all';
+            document.getElementById('workitem-search').value = '';
+            renderWorkItemCategories();
+            renderWorkItemList();
+            document.getElementById('workitem-modal').style.display = 'flex';
+        }
+
+        function closeWorkItemModal() {
+            document.getElementById('workitem-modal').style.display = 'none';
+        }
+
+        function renderWorkItemCategories() {
+            const categories = [...new Set(availableWorkItems.map(i => i.category))].sort();
+            const container = document.getElementById('workitem-categories');
+            
+            let html = `<button onclick="filterWorkItemsByCategory('all')" style="padding: 8px 16px; border-radius: 20px; border: none; background: ${workItemCategoryFilter === 'all' ? '#007AFF' : '#E5E5EA'}; color: ${workItemCategoryFilter === 'all' ? 'white' : 'black'}; cursor: pointer;">Vse</button>`;
+            
+            categories.forEach(cat => {
+                const isActive = workItemCategoryFilter === cat;
+                html += `<button onclick="filterWorkItemsByCategory('${cat}')" style="padding: 8px 16px; border-radius: 20px; border: none; background: ${isActive ? '#007AFF' : '#E5E5EA'}; color: ${isActive ? 'white' : 'black'}; cursor: pointer;">${getCategoryIcon(cat)} ${cat}</button>`;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function filterWorkItemsByCategory(category) {
+            workItemCategoryFilter = category;
+            renderWorkItemCategories();
+            renderWorkItemList();
+        }
+
+        function filterWorkItems() {
+            renderWorkItemList();
+        }
+
+        function renderWorkItemList() {
+            const search = document.getElementById('workitem-search').value.toLowerCase();
+            const container = document.getElementById('workitem-list');
+            
+            let filtered = availableWorkItems.filter(item => {
+                const matchesSearch = !search || item.name.toLowerCase().includes(search);
+                const matchesCategory = workItemCategoryFilter === 'all' || item.category === workItemCategoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p style="color: #8E8E93; text-align: center; padding: 40px;">Ni najdenih postavk</p>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map((item, index) => `
+                <div onclick="selectWorkItem(${availableWorkItems.indexOf(item)})" style="
+                    background: #F8F9FA;
+                    border-radius: 10px;
+                    padding: 16px;
+                    margin-bottom: 10px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    border: 2px solid transparent;
+                " onmouseover="this.style.borderColor='#007AFF'" onmouseout="this.style.borderColor='transparent'">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(item.name)}</div>
+                            <span style="display: inline-block; background: #E3F2FD; padding: 4px 12px; border-radius: 12px; font-size: 12px; color: #007AFF;">${getCategoryIcon(item.category)} ${escapeHtml(item.category)}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 18px; font-weight: 700; color: #007AFF;">${item.price.toFixed(2)} €</div>
+                            <div style="font-size: 12px; color: #8E8E93;">/${item.unit}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectWorkItem(index) {
+            const item = availableWorkItems[index];
+            workItems.push({ 
+                name: item.name, 
+                unit: item.unit, 
+                quantity: 1, 
+                price: item.price 
+            });
+            renderWorkItems();
+            updateTotals();
+            closeWorkItemModal();
+        }
+
+        function addWorkItemManual() {
             workItems.push({ name: '', unit: 'kos', quantity: 1, price: 0 });
             renderWorkItems();
         }
@@ -660,6 +815,42 @@
             return statuses[status] || status;
         }
 
+        function getCategoryIcon(category) {
+            const icons = {
+                'Gradbena dela': '🏗️',
+                'Elektroinštalacije': '⚡',
+                'Vodovodne inštalacije': '🚿',
+                'Keramika': '⬜',
+                'Pleskarska dela': '🎨',
+                'Mizarstvo': '🪚',
+                'Drugo': '📦'
+            };
+            return icons[category] || '📋';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('sl-SI');
+        }
+
+        function getStatusText(status) {
+            const statuses = {
+                'draft': 'Osnutek',
+                'sent': 'Poslano',
+                'accepted': 'Sprejeto',
+                'rejected': 'Zavrnjeno'
+            };
+            return statuses[status] || status;
+        }
+
         function escapeHtml(text) {
             if (!text) return '';
             const div = document.createElement('div');
@@ -673,6 +864,9 @@
         window.updateMaterial = updateMaterial;
         window.removeWorkItem = removeWorkItem;
         window.removeMaterial = removeMaterial;
+        window.selectWorkItem = selectWorkItem;
+        window.filterWorkItemsByCategory = filterWorkItemsByCategory;
+        window.addWorkItemManual = addWorkItemManual;
 
         console.log('✅ All functions loaded');
     </script>
