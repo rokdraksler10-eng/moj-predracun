@@ -1089,6 +1089,17 @@
         // ============================================
         // PDF DOWNLOAD - Professional Black & White
         // ============================================
+        
+        // Pomozna funkcija za pretvorbo slovenskih znakov v ASCII
+        function toASCII(text) {
+            if (!text) return '';
+            return text
+                .replace(/č/g, 'c').replace(/Č/g, 'C')
+                .replace(/š/g, 's').replace(/Š/g, 'S')
+                .replace(/ž/g, 'z').replace(/Ž/g, 'Z')
+                .replace(/ć/g, 'c').replace(/đ/g, 'd');
+        }
+        
         function downloadPDF() {
             const projectName = document.getElementById('project-name').value.trim();
             const customer = document.getElementById('customer').value.trim();
@@ -1119,13 +1130,13 @@
             doc.line(14, 12, 196, 12);
 
             // --- COMPANY INFO (Top Left) ---
-            let yPos = 20;
+            let yPos = 18;
             
             if (companySettings.name) {
                 doc.setFontSize(14);
                 doc.setTextColor(0, 0, 0);
                 doc.setFont(undefined, 'bold');
-                doc.text(companySettings.name, 14, yPos);
+                doc.text(toASCII(companySettings.name), 14, yPos);
                 yPos += 7;
             }
             
@@ -1133,24 +1144,34 @@
             doc.setTextColor(60, 60, 60);
             doc.setFont(undefined, 'normal');
             
-            // NASLOV PODJETJA - bolj poudarjen
+            // NASLOV PODJETJA - vedno prikazi
+            let addressShown = false;
             if (companySettings.address) {
                 const addressLines = companySettings.address.split('\n');
                 addressLines.forEach(line => {
                     if (line.trim()) {
-                        doc.text(line.trim(), 14, yPos);
-                        yPos += 4.5;
+                        doc.text(toASCII(line.trim()), 14, yPos);
+                        yPos += 5;
+                        addressShown = true;
                     }
                 });
             }
             
-            // Davčna številka s predpono SI
+            // Ce ni naslova, dodaj opozorilo
+            if (!addressShown) {
+                doc.setTextColor(200, 0, 0);
+                doc.text(toASCII('Naslov podjetja ni nastavljen!'), 14, yPos);
+                doc.setTextColor(60, 60, 60);
+                yPos += 5;
+            }
+            
+            // Davcna stevilka s predpono SI
             if (companySettings.taxNumber) {
                 const vatNumber = companySettings.taxNumber.startsWith('SI') 
                     ? companySettings.taxNumber 
                     : 'SI' + companySettings.taxNumber;
-                doc.text('ID za DDV: ' + vatNumber, 14, yPos);
-                yPos += 4.5;
+                doc.text(toASCII('ID za DDV: ') + vatNumber, 14, yPos);
+                yPos += 5;
             }
             
             // Kontakti
@@ -1159,8 +1180,8 @@
                 if (companySettings.phone) contact += 'Tel: ' + companySettings.phone;
                 if (companySettings.phone && companySettings.email) contact += ' | ';
                 if (companySettings.email) contact += companySettings.email;
-                doc.text(contact, 14, yPos);
-                yPos += 4.5;
+                doc.text(toASCII(contact), 14, yPos);
+                yPos += 5;
             }
 
             // --- LOGO (Top Right) ---
@@ -1182,11 +1203,11 @@
             }
 
             // --- DOCUMENT TITLE ---
-            yPos = 55;
+            yPos = 58;
             doc.setFontSize(16);
             doc.setTextColor(0, 0, 0);
             doc.setFont(undefined, 'bold');
-            doc.text('PREDRAČUN', 14, yPos);
+            doc.text(toASCII('PREDRAČUN'), 14, yPos);
             doc.setFont(undefined, 'normal');
             
             doc.setFontSize(10);
@@ -1196,8 +1217,18 @@
             // --- KRAJ IN DATUM (Right) ---
             const quoteDate = document.getElementById('quote-date').value;
             const formattedDate = quoteDate ? new Date(quoteDate).toLocaleDateString('sl-SI') : '';
-            const city = companySettings.address ? companySettings.address.split('\n').pop().trim() : 'Kranj';
-            doc.text(city + ', ' + formattedDate, 160, yPos, { align: 'right' });
+            // Iz naslova izlusci zadnjo vrstico (kraj)
+            let city = 'Kranj';
+            if (companySettings.address) {
+                const addressLines = companySettings.address.split('\n').filter(l => l.trim());
+                if (addressLines.length > 0) {
+                    const lastLine = addressLines[addressLines.length - 1];
+                    // Poisci kraj (besedo za stevilko ali na koncu)
+                    const parts = lastLine.split(' ');
+                    city = parts[parts.length - 1] || 'Kranj';
+                }
+            }
+            doc.text(toASCII(city) + ', ' + formattedDate, 160, yPos, { align: 'right' });
             yPos += 12;
             
             // --- VELJAVNOST PONUDBE ---
@@ -1205,9 +1236,9 @@
             if (validUntil) {
                 doc.setFontSize(9);
                 doc.setTextColor(150, 0, 0);
-                doc.text('Ponudba velja do: ' + new Date(validUntil).toLocaleDateString('sl-SI'), 14, yPos);
+                doc.text(toASCII('Ponudba velja do: ') + new Date(validUntil).toLocaleDateString('sl-SI'), 14, yPos);
                 doc.setTextColor(0, 0, 0);
-                yPos += 6;
+                yPos += 8;
             }
 
             // --- CUSTOMER INFO BOX ---
@@ -1217,7 +1248,7 @@
             
             doc.setFontSize(8);
             doc.setTextColor(100, 100, 100);
-            doc.text('NAROČNIK:', 18, yPos + 6);
+            doc.text(toASCII('NAROČNIK:'), 18, yPos + 6);
             
             doc.setFontSize(10);
             doc.setTextColor(0, 0, 0);
@@ -1225,7 +1256,7 @@
             const properCustomer = customer.split(' ').map(word => 
                 word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
             ).join(' ');
-            doc.text(properCustomer, 18, yPos + 14);
+            doc.text(toASCII(properCustomer), 18, yPos + 14);
             
             const projectAddress = document.getElementById('address').value;
             if (projectAddress) {
@@ -1237,7 +1268,7 @@
                     }
                     return word.toLowerCase();
                 }).join(' ');
-                doc.text(properAddress, 18, yPos + 22);
+                doc.text(toASCII(properAddress), 18, yPos + 22);
             }
             yPos += 40;
 
@@ -1245,21 +1276,21 @@
             doc.setFontSize(10);
             doc.setTextColor(0, 0, 0);
             doc.setFont(undefined, 'bold');
-            doc.text('Projekt: ' + projectName, 14, yPos);
+            doc.text(toASCII('Projekt: ') + toASCII(projectName), 14, yPos);
             doc.setFont(undefined, 'normal');
             yPos += 8;
 
             // --- WORK ITEMS TABLE ---
             if (workItems.length > 0) {
                 // Preveri prostor na strani
-                if (yPos > 200) {
+                if (yPos > 180) {
                     doc.addPage();
                     yPos = 20;
                 }
                 
                 const workData = workItems.map(item => [
-                    item.name,
-                    item.unit,
+                    toASCII(item.name),
+                    toASCII(item.unit),
                     item.quantity.toString(),
                     item.price.toFixed(2) + ' EUR',
                     (item.quantity * item.price).toFixed(2) + ' EUR'
@@ -1267,7 +1298,7 @@
 
                 doc.autoTable({
                     startY: yPos,
-                    head: [['Postavka dela', 'Enota', 'Kol.', 'Cena', 'Vrednost']],
+                    head: [[toASCII('Opis storitve'), toASCII('Enota'), toASCII('Kol.'), toASCII('Cena'), toASCII('Znesek')]],
                     body: workData,
                     theme: 'plain',
                     headStyles: { 
@@ -1278,7 +1309,7 @@
                     },
                     styles: { 
                         fontSize: 8,
-                        cellPadding: 2,
+                        cellPadding: 3,
                         lineColor: [200, 200, 200],
                         lineWidth: 0.1
                     },
@@ -1292,20 +1323,20 @@
                     margin: { top: 10 }
                 });
 
-                yPos = doc.lastAutoTable.finalY + 10;
+                yPos = doc.lastAutoTable.finalY + 15;
             }
 
             // --- MATERIALS TABLE ---
             if (materials.length > 0) {
                 // Preveri prostor na strani
-                if (yPos > 200) {
+                if (yPos > 180) {
                     doc.addPage();
                     yPos = 20;
                 }
                 
                 const matData = materials.map(item => [
-                    item.name,
-                    item.unit,
+                    toASCII(item.name),
+                    toASCII(item.unit),
                     item.quantity.toString(),
                     item.price.toFixed(2) + ' EUR',
                     (item.quantity * item.price).toFixed(2) + ' EUR'
@@ -1313,7 +1344,7 @@
 
                 doc.autoTable({
                     startY: yPos,
-                    head: [['Material', 'Enota', 'Kol.', 'Cena', 'Vrednost']],
+                    head: [[toASCII('Material'), toASCII('Enota'), toASCII('Kol.'), toASCII('Cena'), toASCII('Znesek')]],
                     body: matData,
                     theme: 'plain',
                     headStyles: { 
@@ -1324,7 +1355,7 @@
                     },
                     styles: { 
                         fontSize: 8,
-                        cellPadding: 2,
+                        cellPadding: 3,
                         lineColor: [200, 200, 200],
                         lineWidth: 0.1
                     },
@@ -1338,7 +1369,7 @@
                     margin: { top: 10 }
                 });
 
-                yPos = doc.lastAutoTable.finalY + 10;
+                yPos = doc.lastAutoTable.finalY + 15;
             }
 
             // --- TOTALS SECTION ---
@@ -1348,58 +1379,53 @@
             const vat = subtotal * 0.22;
             const grandTotal = subtotal + vat;
 
-            // Preveri če je dovolj prostora, sicer dodaj novo stran
-            if (yPos > 220) {
+            // Preveri ce je dovolj prostora, sicer dodaj novo stran
+            if (yPos > 200) {
                 doc.addPage();
-                yPos = 20;
+                yPos = 30;
             }
 
-            // Draw totals box - večji prostor
-            const totalBoxY = yPos + 10;
+            // Draw totals box - na desni strani
+            const totalBoxY = yPos + 15;
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(0.3);
             doc.line(120, totalBoxY, 196, totalBoxY);
             
-            let totalY = totalBoxY + 8;
+            let totalY = totalBoxY + 10;
             doc.setFontSize(9);
             doc.setTextColor(80, 80, 80);
-            doc.text('Postavke dela:', 125, totalY);
+            doc.text(toASCII('Postavke dela:'), 125, totalY);
             doc.text(workTotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 7;
-            
-            doc.text('Materiali:', 125, totalY);
-            doc.text(materialsTotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 7;
-            
-            doc.text('Skupaj brez DDV:', 125, totalY);
-            doc.text(subtotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 7;
-            
-            doc.text('DDV 22%:', 125, totalY);
-            doc.text(vat.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 10;
+            totalY += 8;
 
-            // Bold total line
+            doc.text(toASCII('Materiali:'), 125, totalY);
+            doc.text(materialsTotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
+            totalY += 8;
+
+            doc.text(toASCII('Skupaj brez DDV:'), 125, totalY);
+            doc.text(subtotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
+            totalY += 8;
+
+            doc.text(toASCII('DDV 22%:'), 125, totalY);
+            doc.text(vat.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
+            totalY += 12;
+
+            // Bold total line - debela crta
             doc.setDrawColor(0, 0, 0);
-            doc.setLineWidth(0.5);
+            doc.setLineWidth(1);
             doc.line(120, totalY - 4, 196, totalY - 4);
-            
-            // SKUPAJ - večji font in večji prostor
-            doc.setFontSize(12);
+
+            // SKUPAJ - vecji font in dovolj prostora
+            doc.setFontSize(11);
             doc.setTextColor(0, 0, 0);
             doc.setFont(undefined, 'bold');
-            doc.text('SKUPAJ ZA PLAČILO:', 125, totalY + 2);
-            doc.text(grandTotal.toFixed(2) + ' EUR', 192, totalY + 2, { align: 'right' });
+            doc.text(toASCII('SKUPAJ ZA PLAČILO:'), 125, totalY + 4);
+            doc.text(grandTotal.toFixed(2) + ' EUR', 192, totalY + 4, { align: 'right' });
             doc.setFont(undefined, 'normal');
 
             // --- FOOTER ---
             let footerY = 270;
-            if (totalY + 30 > 270) {
-                footerY = totalY + 40;
-            }
-            
-            // Preveri če je prostor za footer
-            if (footerY > 280) {
+            if (totalY + 40 > 260) {
                 doc.addPage();
                 footerY = 20;
             }
@@ -1410,12 +1436,12 @@
             
             doc.setFontSize(8);
             doc.setTextColor(100, 100, 100);
-            doc.text('Predračun je informativne narave in ne predstavlja računa.', 105, footerY + 6, { align: 'center' });
-            
+            doc.text(toASCII('Predračun je informativne narave in ne predstavlja računa.'), 105, footerY + 6, { align: 'center' });
+
             // TRR podatki
             if (companySettings.bankName || companySettings.bankIban) {
-                let bankText = 'Plačilo:';
-                if (companySettings.bankName) bankText += ' ' + companySettings.bankName;
+                let bankText = toASCII('Plačilo:');
+                if (companySettings.bankName) bankText += ' ' + toASCII(companySettings.bankName);
                 if (companySettings.bankIban) bankText += ' | TRR: ' + companySettings.bankIban;
                 doc.text(bankText, 105, footerY + 12, { align: 'center' });
             }
@@ -1469,6 +1495,7 @@
         window.addMaterialManual = addMaterialManual;
         window.downloadPDF = downloadPDF;
         window.downloadQuotePDF = downloadQuotePDF;
+        window.toASCII = toASCII;
 
         console.log('✅ All functions loaded');
     </script>
