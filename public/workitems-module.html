@@ -465,64 +465,15 @@
                 if (e.target === this) closeTemplatesModal();
             });
             
+            // Force clear - start completely empty (templates are only in getTemplates, not in workItems)
+            workItems = [];
+            localStorage.setItem('workItems', '[]');
+            
             renderItems();
             renderCategories();
             
             console.log('✅ Event listeners attached');
         });
-
-        // ============================================
-        // DEFAULT ITEMS
-        // ============================================
-        function addDefaultItems() {
-            const defaults = [
-                // Gradbena dela
-                { id: Date.now() + 1, name: 'Rušenje nosilne stene', category: 'Gradbena dela', unit: 'm²', price: 45.00 },
-                { id: Date.now() + 2, name: 'Rušenje predelne stene', category: 'Gradbena dela', unit: 'm²', price: 28.00 },
-                { id: Date.now() + 3, name: 'Zidarsko delo (opeka)', category: 'Gradbena dela', unit: 'm²', price: 42.00 },
-                { id: Date.now() + 4, name: 'Zidarsko delo (YTONG)', category: 'Gradbena dela', unit: 'm²', price: 38.00 },
-                { id: Date.now() + 5, name: 'Izdelava cementnega estriha', category: 'Gradbena dela', unit: 'm²', price: 18.00 },
-                { id: Date.now() + 6, name: 'Sanaacija vlage v zidovju', category: 'Gradbena dela', unit: 'm²', price: 85.00 },
-                { id: Date.now() + 7, name: 'Montaža knauf plošč', category: 'Gradbena dela', unit: 'm²', price: 22.00 },
-                
-                // Elektroinštalacije
-                { id: Date.now() + 10, name: 'Vgradnja vtičnice', category: 'Elektroinštalacije', unit: 'kos', price: 48.00 },
-                { id: Date.now() + 11, name: 'Vgradnja stikala', category: 'Elektroinštalacije', unit: 'kos', price: 42.00 },
-                { id: Date.now() + 12, name: 'Montaža elektro razdelilca', category: 'Elektroinštalacije', unit: 'kos', price: 180.00 },
-                { id: Date.now() + 13, name: 'Vgradnja LED svetilke', category: 'Elektroinštalacije', unit: 'kos', price: 35.00 },
-                { id: Date.now() + 14, name: 'Elektroinštalacije (delovna ura)', category: 'Elektroinštalacije', unit: 'ura', price: 55.00 },
-                { id: Date.now() + 15, name: 'Montaža stropnega ventilatorja', category: 'Elektroinštalacije', unit: 'kos', price: 85.00 },
-                
-                // Keramika
-                { id: Date.now() + 20, name: 'Polaganje stenskih ploščic', category: 'Keramika', unit: 'm²', price: 58.00 },
-                { id: Date.now() + 21, name: 'Polaganje talnih ploščic', category: 'Keramika', unit: 'm²', price: 52.00 },
-                { id: Date.now() + 22, name: 'Polaganje mozaika', category: 'Keramika', unit: 'm²', price: 75.00 },
-                { id: Date.now() + 23, name: 'Fugiranje keramičnih ploščic', category: 'Keramika', unit: 'm²', price: 12.00 },
-                { id: Date.now() + 24, name: 'Hidroizolacija kopalnice', category: 'Keramika', unit: 'm²', price: 35.00 },
-                { id: Date.now() + 25, name: 'Montaža keramičnega robnika', category: 'Keramika', unit: 'm', price: 18.00 },
-                
-                // Vodovodne inštalacije
-                { id: Date.now() + 30, name: 'Priklop sanitarnega umivalnika', category: 'Vodovodne inštalacije', unit: 'kos', price: 65.00 },
-                { id: Date.now() + 31, name: 'Priklop WC školjke', category: 'Vodovodne inštalacije', unit: 'kos', price: 95.00 },
-                { id: Date.now() + 32, name: 'Priklop tuš kabine', category: 'Vodovodne inštalacije', unit: 'kos', price: 145.00 },
-                { id: Date.now() + 33, name: 'Montaža električnega bojlerja', category: 'Vodovodne inštalacije', unit: 'kos', price: 120.00 },
-                { id: Date.now() + 34, name: 'Vodovodne inštalacije (delovna ura)', category: 'Vodovodne inštalacije', unit: 'ura', price: 52.00 },
-                { id: Date.now() + 35, name: 'Zamenjava pipa', category: 'Vodovodne inštalacije', unit: 'kos', price: 45.00 },
-                
-                // Pleskarska dela
-                { id: Date.now() + 40, name: 'Pleskanje sten (dva sloja)', category: 'Pleskarska dela', unit: 'm²', price: 16.00 },
-                { id: Date.now() + 41, name: 'Pleskanje stropa (dva sloja)', category: 'Pleskarska dela', unit: 'm²', price: 14.00 },
-                { id: Date.now() + 42, name: 'Priprava podlage (brusenje)', category: 'Pleskarska dela', unit: 'm²', price: 8.00 },
-                { id: Date.now() + 43, name: 'Nanašanje dekorativnega ometa', category: 'Pleskarska dela', unit: 'm²', price: 28.00 },
-                { id: Date.now() + 44, name: 'Glajenje sten (zglajen omet)', category: 'Pleskarska dela', unit: 'm²', price: 22.00 },
-                
-                // Mizarstvo
-                { id: Date.now() + 50, name: 'Montaža kuhinjskega bloka', category: 'Mizarstvo', unit: 'kos', price: 380.00 },
-                { id: Date.now() + 51, name: 'Montaža notranjih vrat', category: 'Mizarstvo', unit: 'kos', price: 125.00 },
-                { id: Date.now() + 52, name: 'Montaža talnih letev', category: 'Mizarstvo', unit: 'm', price: 8.50 },
-                { id: Date.now() + 53, name: 'Montaža okenske police', category: 'Mizarstvo', unit: 'kos', price: 35.00 }
-            ];
-        }
 
         // ============================================
         // CHOICE MODAL FUNCTIONS
