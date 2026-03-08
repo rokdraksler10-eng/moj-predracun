@@ -286,7 +286,45 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal - Choice -->
+    <div class="modal-overlay" id="modal-choice">
+        <div class="modal">
+            <div class="modal-title">Dodaj nov material</div>
+            <p style="color: #8E8E93; margin-bottom: 20px;">Izberi način dodajanja:</p>
+            
+            <button class="btn" id="btn-choose-template" style="margin-bottom: 12px;">
+                📋 Izberi iz prednastavljenih
+            </button>
+            <button class="btn" id="btn-create-new" style="background: transparent; border: 2px solid #007AFF; color: #007AFF;">
+                ✏️ Ustvari nov material
+            </button>
+            
+            <div style="margin-top: 20px; text-align: center;">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-choice" style="width: auto; padding: 10px 30px;">Prekliči</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal - Templates -->
+    <div class="modal-overlay" id="modal-templates">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-title">Izberi prednastavljene materiale</div>
+            <p style="color: #8E8E93; margin-bottom: 16px;">Označi materiale, ki jih želiš dodati:</p>
+            
+            <input type="text" id="template-search" placeholder="🔍 Išči material..." style="width: 100%; padding: 12px 16px; border: 1px solid #E5E5EA; border-radius: 10px; font-size: 16px; margin-bottom: 16px;">
+            
+            <div id="template-categories" style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap;"></div>
+            
+            <div id="template-list" style="max-height: 400px; overflow-y: auto;"></div>
+            
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button type="button" class="btn btn-secondary" id="btn-back-to-choice">Nazaj</button>
+                <button type="button" class="btn" id="btn-add-selected" style="display: none;">Dodaj izbrane</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal - New Item -->
     <div class="modal-overlay" id="modal">
         <div class="modal">
             <div class="modal-title" id="modal-title">Nov material</div>
@@ -362,20 +400,28 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('✅ Materials page loaded');
             
-            // Start empty
-            materials = [];
-            localStorage.setItem('materials', '[]');
-            
             // Event listeners
-            document.getElementById('btn-new-item').addEventListener('click', openModal);
+            document.getElementById('btn-new-item').addEventListener('click', openChoiceModal);
+            document.getElementById('btn-choose-template').addEventListener('click', openTemplatesModal);
+            document.getElementById('btn-create-new').addEventListener('click', openNewItemModal);
+            document.getElementById('btn-cancel-choice').addEventListener('click', closeChoiceModal);
+            document.getElementById('btn-back-to-choice').addEventListener('click', backToChoice);
+            document.getElementById('btn-add-selected').addEventListener('click', addSelectedTemplates);
+            document.getElementById('template-search').addEventListener('input', renderTemplateList);
             document.getElementById('btn-cancel').addEventListener('click', closeModal);
             document.getElementById('item-form').addEventListener('submit', saveItem);
             document.getElementById('search-input').addEventListener('input', renderItems);
             document.getElementById('sort-select').addEventListener('change', renderItems);
             
-            // Close modal on overlay click
+            // Close modals on overlay click
             document.getElementById('modal').addEventListener('click', function(e) {
                 if (e.target === this) closeModal();
+            });
+            document.getElementById('modal-choice').addEventListener('click', function(e) {
+                if (e.target === this) closeChoiceModal();
+            });
+            document.getElementById('modal-templates').addEventListener('click', function(e) {
+                if (e.target === this) closeTemplatesModal();
             });
             
             renderItems();
@@ -385,16 +431,237 @@
         });
 
         // ============================================
-        // MODAL FUNCTIONS
+        // CHOICE MODAL FUNCTIONS
         // ============================================
-        function openModal() {
-            console.log('🔘 Opening modal for new material');
+        function openChoiceModal() {
+            console.log('🔘 Opening choice modal');
+            document.getElementById('modal-choice').classList.add('active');
+        }
+
+        function closeChoiceModal() {
+            document.getElementById('modal-choice').classList.remove('active');
+        }
+
+        function openTemplatesModal() {
+            console.log('🔘 Opening templates modal');
+            closeChoiceModal();
+            templateCategoryFilter = 'all';
+            selectedTemplates.clear();
+            document.getElementById('template-search').value = '';
+            renderTemplateCategories();
+            renderTemplateList();
+            document.getElementById('modal-templates').classList.add('active');
+        }
+
+        function closeTemplatesModal() {
+            document.getElementById('modal-templates').classList.remove('active');
+        }
+
+        function backToChoice() {
+            closeTemplatesModal();
+            openChoiceModal();
+        }
+
+        function openNewItemModal() {
+            console.log('🔘 Opening new item modal');
+            closeChoiceModal();
             editingId = null;
             document.getElementById('modal-title').textContent = 'Nov material';
             document.getElementById('item-form').reset();
             document.getElementById('item-id').value = '';
             document.getElementById('modal').classList.add('active');
             document.getElementById('item-name').focus();
+        }
+
+        // ============================================
+        // TEMPLATES
+        // ============================================
+        let templateCategoryFilter = 'all';
+        let selectedTemplates = new Set();
+
+        function getTemplates() {
+            return [
+                // Gradbeni material
+                { name: 'Cement (25kg)', category: 'Gradbeni material', unit: 'kos', price: 8.50 },
+                { name: 'Mavec (25kg)', category: 'Gradbeni material', unit: 'kos', price: 6.20 },
+                { name: 'Opeka', category: 'Gradbeni material', unit: 'kos', price: 0.45 },
+                { name: 'YTONG blok', category: 'Gradbeni material', unit: 'kos', price: 3.80 },
+                { name: 'Estrih (40kg)', category: 'Gradbeni material', unit: 'kos', price: 5.50 },
+                { name: 'Knauf plošča', category: 'Gradbeni material', unit: 'm²', price: 4.20 },
+                { name: 'Stiropor (5cm)', category: 'Gradbeni material', unit: 'm²', price: 8.50 },
+                { name: 'Gradbeni les', category: 'Gradbeni material', unit: 'm', price: 3.20 },
+                
+                // Elektro material
+                { name: 'Vtičnica', category: 'Elektro material', unit: 'kos', price: 12.00 },
+                { name: 'Stikalo', category: 'Elektro material', unit: 'kos', price: 10.50 },
+                { name: 'Kabel NYM 3x1.5', category: 'Elektro material', unit: 'm', price: 2.80 },
+                { name: 'LED svetilka', category: 'Elektro material', unit: 'kos', price: 25.00 },
+                { name: 'Elektro omarica', category: 'Elektro material', unit: 'kos', price: 45.00 },
+                { name: 'Varovalka', category: 'Elektro material', unit: 'kos', price: 8.00 },
+                
+                // Keramika
+                { name: 'Talne ploščice', category: 'Keramika', unit: 'm²', price: 18.00 },
+                { name: 'Stenske ploščice', category: 'Keramika', unit: 'm²', price: 22.00 },
+                { name: 'Fugirna masa', category: 'Keramika', unit: 'kg', price: 4.50 },
+                { name: 'Hidroizolacija', category: 'Keramika', unit: 'kg', price: 8.00 },
+                { name: 'Lepilo za ploščice', category: 'Keramika', unit: 'kg', price: 3.80 },
+                
+                // Vodovodni material
+                { name: 'PVC cev (fi 50)', category: 'Vodovodni material', unit: 'm', price: 3.20 },
+                { name: 'Koleno PVC', category: 'Vodovodni material', unit: 'kos', price: 2.50 },
+                { name: 'Ventil', category: 'Vodovodni material', unit: 'kos', price: 15.00 },
+                { name: 'Sifon', category: 'Vodovodni material', unit: 'kos', price: 12.00 },
+                { name: 'Baterija', category: 'Vodovodni material', unit: 'kos', price: 85.00 },
+                
+                // Barve in laki
+                { name: 'Notranja barva (10L)', category: 'Barve in laki', unit: 'kos', price: 35.00 },
+                { name: 'Temeljna barva (5L)', category: 'Barve in laki', unit: 'kos', price: 22.00 },
+                { name: 'Lak za les', category: 'Barve in laki', unit: 'l', price: 12.00 },
+                { name: 'Razredčilo', category: 'Barve in laki', unit: 'l', price: 5.50 },
+                { name: 'Kit za les', category: 'Barve in laki', unit: 'kg', price: 8.00 },
+                
+                // Pohištvo
+                { name: 'Vrata notranja', category: 'Pohištvo', unit: 'kos', price: 120.00 },
+                { name: 'Okenica', category: 'Pohištvo', unit: 'kos', price: 45.00 },
+                { name: 'Ključavnica', category: 'Pohištvo', unit: 'kos', price: 35.00 },
+                { name: 'Tečaj', category: 'Pohištvo', unit: 'kos', price: 4.50 },
+                
+                // Orodje
+                { name: 'Kladivo', category: 'Orodje', unit: 'kos', price: 25.00 },
+                { name: 'Sveder', category: 'Orodje', unit: 'kos', price: 8.00 },
+                { name: 'Žaga', category: 'Orodje', unit: 'kos', price: 35.00 }
+            ];
+        }
+
+        function renderTemplateCategories() {
+            const templates = getTemplates();
+            const categories = [...new Set(templates.map(t => t.category))].sort();
+            const container = document.getElementById('template-categories');
+            
+            let html = `<button onclick="filterTemplatesByCategory('all')" style="padding: 8px 16px; border-radius: 20px; border: none; background: ${templateCategoryFilter === 'all' ? '#007AFF' : '#E5E5EA'}; color: ${templateCategoryFilter === 'all' ? 'white' : 'black'}; cursor: pointer;">📋 Vse</button>`;
+            
+            categories.forEach(cat => {
+                const isActive = templateCategoryFilter === cat;
+                html += `<button onclick="filterTemplatesByCategory('${cat}')" style="padding: 8px 16px; border-radius: 20px; border: none; background: ${isActive ? '#007AFF' : '#E5E5EA'}; color: ${isActive ? 'white' : 'black'}; cursor: pointer;">${getCategoryIcon(cat)} ${cat}</button>`;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function filterTemplatesByCategory(category) {
+            templateCategoryFilter = category;
+            renderTemplateCategories();
+            renderTemplateList();
+        }
+
+        function renderTemplateList() {
+            const search = document.getElementById('template-search').value.toLowerCase();
+            const templates = getTemplates();
+            const container = document.getElementById('template-list');
+            
+            let filtered = templates.filter(item => {
+                const matchesSearch = !search || item.name.toLowerCase().includes(search);
+                const matchesCategory = templateCategoryFilter === 'all' || item.category === templateCategoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p style="color: #8E8E93; text-align: center; padding: 40px;">Ni najdenih materialov</p>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map((t, index) => {
+                const globalIndex = templates.indexOf(t);
+                const isSelected = selectedTemplates.has(globalIndex);
+                return `
+                <div class="template-item" data-index="${globalIndex}" onclick="toggleTemplateSelection(${globalIndex})" style="
+                    background: ${isSelected ? '#E3F2FD' : '#F8F9FA'};
+                    border-radius: 10px;
+                    padding: 16px;
+                    margin-bottom: 10px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    border: 2px solid ${isSelected ? '#007AFF' : 'transparent'};
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="
+                                width: 24px;
+                                height: 24px;
+                                border: 2px solid ${isSelected ? '#007AFF' : '#C7C7CC'};
+                                border-radius: 6px;
+                                background: ${isSelected ? '#007AFF' : 'white'};
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                color: white;
+                                font-weight: bold;
+                                font-size: 14px;
+                            ">${isSelected ? '✓' : ''}</div>
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(t.name)}</div>
+                                <span class="item-category">${getCategoryIcon(t.category)} ${escapeHtml(t.category)}</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 18px; font-weight: 700; color: #007AFF;">${t.price.toFixed(2)} €</div>
+                            <div style="font-size: 12px; color: #8E8E93;">/${t.unit}</div>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+            
+            // Update button
+            const addSelectedBtn = document.getElementById('btn-add-selected');
+            if (selectedTemplates.size > 0) {
+                addSelectedBtn.style.display = 'inline-block';
+                addSelectedBtn.textContent = `Dodaj izbrane (${selectedTemplates.size})`;
+            } else {
+                addSelectedBtn.style.display = 'none';
+            }
+        }
+
+        function toggleTemplateSelection(index) {
+            if (selectedTemplates.has(index)) {
+                selectedTemplates.delete(index);
+            } else {
+                selectedTemplates.add(index);
+            }
+            renderTemplateList();
+        }
+
+        function addSelectedTemplates() {
+            const templates = getTemplates();
+            let addedCount = 0;
+            
+            selectedTemplates.forEach(index => {
+                const template = templates[index];
+                const item = {
+                    id: Date.now() + Math.random(),
+                    name: template.name,
+                    category: template.category,
+                    unit: template.unit,
+                    price: template.price
+                };
+                materials.push(item);
+                addedCount++;
+            });
+            
+            selectedTemplates.clear();
+            saveToStorage();
+            renderItems();
+            renderCategories();
+            closeTemplatesModal();
+            
+            alert(`✅ ${addedCount} materialov je bilo dodanih!`);
+        }
+
+        // ============================================
+        // MODAL FUNCTIONS
+        // ============================================
+        function openModal() {
+            console.log('🔘 Opening modal for edit');
+            document.getElementById('modal').classList.add('active');
         }
 
         function openEditModal(id) {
@@ -584,6 +851,9 @@
         // Expose functions to window
         window.openEditModal = openEditModal;
         window.deleteItem = deleteItem;
+        window.toggleTemplateSelection = toggleTemplateSelection;
+        window.filterTemplatesByCategory = filterTemplatesByCategory;
+        window.addSelectedTemplates = addSelectedTemplates;
 
         console.log('✅ All functions loaded');
     </script>
