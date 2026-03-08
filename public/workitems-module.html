@@ -3,1024 +3,524 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Upravljanje postavk dela za gradbene predračune. Dodajaj, urejaj in upravljaj postavke dela z enostavnim vmesnikom.">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <title>Postavke Dela | Moj Predračun</title>
-    <script src="utils.js"></script>
+    <title>Postavke Dela - Moj Predračun</title>
     <style>
-        :root {
-            --ios-blue: #007AFF;
-            --ios-green: #34C759;
-            --ios-red: #FF3B30;
-            --ios-bg: #F2F2F7;
-            --ios-card: #FFFFFF;
-            --ios-text: #000000;
-            --ios-text-secondary: #8E8E93;
-            --ios-border: #E5E5EA;
-        }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--ios-bg);
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #F2F2F7; 
             min-height: 100vh;
-            padding: 20px;
+            padding-bottom: 80px;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: var(--ios-card);
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            padding: 20px;
+        
+        .header { 
+            background: white; 
+            padding: 20px; 
+            border-bottom: 1px solid #E5E5EA;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-
-        h1 {
-            color: var(--ios-text);
+        .header h1 { font-size: 24px; margin-bottom: 10px; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        .btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-secondary { background: #8E8E93; }
+        .btn-danger { background: #FF3B30; }
+        .btn-sm { padding: 8px 16px; font-size: 14px; }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
             margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 28px;
-            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-
-        h1::before {
-            content: "🔨";
-            font-size: 1.2em;
-        }
-
+        
         .controls {
             display: flex;
-            flex-wrap: wrap;
             gap: 12px;
             margin-bottom: 20px;
-            padding: 16px;
-            background: var(--ios-bg);
-            border-radius: 12px;
+            flex-wrap: wrap;
         }
-
         .controls input, .controls select {
-            padding: 12px 16px;
-            border: 1px solid var(--ios-border);
-            border-radius: 12px;
-            font-size: 16px;
-            background: var(--ios-card);
-            transition: all 0.2s;
-            min-height: 48px;
-        }
-
-        .controls input:focus, .controls select:focus {
-            outline: none;
-            border-color: var(--ios-blue);
-            box-shadow: 0 0 0 3px rgba(0,122,255,0.1);
-        }
-
-        .controls input[type="text"], .controls input[type="search"] {
             flex: 1;
             min-width: 200px;
-        }
-
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 12px;
+            padding: 12px 16px;
+            border: 1px solid #E5E5EA;
+            border-radius: 10px;
             font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            min-height: 48px;
         }
-
-        .btn:active { transform: scale(0.98); }
-
-        .btn-primary {
-            background: var(--ios-blue);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: var(--ios-card);
-            color: var(--ios-blue);
-            border: 1px solid var(--ios-border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--ios-border);
-        }
-
-        .btn-danger {
-            background: var(--ios-red);
-            color: white;
-        }
-
-        .btn-success {
-            background: var(--ios-green);
-            color: white;
-        }
-
-        /* Loading Overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255,255,255,0.9);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-        .loading-overlay.active { display: flex; }
-        .loading-spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid var(--ios-border);
-            border-top-color: var(--ios-blue);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Custom Confirm Dialog */
-        .confirm-dialog {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1500;
-        }
-        .confirm-dialog.active { display: flex; }
-        .confirm-content {
-            background: white;
-            padding: 24px;
-            border-radius: 16px;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-            animation: slideUp 0.3s ease;
-        }
-        .confirm-content p { margin-bottom: 20px; font-size: 16px; }
-        .confirm-buttons { display: flex; gap: 12px; justify-content: center; }
-        .confirm-buttons .btn { flex: 1; }
-
-        .stats {
+        
+        /* Category tabs */
+        .category-tabs {
             display: flex;
-            gap: 16px;
+            gap: 10px;
+            flex-wrap: wrap;
             margin-bottom: 20px;
-            flex-wrap: wrap;
         }
-
-        .stat-card {
-            background: var(--ios-blue);
-            color: white;
-            padding: 16px 24px;
-            border-radius: 12px;
-            min-width: 150px;
-        }
-
-        .stat-card h3 {
-            font-size: 12px;
-            text-transform: uppercase;
-            opacity: 0.9;
-            margin-bottom: 4px;
-        }
-
-        .stat-card .value {
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .table-container {
-            overflow-x: auto;
-            border-radius: 12px;
-            border: 1px solid var(--ios-border);
-            background: var(--ios-card);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        thead {
-            background: var(--ios-bg);
-        }
-
-        th {
-            padding: 14px 16px;
-            text-align: left;
-            font-weight: 600;
-            color: #555;
-            border-bottom: 2px solid #e0e0e0;
-            cursor: pointer;
-            user-select: none;
-            transition: background 0.2s;
-        }
-
-        th:hover {
-            background: #e9ecef;
-        }
-
-        td {
-            padding: 14px 16px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        tr:hover {
-            background: #f8f9fa;
-        }
-
-        .favorite-btn {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .favorite-btn:hover {
-            transform: scale(1.2);
-        }
-
-        .favorite-btn.active {
-            color: #f1c40f;
-        }
-
-        .category-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-
-        .price {
-            font-weight: 600;
-            color: #27ae60;
-        }
-
-        .unit {
-            color: #666;
-            font-size: 12px;
-        }
-
-        .difficulty-factors {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-        }
-
-        .difficulty-tag {
-            font-size: 11px;
-            padding: 2px 8px;
-            border-radius: 12px;
-            background: #fff3e0;
-            color: #f57c00;
-        }
-
-        .actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal {
+        .category-tab {
+            padding: 8px 16px;
             background: white;
-            border-radius: 16px;
-            padding: 30px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .modal h2 {
-            margin-bottom: 24px;
-            color: #333;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 500;
-            color: #555;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.2s;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .difficulty-factors-input {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
-        .difficulty-factor-tag {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: #e3f2fd;
+            border: 1px solid #E5E5EA;
             border-radius: 20px;
-            font-size: 13px;
-        }
-
-        .difficulty-factor-tag button {
-            background: none;
-            border: none;
             cursor: pointer;
-            font-size: 16px;
-            color: #666;
+            font-size: 14px;
         }
-
-        .modal-actions {
+        .category-tab.active {
+            background: #007AFF;
+            color: white;
+            border-color: #007AFF;
+        }
+        
+        /* Items list */
+        .items-list { margin-top: 20px; }
+        .item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            margin-top: 24px;
+            justify-content: space-between;
+            align-items: center;
         }
-
+        .item-info { flex: 1; }
+        .item-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
+        .item-category { 
+            display: inline-block;
+            background: #F2F2F7;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #8E8E93;
+        }
+        .item-price { 
+            font-size: 18px; 
+            font-weight: 700; 
+            color: #007AFF;
+            margin-right: 16px;
+        }
+        .item-unit { font-size: 12px; color: #8E8E93; }
+        .item-actions { display: flex; gap: 8px; }
+        
+        /* Empty state */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #999;
+            color: #8E8E93;
         }
-
-        .empty-state-icon {
-            font-size: 64px;
-            margin-bottom: 16px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e0e0e0;
-            border-top-color: #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .toast-container {
+        .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+        
+        /* Modal */
+        .modal-overlay {
+            display: none;
             position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1100;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-
-        .toast {
-            padding: 16px 24px;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            color: white;
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #8E8E93;
             font-weight: 500;
-            animation: slideInRight 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
-
-        @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(100px); }
-            to { opacity: 1; transform: translateX(0); }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #E5E5EA;
+            border-radius: 10px;
+            font-size: 16px;
         }
-
-        .toast.success { background: #27ae60; }
-        .toast.error { background: #e74c3c; }
-        .toast.info { background: #3498db; }
-
-        .filter-tags {
+        
+        .modal-buttons {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 16px;
+            gap: 10px;
+            margin-top: 24px;
         }
-
-        .filter-tag {
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 2px solid transparent;
+        .modal-buttons .btn { flex: 1; }
+        
+        /* Bottom nav */
+        .nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: white; 
+            border-top: 1px solid #E5E5EA;
+            display: flex; 
+            justify-content: space-around; 
+            padding: 10px 0;
+            z-index: 100;
         }
-
-        .filter-tag.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .nav a {
+            text-decoration: none;
+            color: #8E8E93;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 15px;
         }
-
-        .filter-tag:not(.active) {
-            background: #f0f0f0;
-            color: #666;
-        }
-
-        .filter-tag:not(.active):hover {
-            background: #e0e0e0;
-        }
+        .nav a.active { color: #007AFF; }
+        .nav a span { font-size: 20px; }
     </style>
 </head>
 <body>
+    <!-- Header -->
+    <div class="header">
+        <h1>🔧 Postavke Dela</h1>
+    </div>
+
+    <!-- Main Content -->
     <div class="container">
-        <h1>Postavke Dela</h1>
-
-        <div class="stats" id="stats">
-            <div class="stat-card">
-                <h3>Skupaj postavk</h3>
-                <div class="value" id="totalCount">0</div>
+        <!-- Controls -->
+        <div class="card">
+            <div class="controls">
+                <input type="text" id="search-input" placeholder="🔍 Išči postavko...">
+                <select id="sort-select">
+                    <option value="name">Naziv (A-Z)</option>
+                    <option value="price-asc">Cena (nizka→visoka)</option>
+                    <option value="price-desc">Cena (visoka→nizka)</option>
+                </select>
             </div>
-            <div class="stat-card">
-                <h3>Priljubljene</h3>
-                <div class="value" id="favoriteCount">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>Kategorije</h3>
-                <div class="value" id="categoryCount">0</div>
+            
+            <button class="btn" id="btn-new-item">+ Nova postavka</button>
+            
+            <!-- Category Tabs -->
+            <div class="category-tabs" id="category-tabs">
+                <div class="category-tab active" data-category="all">Vse</div>
             </div>
         </div>
-
-        <div class="controls">
-            <input type="search" id="searchInput" placeholder="🔍 Išči postavke...">
-            <select id="sortSelect">
-                <option value="name-asc">🔤 Naziv (A-Z)</option>
-                <option value="name-desc">🔤 Naziv (Z-A)</option>
-                <option value="price-asc">💰 Cena (nizka→visoka)</option>
-                <option value="price-desc">💰 Cena (visoka→nizka)</option>
-                <option value="category-asc">📁 Kategorija (A-Z)</option>
-            </select>
-            <button class="btn btn-primary" onclick="openModal()">
-                <span>+</span> Nova postavka
-            </button>
-        </div>
-
-        <div class="filter-tags" id="categoryFilters">
-            <div class="filter-tag active" data-category="all">Vse kategorije</div>
-        </div>
-
-        <div class="table-container" id="tableContainer">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>Nalaganje postavk...</p>
+        
+        <!-- Items List -->
+        <div class="items-list" id="items-list">
+            <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <h3>Ni postavk</h3>
+                <p>Klikni "Nova postavka" za začetek</p>
             </div>
         </div>
     </div>
 
+    <!-- Modal -->
     <div class="modal-overlay" id="modal">
         <div class="modal">
-            <h2 id="modalTitle">Nova postavka</h2>
-            <form id="workItemForm">
-                <input type="hidden" id="itemId">
+            <div class="modal-title" id="modal-title">Nova postavka</div>
+            <form id="item-form">
+                <input type="hidden" id="item-id">
                 
                 <div class="form-group">
-                    <label for="name">Naziv postavke *</label>
-                    <input type="text" id="name" required placeholder="npr. Montaža oken">
+                    <label>Naziv postavke *</label>
+                    <input type="text" id="item-name" placeholder="npr. Montaža oken" required>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="category">Kategorija *</label>
-                    <select id="category" required>
-                        <option value="">Izberi kategorijo</option>
-                        <option value="Gradbeništvo">Gradbeništvo</option>
-                        <option value="Elektrika">Elektrika</option>
+                    <label>Kategorija *</label>
+                    <select id="item-category" required>
+                        <option value="">Izberi kategorijo...</option>
+                        <option value="Gradbeno">Gradbeno delo</option>
+                        <option value="Električno">Električno delo</option>
                         <option value="Vodovod">Vodovod</option>
                         <option value="Ogrevanje">Ogrevanje</option>
-                        <option value="Hladilništvo">Hladilništvo</option>
-                        <option value="Tesarstvo">Tesarstvo</option>
-                        <option value="Krovstvo">Krovstvo</option>
-                        <option value="Pleskarstvo">Pleskarstvo</option>
-                        <option value="Talne obloge">Talne obloge</option>
                         <option value="Pohištvo">Pohištvo</option>
-                        <option value="Ostalo">Ostalo</option>
+                        <option value="Keramika">Keramika</option>
+                        <option value="Barvanje">Barvanje</option>
+                        <option value="Drugo">Drugo</option>
                     </select>
                 </div>
-
-                <div class="form-group">
-                    <label for="unit">Enota *</label>
-                    <select id="unit" required>
-                        <option value="">Izberi enoto</option>
-                        <option value="kos">kos</option>
-                        <option value="m">m</option>
-                        <option value="m²">m²</option>
-                        <option value="m³">m³</option>
-                        <option value="kg">kg</option>
-                        <option value="ura">ura</option>
-                        <option value="dan">dan</option>
-                        <option value="komplet">komplet</option>
-                    </select>
+                
+                <div style="display: flex; gap: 16px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Enota *</label>
+                        <select id="item-unit" required>
+                            <option value="kos">kos</option>
+                            <option value="m">m</option>
+                            <option value="m2">m²</option>
+                            <option value="m3">m³</option>
+                            <option value="ura">ura</option>
+                            <option value="dan">dan</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label>Cena na enoto (€) *</label>
+                        <input type="number" id="item-price" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="price">Cena (€) *</label>
-                    <input type="number" id="price" required min="0" step="0.01" placeholder="0.00">
-                </div>
-
-                <div class="form-group">
-                    <label>Faktorji težavnosti</label>
-                    <div class="difficulty-factors-input" id="difficultyTags"></div>
-                    <input type="text" id="difficultyInput" placeholder="Dodaj faktor in pritisni Enter (npr. višinsko delo)">
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Prekliči</button>
-                    <button type="submit" class="btn btn-success">Shrani</button>
+                
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel">Prekliči</button>
+                    <button type="submit" class="btn">Shrani postavko</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="toast-container" id="toastContainer"></div>
+    <!-- Bottom Navigation -->
+    <nav class="nav">
+        <a href="index.html"><span>📋</span>Predračuni</a>
+        <a href="workitems-module.html" class="active"><span>🔧</span>Postavke</a>
+        <a href="calculator-module.html"><span>🧮</span>Kalkulator</a>
+    </nav>
 
     <script>
-        let workItems = [];
-        let categories = new Set();
-        let currentFilter = 'all';
-        let currentSort = 'name-asc';
-        let currentSearch = '';
+        // ============================================
+        // STATE
+        // ============================================
+        let workItems = JSON.parse(localStorage.getItem('workItems') || '[]');
+        let currentCategory = 'all';
         let editingId = null;
-        let difficultyFactors = [];
-        let confirmCallback = null;
 
-        const API_BASE = '/api';
-
-        // Loading state functions
-        function showLoading() {
-            document.getElementById('loadingOverlay').classList.add('active');
-        }
-        function hideLoading() {
-            document.getElementById('loadingOverlay').classList.remove('active');
-        }
-
-        // Custom confirm dialog
-        function showConfirm(message, callback, actionText = 'Potrdi', actionClass = 'btn-danger') {
-            confirmCallback = callback;
-            document.getElementById('confirmMessage').textContent = message;
-            const actionBtn = document.getElementById('confirmActionBtn');
-            actionBtn.textContent = actionText;
-            actionBtn.className = 'btn ' + actionClass;
-            document.getElementById('confirmDialog').classList.add('active');
-        }
-        function handleConfirm(result) {
-            document.getElementById('confirmDialog').classList.remove('active');
-            if (confirmCallback) {
-                confirmCallback(result);
-                confirmCallback = null;
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ Workitems page loaded');
+            
+            // Add some default items if empty
+            if (workItems.length === 0) {
+                addDefaultItems();
             }
-        }
-
-        // Global error handler for debugging
-        window.onerror = function(msg, url, line, col, error) {
-            console.error('🚨 Global Error:', msg, 'at line', line, 'in', url);
-            alert('Napaka: ' + msg + ' (vrstica ' + line + ')');
-            return false;
-        };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('📄 workitems-module.html DOM loaded');
-            loadWorkItems();
-            setupEventListeners();
-            console.log('✅ workitems-module initialized');
+            
+            // Event listeners
+            document.getElementById('btn-new-item').addEventListener('click', openModal);
+            document.getElementById('btn-cancel').addEventListener('click', closeModal);
+            document.getElementById('item-form').addEventListener('submit', saveItem);
+            document.getElementById('search-input').addEventListener('input', renderItems);
+            document.getElementById('sort-select').addEventListener('change', renderItems);
+            
+            // Close modal on overlay click
+            document.getElementById('modal').addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+            
+            renderItems();
+            renderCategories();
+            
+            console.log('✅ Event listeners attached');
         });
 
-        function setupEventListeners() {
-            document.getElementById('searchInput').addEventListener('input', (e) => {
-                currentSearch = e.target.value.toLowerCase();
-                renderTable();
-            });
-
-            document.getElementById('sortSelect').addEventListener('change', (e) => {
-                currentSort = e.target.value;
-                renderTable();
-            });
-
-            document.getElementById('difficultyInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const value = e.target.value.trim();
-                    if (value && !difficultyFactors.includes(value)) {
-                        difficultyFactors.push(value);
-                        renderDifficultyTags();
-                        e.target.value = '';
-                    }
-                }
-            });
-
-            document.getElementById('workItemForm').addEventListener('submit', handleFormSubmit);
-
-            document.getElementById('modal').addEventListener('click', (e) => {
-                if (e.target.id === 'modal') closeModal();
-            });
+        // ============================================
+        // DEFAULT ITEMS
+        // ============================================
+        function addDefaultItems() {
+            const defaults = [
+                { id: Date.now() + 1, name: 'Rušenje stene', category: 'Gradbeno', unit: 'm2', price: 25.00 },
+                { id: Date.now() + 2, name: 'Zidarsko delo', category: 'Gradbeno', unit: 'm2', price: 35.00 },
+                { id: Date.now() + 3, name: 'Montaža vtičnic', category: 'Električno', unit: 'kos', price: 45.00 },
+                { id: Date.now() + 4, name: 'Polaganje ploščic', category: 'Keramika', unit: 'm2', price: 55.00 },
+                { id: Date.now() + 5, name: 'Montaža radiatorja', category: 'Ogrevanje', unit: 'kos', price: 120.00 },
+                { id: Date.now() + 6, name: 'Barvanje sten', category: 'Barvanje', unit: 'm2', price: 15.00 },
+                { id: Date.now() + 7, name: 'Montaža omare', category: 'Pohištvo', unit: 'kos', price: 80.00 },
+                { id: Date.now() + 8, name: 'Priklop umivalnika', category: 'Vodovod', unit: 'kos', price: 60.00 }
+            ];
+            workItems = defaults;
+            saveToStorage();
         }
 
-        async function loadWorkItems() {
-            try {
-                const response = await fetch(`${API_BASE}/work-items`);
-                if (!response.ok) throw new Error('Napaka pri nalaganju');
-                workItems = await response.json();
-                updateCategories();
-                renderTable();
-                updateStats();
-            } catch (error) {
-                showToast('Napaka pri nalaganju postavk: ' + error.message, 'error');
-            }
+        // ============================================
+        // MODAL FUNCTIONS
+        // ============================================
+        function openModal() {
+            console.log('🔘 Opening modal for new item');
+            editingId = null;
+            document.getElementById('modal-title').textContent = 'Nova postavka';
+            document.getElementById('item-form').reset();
+            document.getElementById('item-id').value = '';
+            document.getElementById('modal').classList.add('active');
+            document.getElementById('item-name').focus();
         }
 
-        async function createWorkItem(item) {
-            showLoading();
-            try {
-                const response = await fetch(`${API_BASE}/work-items`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(item)
-                });
-                if (!response.ok) throw new Error('Napaka pri ustvarjanju');
-                const newItem = await response.json();
-                workItems.push(newItem);
-                updateCategories();
-                renderTable();
-                updateStats();
-                showToast('Postavka uspešno ustvarjena!', 'success');
-                return true;
-            } catch (error) {
-                showToast('Napaka: ' + error.message, 'error');
-                return false;
-            } finally {
-                hideLoading();
-            }
-        }
-
-        async function updateWorkItem(id, item) {
-            showLoading();
-            try {
-                const response = await fetch(`${API_BASE}/work-items/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(item)
-                });
-                if (!response.ok) throw new Error('Napaka pri posodabljanju');
-                const updatedItem = await response.json();
-                const index = workItems.findIndex(i => String(i.id) === String(id));
-                if (index !== -1) workItems[index] = updatedItem;
-                updateCategories();
-                renderTable();
-                updateStats();
-                showToast('Postavka uspešno posodobljena!', 'success');
-                return true;
-            } catch (error) {
-                showToast('Napaka: ' + error.message, 'error');
-                return false;
-            } finally {
-                hideLoading();
-            }
-        }
-
-        function deleteWorkItem(id) {
-            showConfirm('Ali ste prepričani, da želite izbrisati to postavko?', async (confirmed) => {
-                if (!confirmed) return;
-                
-                showLoading();
-                try {
-                    const response = await fetch(`${API_BASE}/work-items/${id}`, {
-                        method: 'DELETE'
-                    });
-                    if (!response.ok) throw new Error('Napaka pri brisanju');
-                    workItems = workItems.filter(i => String(i.id) !== String(id));
-                    updateCategories();
-                    renderTable();
-                    updateStats();
-                    showToast('Postavka izbrisana!', 'success');
-                } catch (error) {
-                    showToast('Napaka: ' + error.message, 'error');
-                } finally {
-                    hideLoading();
-                }
-            }, 'Izbriši', 'btn-danger');
-        }
-
-        async function toggleFavorite(id) {
-            const item = workItems.find(i => String(i.id) === String(id));
+        function openEditModal(id) {
+            console.log('🔘 Opening modal for edit:', id);
+            const item = workItems.find(i => i.id === id);
             if (!item) return;
-
-            const updatedItem = { ...item, isFavorite: !item.isFavorite };
             
-            showLoading();
-            try {
-                const response = await fetch(`${API_BASE}/work-items/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatedItem)
-                });
-                if (!response.ok) throw new Error('Napaka');
-                const result = await response.json();
-                const index = workItems.findIndex(i => String(i.id) === String(id));
-                if (index !== -1) workItems[index] = result;
-                renderTable();
-                updateStats();
-            } catch (error) {
-                showToast('Napaka pri posodabljanju priljubljenih', 'error');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        function updateCategories() {
-            categories = new Set(workItems.map(item => item.category).filter(Boolean));
-            renderCategoryFilters();
-        }
-
-        function renderCategoryFilters() {
-            const container = document.getElementById('categoryFilters');
-            let html = `<div class="filter-tag ${currentFilter === 'all' ? 'active' : ''}" data-category="all">Vse kategorije</div>`;
-            
-            Array.from(categories).sort().forEach(cat => {
-                html += `<div class="filter-tag ${currentFilter === cat ? 'active' : ''}" data-category="${cat}">${cat}</div>`;
-            });
-            
-            container.innerHTML = html;
-
-            container.querySelectorAll('.filter-tag').forEach(tag => {
-                tag.addEventListener('click', () => {
-                    currentFilter = tag.dataset.category;
-                    renderCategoryFilters();
-                    renderTable();
-                });
-            });
-        }
-
-        function getFilteredAndSortedItems() {
-            let items = [...workItems];
-
-            if (currentFilter !== 'all') {
-                items = items.filter(item => item.category === currentFilter);
-            }
-
-            if (currentSearch) {
-                items = items.filter(item => 
-                    item.name?.toLowerCase().includes(currentSearch) ||
-                    item.category?.toLowerCase().includes(currentSearch) ||
-                    item.unit?.toLowerCase().includes(currentSearch)
-                );
-            }
-
-            items.sort((a, b) => {
-                switch (currentSort) {
-                    case 'name-asc': return (a.name || '').localeCompare(b.name || '');
-                    case 'name-desc': return (b.name || '').localeCompare(a.name || '');
-                    case 'price-asc': return (a.price || 0) - (b.price || 0);
-                    case 'price-desc': return (b.price || 0) - (a.price || 0);
-                    case 'category-asc': return (a.category || '').localeCompare(b.category || '');
-                    default: return 0;
-                }
-            });
-
-            return items;
-        }
-
-        function renderTable() {
-            const container = document.getElementById('tableContainer');
-            const items = getFilteredAndSortedItems();
-
-            if (items.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📋</div>
-                        <h3>Ni najdenih postavk</h3>
-                        <p>Začnite z dodajanjem nove postavke ali prilagodite iskalne kriterije.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const sortIndicator = (field) => {
-                if (currentSort.startsWith(field)) {
-                    return currentSort.endsWith('asc') ? ' ▲' : ' ▼';
-                }
-                return '';
-            };
-
-            let html = `
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 50px;"></th>
-                            <th onclick="setSort('name')" class="sortable">Naziv${sortIndicator('name')}</th>
-                            <th onclick="setSort('category')" class="sortable">Kategorija${sortIndicator('category')}</th>
-                            <th style="width: 100px;">Enota</th>
-                            <th onclick="setSort('price')" class="sortable">Cena${sortIndicator('price')}</th>
-                            <th>Faktorji težavnosti</th>
-                            <th style="width: 150px;">Akcije</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            items.forEach(item => {
-                const difficultyHtml = item.difficultyFactors?.map(f => 
-                    `<span class="difficulty-tag">${f}</span>`
-                ).join('') || '';
-
-                html += `
-                    <tr>
-                        <td>
-                            <button class="favorite-btn ${item.isFavorite ? 'active' : ''}" onclick="toggleFavorite(${item.id})">
-                                ${item.isFavorite ? '⭐' : '☆'}
-                            </button>
-                        </td>
-                        <td><strong>${escapeHtml(item.name || '')}</strong></td>
-                        <td><span class="category-badge">${escapeHtml(item.category || '')}</span></td>
-                        <td class="unit">${escapeHtml(item.unit || '')}</td>
-                        <td class="price">€${parseFloat(item.price || 0).toFixed(2)}</td>
-                        <td>
-                            <div class="difficulty-factors">${difficultyHtml}</div>
-                        </td>
-                        <td>
-                            <div class="actions">
-                                <button class="btn btn-secondary btn-small" onclick="editItem(${item.id})">Uredi</button>
-                                <button class="btn btn-danger btn-small" onclick="deleteWorkItem(${item.id})">Izbriši</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-
-        function setSort(field) {
-            if (currentSort.startsWith(field)) {
-                currentSort = currentSort.endsWith('asc') ? `${field}-desc` : `${field}-asc`;
-            } else {
-                currentSort = `${field}-asc`;
-            }
-            document.getElementById('sortSelect').value = currentSort;
-            renderTable();
-        }
-
-        function updateStats() {
-            document.getElementById('totalCount').textContent = workItems.length;
-            document.getElementById('favoriteCount').textContent = workItems.filter(i => i.isFavorite).length;
-            document.getElementById('categoryCount').textContent = categories.size;
-        }
-
-        function openModal(item = null) {
-            console.log('🔘 openModal() called, item:', item);
-            try {
-                editingId = item ? item.id : null;
-                document.getElementById('modalTitle').textContent = item ? 'Uredi postavko' : 'Nova postavka';
-                document.getElementById('itemId').value = item ? item.id : '';
-                document.getElementById('name').value = item ? item.name : '';
-                document.getElementById('category').value = item ? item.category : '';
-                document.getElementById('unit').value = item ? item.unit : '';
-                document.getElementById('price').value = item ? item.price : '';
-                difficultyFactors = item?.difficultyFactors || [];
-                renderDifficultyTags();
-                document.getElementById('modal').classList.add('active');
-                console.log('✅ openModal() completed');
-            } catch (e) {
-                console.error('❌ Error in openModal():', e);
-                alert('Napaka pri odpiranju: ' + e.message);
-            }
+            editingId = id;
+            document.getElementById('modal-title').textContent = 'Uredi postavko';
+            document.getElementById('item-id').value = item.id;
+            document.getElementById('item-name').value = item.name;
+            document.getElementById('item-category').value = item.category;
+            document.getElementById('item-unit').value = item.unit;
+            document.getElementById('item-price').value = item.price;
+            document.getElementById('modal').classList.add('active');
         }
 
         function closeModal() {
             document.getElementById('modal').classList.remove('active');
             editingId = null;
-            difficultyFactors = [];
-            document.getElementById('workItemForm').reset();
-            renderDifficultyTags();
         }
 
-        function renderDifficultyTags() {
-            const container = document.getElementById('difficultyTags');
-            container.innerHTML = difficultyFactors.map((f, i) => `
-                <div class="difficulty-factor-tag">
-                    ${escapeHtml(f)}
-                    <button type="button" onclick="removeDifficultyFactor(${i})">×</button>
+        // ============================================
+        // SAVE / DELETE
+        // ============================================
+        function saveItem(e) {
+            e.preventDefault();
+            console.log('🔘 Saving item...');
+            
+            const item = {
+                id: editingId || Date.now(),
+                name: document.getElementById('item-name').value.trim(),
+                category: document.getElementById('item-category').value,
+                unit: document.getElementById('item-unit').value,
+                price: parseFloat(document.getElementById('item-price').value)
+            };
+            
+            if (editingId) {
+                const index = workItems.findIndex(i => i.id === editingId);
+                if (index >= 0) workItems[index] = item;
+            } else {
+                workItems.push(item);
+            }
+            
+            saveToStorage();
+            renderItems();
+            renderCategories();
+            closeModal();
+            
+            alert('✅ Postavka "' + item.name + '" je bila shranjena!');
+        }
+
+        function deleteItem(id) {
+            if (!confirm('Ali ste prepričani, da želite izbrisati to postavko?')) return;
+            
+            workItems = workItems.filter(i => i.id !== id);
+            saveToStorage();
+            renderItems();
+            renderCategories();
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('workItems', JSON.stringify(workItems));
+        }
+
+        // ============================================
+        // RENDERING
+        // ============================================
+        function renderItems() {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const sort = document.getElementById('sort-select').value;
+            
+            let filtered = workItems.filter(item => {
+                const matchesSearch = !search || 
+                    item.name.toLowerCase().includes(search) ||
+                    item.category.toLowerCase().includes(search);
+                const matchesCategory = currentCategory === 'all' || item.category === currentCategory;
+                return matchesSearch && matchesCategory;
+            });
+            
+            // Sort
+            filtered.sort((a, b) => {
+                if (sort === 'name') return a.name.localeCompare(b.name);
+                if (sort === 'price-asc') return a.price - b.price;
+                if (sort === 'price-desc') return b.price - a.price;
+                return 0;
+            });
+            
+            const container = document.getElementById('items-list');
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>Ni najdenih postavk</h3>
+                        <p>${workItems.length === 0 ? 'Klikni "Nova postavka" za začetek' : 'Poskusite drugo iskanje'}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filtered.map(item => `
+                <div class="item">
+                    <div class="item-info">
+                        <div class="item-name">${escapeHtml(item.name)}</div>
+                        <span class="item-category">${escapeHtml(item.category)}</span>
+                    </div>
+                    <div>
+                        <div class="item-price">${item.price.toFixed(2)} €</div>
+                        <div class="item-unit">/${item.unit}</div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="openEditModal(${item.id})">✏️</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">🗑️</button>
+                    </div>
                 </div>
             `).join('');
         }
 
-        function removeDifficultyFactor(index) {
-            difficultyFactors.splice(index, 1);
-            renderDifficultyTags();
-        }
-
-        function editItem(id) {
-            const item = workItems.find(i => String(i.id) === String(id));
-            if (item) openModal(item);
-        }
-
-        async function handleFormSubmit(e) {
-            e.preventDefault();
+        function renderCategories() {
+            const categories = [...new Set(workItems.map(i => i.category))].sort();
+            const container = document.getElementById('category-tabs');
             
-            const item = {
-                name: document.getElementById('name').value.trim(),
-                category: document.getElementById('category').value,
-                unit: document.getElementById('unit').value,
-                price: parseFloat(document.getElementById('price').value),
-                difficultyFactors: difficultyFactors,
-                isFavorite: false
-            };
-
-            if (editingId) {
-                const existing = workItems.find(i => i.id == editingId);
-                item.isFavorite = existing?.isFavorite || false;
-                const success = await updateWorkItem(editingId, item);
-                if (success) closeModal();
-            } else {
-                const success = await createWorkItem(item);
-                if (success) closeModal();
-            }
+            let html = `<div class="category-tab ${currentCategory === 'all' ? 'active' : ''}" data-category="all">Vse</div>`;
+            
+            categories.forEach(cat => {
+                html += `<div class="category-tab ${currentCategory === cat ? 'active' : ''}" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</div>`;
+            });
+            
+            container.innerHTML = html;
+            
+            // Attach click handlers
+            container.querySelectorAll('.category-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    currentCategory = this.dataset.category;
+                    renderCategories();
+                    renderItems();
+                });
+            });
         }
 
+        // ============================================
+        // UTILS
+        // ============================================
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Expose functions to window for onclick handlers
+        window.openEditModal = openEditModal;
+        window.deleteItem = deleteItem;
+
+        console.log('✅ All functions loaded');
     </script>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-spinner"></div>
-    </div>
-
-    <!-- Custom Confirm Dialog -->
-    <div id="confirmDialog" class="confirm-dialog">
-        <div class="confirm-content">
-            <p id="confirmMessage">Ali ste prepričani?</p>
-            <div class="confirm-buttons">
-                <button class="btn btn-secondary" onclick="handleConfirm(false)">Prekliči</button>
-                <button class="btn btn-danger" id="confirmActionBtn" onclick="handleConfirm(true)">Potrdi</button>
-            </div>
-        </div>
-    </div>
 </body>
 </html>
