@@ -236,8 +236,8 @@
 
         <!-- Navigation Tabs -->
         <div class="tabs no-print">
-            <button class="tab active" onclick="switchTab('list')" id="tab-list">Seznam predračunov</button>
-            <button class="tab" onclick="switchTab('edit')" id="tab-edit">Uredi predračun</button>
+            <button class="tab active" id="tab-list">Seznam predračunov</button>
+            <button class="tab" id="tab-edit">Uredi predračun</button>
         </div>
 
         <!-- LIST VIEW -->
@@ -257,7 +257,7 @@
                             <option value="rejected">Zavrnjeno</option>
                             <option value="expired">Poteklo</option>
                         </select>
-                        <button class="btn btn-primary" onclick="createNewQuote()">
+                        <button class="btn btn-primary" id="btn-new-quote">
                             <span>+</span> Nov predračun
                         </button>
                     </div>
@@ -574,6 +574,40 @@
         
         document.addEventListener('DOMContentLoaded', function() {
             console.log('📄 quotes-module.html DOM loaded');
+            console.log('🔧 Functions available:', typeof createNewQuote, typeof switchTab, typeof editQuote);
+            
+            // Attach event listeners programmatically
+            const newQuoteBtn = document.getElementById('btn-new-quote');
+            if (newQuoteBtn) {
+                newQuoteBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🔘 Nov predračun button clicked');
+                    createNewQuote();
+                });
+                console.log('✅ Nov predračun button listener attached');
+            } else {
+                console.error('❌ btn-new-quote not found');
+            }
+            
+            // Attach tab listeners
+            const editTab = document.getElementById('tab-edit');
+            if (editTab) {
+                editTab.addEventListener('click', function() {
+                    console.log('🔘 Uredi predračun tab clicked');
+                    switchTab('edit');
+                });
+                console.log('✅ Uredi predračun tab listener attached');
+            }
+            
+            const listTab = document.getElementById('tab-list');
+            if (listTab) {
+                listTab.addEventListener('click', function() {
+                    console.log('🔘 Seznam predračunov tab clicked');
+                    switchTab('list');
+                });
+                console.log('✅ Seznam predračunov tab listener attached');
+            }
+            
             initializeDateFields();
             loadQuotes();
             setupEventListeners();
