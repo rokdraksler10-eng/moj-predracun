@@ -336,10 +336,10 @@
                     <label>Kategorija *</label>
                     <select id="item-category" required>
                         <option value="">Izberi kategorijo...</option>
-                        <option value="Gradbeno delo">Gradbeno delo</option>
+                        <option value="Gradbena dela">Gradbena dela</option>
                         <option value="Elektroinštalacije">Elektroinštalacije</option>
                         <option value="Vodovodne inštalacije">Vodovodne inštalacije</option>
-                        <option value="Keramičarska dela">Keramičarska dela</option>
+                        <option value="Keramika">Keramika</option>
                         <option value="Pleskarska dela">Pleskarska dela</option>
                         <option value="Mizarstvo">Mizarstvo</option>
                         <option value="Drugo">Drugo</option>
@@ -421,14 +421,14 @@
         // ============================================
         function addDefaultItems() {
             const defaults = [
-                // Gradbeno delo
-                { id: Date.now() + 1, name: 'Rušenje nosilne stene', category: 'Gradbeno delo', unit: 'm²', price: 45.00 },
-                { id: Date.now() + 2, name: 'Rušenje predelne stene', category: 'Gradbeno delo', unit: 'm²', price: 28.00 },
-                { id: Date.now() + 3, name: 'Zidarsko delo (opeka)', category: 'Gradbeno delo', unit: 'm²', price: 42.00 },
-                { id: Date.now() + 4, name: 'Zidarsko delo (YTONG)', category: 'Gradbeno delo', unit: 'm²', price: 38.00 },
-                { id: Date.now() + 5, name: 'Izdelava cementnega estriha', category: 'Gradbeno delo', unit: 'm²', price: 18.00 },
-                { id: Date.now() + 6, name: 'Sanaacija vlage v zidovju', category: 'Gradbeno delo', unit: 'm²', price: 85.00 },
-                { id: Date.now() + 7, name: 'Montaža knauf plošč', category: 'Gradbeno delo', unit: 'm²', price: 22.00 },
+                // Gradbena dela
+                { id: Date.now() + 1, name: 'Rušenje nosilne stene', category: 'Gradbena dela', unit: 'm²', price: 45.00 },
+                { id: Date.now() + 2, name: 'Rušenje predelne stene', category: 'Gradbena dela', unit: 'm²', price: 28.00 },
+                { id: Date.now() + 3, name: 'Zidarsko delo (opeka)', category: 'Gradbena dela', unit: 'm²', price: 42.00 },
+                { id: Date.now() + 4, name: 'Zidarsko delo (YTONG)', category: 'Gradbena dela', unit: 'm²', price: 38.00 },
+                { id: Date.now() + 5, name: 'Izdelava cementnega estriha', category: 'Gradbena dela', unit: 'm²', price: 18.00 },
+                { id: Date.now() + 6, name: 'Sanaacija vlage v zidovju', category: 'Gradbena dela', unit: 'm²', price: 85.00 },
+                { id: Date.now() + 7, name: 'Montaža knauf plošč', category: 'Gradbena dela', unit: 'm²', price: 22.00 },
                 
                 // Elektroinštalacije
                 { id: Date.now() + 10, name: 'Vgradnja vtičnice', category: 'Elektroinštalacije', unit: 'kos', price: 48.00 },
@@ -438,13 +438,13 @@
                 { id: Date.now() + 14, name: 'Elektroinštalacije (delovna ura)', category: 'Elektroinštalacije', unit: 'ura', price: 55.00 },
                 { id: Date.now() + 15, name: 'Montaža stropnega ventilatorja', category: 'Elektroinštalacije', unit: 'kos', price: 85.00 },
                 
-                // Keramičarska dela
-                { id: Date.now() + 20, name: 'Polaganje stenskih ploščic', category: 'Keramičarska dela', unit: 'm²', price: 58.00 },
-                { id: Date.now() + 21, name: 'Polaganje talnih ploščic', category: 'Keramičarska dela', unit: 'm²', price: 52.00 },
-                { id: Date.now() + 22, name: 'Polaganje mozaika', category: 'Keramičarska dela', unit: 'm²', price: 75.00 },
-                { id: Date.now() + 23, name: 'Fugiranje keramičnih ploščic', category: 'Keramičarska dela', unit: 'm²', price: 12.00 },
-                { id: Date.now() + 24, name: 'Hidroizolacija kopalnice', category: 'Keramičarska dela', unit: 'm²', price: 35.00 },
-                { id: Date.now() + 25, name: 'Montaža keramičnega robnika', category: 'Keramičarska dela', unit: 'm', price: 18.00 },
+                // Keramika
+                { id: Date.now() + 20, name: 'Polaganje stenskih ploščic', category: 'Keramika', unit: 'm²', price: 58.00 },
+                { id: Date.now() + 21, name: 'Polaganje talnih ploščic', category: 'Keramika', unit: 'm²', price: 52.00 },
+                { id: Date.now() + 22, name: 'Polaganje mozaika', category: 'Keramika', unit: 'm²', price: 75.00 },
+                { id: Date.now() + 23, name: 'Fugiranje keramičnih ploščic', category: 'Keramika', unit: 'm²', price: 12.00 },
+                { id: Date.now() + 24, name: 'Hidroizolacija kopalnice', category: 'Keramika', unit: 'm²', price: 35.00 },
+                { id: Date.now() + 25, name: 'Montaža keramičnega robnika', category: 'Keramika', unit: 'm', price: 18.00 },
                 
                 // Vodovodne inštalacije
                 { id: Date.now() + 30, name: 'Priklop sanitarnega umivalnika', category: 'Vodovodne inštalacije', unit: 'kos', price: 65.00 },
@@ -646,10 +646,10 @@
         
         function getCategoryIcon(category) {
             const icons = {
-                'Gradbeno delo': '🏗️',
+                'Gradbena dela': '🏗️',
                 'Elektroinštalacije': '⚡',
                 'Vodovodne inštalacije': '🚿',
-                'Keramičarska dela': '🏺',
+                'Keramika': '⬜',
                 'Pleskarska dela': '🎨',
                 'Mizarstvo': '🪚',
                 'Drugo': '📦'
