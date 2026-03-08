@@ -223,17 +223,21 @@
         }
         .modal-buttons .btn { flex: 1; }
         
-        .nav { 
-            position: fixed; 
-            bottom: 0; 
-            left: 0; 
-            right: 0; 
-            background: white; 
+        .nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            background: white;
             border-top: 1px solid #E5E5EA;
-            display: flex; 
-            justify-content: space-around; 
-            padding: 10px 0;
-            z-index: 100;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+            z-index: 9999;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            will-change: transform;
         }
         .nav a {
             text-decoration: none;
