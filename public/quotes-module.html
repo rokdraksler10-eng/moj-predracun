@@ -1087,7 +1087,7 @@
         // Expose functions to window
         window.editQuote = editQuote;
         // ============================================
-        // PDF DOWNLOAD
+        // PDF DOWNLOAD - Professional Black & White
         // ============================================
         function downloadPDF() {
             const projectName = document.getElementById('project-name').value.trim();
@@ -1113,162 +1113,236 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // Header with company info
-            doc.setFontSize(24);
-            doc.setTextColor(0, 122, 255);
-            doc.text('PREDRAČUN', 105, 20, { align: 'center' });
+            // --- HEADER LINE ---
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.5);
+            doc.line(14, 12, 196, 12);
 
-            // Company info
-            doc.setFontSize(10);
-            doc.setTextColor(100, 100, 100);
-            let yPos = 35;
+            // --- COMPANY INFO (Top Left) ---
+            let yPos = 20;
             
             if (companySettings.name) {
-                doc.setFontSize(12);
+                doc.setFontSize(14);
                 doc.setTextColor(0, 0, 0);
+                doc.setFont(undefined, 'bold');
                 doc.text(companySettings.name, 14, yPos);
-                yPos += 6;
+                yPos += 7;
             }
             
             doc.setFontSize(9);
-            doc.setTextColor(100, 100, 100);
+            doc.setTextColor(60, 60, 60);
+            doc.setFont(undefined, 'normal');
+            
             if (companySettings.address) {
                 const addressLines = companySettings.address.split('\n');
                 addressLines.forEach(line => {
                     doc.text(line, 14, yPos);
-                    yPos += 4;
+                    yPos += 4.5;
                 });
             }
-            if (companySettings.phone) {
-                doc.text('Tel: ' + companySettings.phone, 14, yPos);
-                yPos += 4;
+            if (companySettings.taxNumber) {
+                doc.text('Davčna št.: ' + companySettings.taxNumber, 14, yPos);
+                yPos += 4.5;
             }
-            if (companySettings.email) {
-                doc.text('Email: ' + companySettings.email, 14, yPos);
-                yPos += 4;
+            if (companySettings.phone || companySettings.email) {
+                let contact = '';
+                if (companySettings.phone) contact += companySettings.phone;
+                if (companySettings.phone && companySettings.email) contact += ' | ';
+                if (companySettings.email) contact += companySettings.email;
+                doc.text(contact, 14, yPos);
+                yPos += 4.5;
             }
 
-            // Quote info box
-            yPos += 5;
-            doc.setDrawColor(200, 200, 200);
-            doc.setFillColor(248, 249, 250);
-            doc.roundedRect(14, yPos, 182, 35, 3, 3, 'FD');
+            // --- LOGO (Top Right) ---
+            if (companySettings.logo) {
+                try {
+                    // Check if logo is base64 data URL
+                    let imgData = companySettings.logo;
+                    let imgFormat = 'JPEG';
+                    
+                    if (imgData.startsWith('data:image/png')) {
+                        imgFormat = 'PNG';
+                    } else if (imgData.startsWith('data:image/jpeg') || imgData.startsWith('data:image/jpg')) {
+                        imgFormat = 'JPEG';
+                    }
+                    
+                    // Add logo to PDF
+                    doc.addImage(imgData, imgFormat, 160, 15, 36, 28);
+                } catch (e) {
+                    console.log('Logo could not be added to PDF:', e);
+                }
+            }
+
+            // --- DOCUMENT TITLE (Center) ---
+            yPos = 52;
+            doc.setFontSize(11);
+            doc.setTextColor(100, 100, 100);
+            doc.text('PREDRAČUN št.: ' + (currentQuote ? currentQuote.id : Date.now()), 14, yPos);
+            
+            // --- DATE (Right) ---
+            doc.text('Datum: ' + document.getElementById('quote-date').value, 160, yPos);
+            yPos += 10;
+
+            // --- CUSTOMER INFO BOX ---
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.3);
+            doc.rect(14, yPos, 90, 30);
+            
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text('NAROČNIK:', 18, yPos + 6);
             
             doc.setFontSize(10);
             doc.setTextColor(0, 0, 0);
-            doc.text('Stranka: ' + customer, 18, yPos + 8);
-            doc.text('Projekt: ' + projectName, 18, yPos + 16);
-            doc.text('Datum: ' + document.getElementById('quote-date').value, 18, yPos + 24);
+            doc.text(customer, 18, yPos + 14);
+            
+            if (document.getElementById('address').value) {
+                doc.setFontSize(9);
+                doc.text(document.getElementById('address').value, 18, yPos + 22);
+            }
+            yPos += 40;
 
-            // Work Items Table
-            yPos += 45;
+            // --- PROJECT INFO ---
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'bold');
+            doc.text('Projekt: ' + projectName, 14, yPos);
+            doc.setFont(undefined, 'normal');
+            yPos += 8;
+
+            // --- WORK ITEMS TABLE ---
             if (workItems.length > 0) {
-                doc.setFontSize(12);
-                doc.setTextColor(0, 122, 255);
-                doc.text('POSTAVKE DELA', 14, yPos);
-                yPos += 8;
-
                 const workData = workItems.map(item => [
                     item.name,
                     item.unit,
                     item.quantity.toString(),
-                    item.price.toFixed(2) + ' €',
-                    (item.quantity * item.price).toFixed(2) + ' €'
+                    item.price.toFixed(2) + ' EUR',
+                    (item.quantity * item.price).toFixed(2) + ' EUR'
                 ]);
 
                 doc.autoTable({
                     startY: yPos,
-                    head: [['Naziv', 'Enota', 'Kol.', 'Cena', 'Znesek']],
+                    head: [['Postavka dela', 'Enota', 'Kol.', 'Cena', 'Vrednost']],
                     body: workData,
-                    theme: 'striped',
-                    headStyles: { fillColor: [0, 122, 255], textColor: 255 },
-                    styles: { fontSize: 9 },
+                    theme: 'plain',
+                    headStyles: { 
+                        fillColor: [240, 240, 240], 
+                        textColor: 0,
+                        fontStyle: 'bold',
+                        fontSize: 8
+                    },
+                    styles: { 
+                        fontSize: 8,
+                        cellPadding: 2,
+                        lineColor: [200, 200, 200],
+                        lineWidth: 0.1
+                    },
                     columnStyles: {
-                        0: { cellWidth: 70 },
-                        1: { cellWidth: 25 },
-                        2: { cellWidth: 20 },
-                        3: { cellWidth: 30, halign: 'right' },
-                        4: { cellWidth: 35, halign: 'right' }
+                        0: { cellWidth: 75 },
+                        1: { cellWidth: 20, halign: 'center' },
+                        2: { cellWidth: 18, halign: 'center' },
+                        3: { cellWidth: 28, halign: 'right' },
+                        4: { cellWidth: 30, halign: 'right' }
                     }
                 });
 
-                yPos = doc.lastAutoTable.finalY + 10;
+                yPos = doc.lastAutoTable.finalY + 6;
             }
 
-            // Materials Table
+            // --- MATERIALS TABLE ---
             if (materials.length > 0) {
-                doc.setFontSize(12);
-                doc.setTextColor(0, 122, 255);
-                doc.text('MATERIALI', 14, yPos);
-                yPos += 8;
-
                 const matData = materials.map(item => [
                     item.name,
                     item.unit,
                     item.quantity.toString(),
-                    item.price.toFixed(2) + ' €',
-                    (item.quantity * item.price).toFixed(2) + ' €'
+                    item.price.toFixed(2) + ' EUR',
+                    (item.quantity * item.price).toFixed(2) + ' EUR'
                 ]);
 
                 doc.autoTable({
                     startY: yPos,
-                    head: [['Naziv', 'Enota', 'Kol.', 'Cena', 'Znesek']],
+                    head: [['Material', 'Enota', 'Kol.', 'Cena', 'Vrednost']],
                     body: matData,
-                    theme: 'striped',
-                    headStyles: { fillColor: [52, 199, 89], textColor: 255 },
-                    styles: { fontSize: 9 },
+                    theme: 'plain',
+                    headStyles: { 
+                        fillColor: [240, 240, 240], 
+                        textColor: 0,
+                        fontStyle: 'bold',
+                        fontSize: 8
+                    },
+                    styles: { 
+                        fontSize: 8,
+                        cellPadding: 2,
+                        lineColor: [200, 200, 200],
+                        lineWidth: 0.1
+                    },
                     columnStyles: {
-                        0: { cellWidth: 70 },
-                        1: { cellWidth: 25 },
-                        2: { cellWidth: 20 },
-                        3: { cellWidth: 30, halign: 'right' },
-                        4: { cellWidth: 35, halign: 'right' }
+                        0: { cellWidth: 75 },
+                        1: { cellWidth: 20, halign: 'center' },
+                        2: { cellWidth: 18, halign: 'center' },
+                        3: { cellWidth: 28, halign: 'right' },
+                        4: { cellWidth: 30, halign: 'right' }
                     }
                 });
 
-                yPos = doc.lastAutoTable.finalY + 10;
+                yPos = doc.lastAutoTable.finalY + 8;
             }
 
-            // Totals
+            // --- TOTALS SECTION ---
             const workTotal = workItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
             const materialsTotal = materials.reduce((sum, item) => sum + (item.quantity * item.price), 0);
             const subtotal = workTotal + materialsTotal;
             const vat = subtotal * 0.22;
             const grandTotal = subtotal + vat;
 
-            yPos += 5;
-            doc.setDrawColor(0, 122, 255);
-            doc.setFillColor(240, 247, 255);
-            doc.roundedRect(120, yPos, 76, 45, 3, 3, 'FD');
-
+            // Draw totals box
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.3);
+            doc.line(120, yPos, 196, yPos);
+            
+            yPos += 6;
             doc.setFontSize(9);
-            doc.setTextColor(100, 100, 100);
-            doc.text('Postavke dela:', 125, yPos + 8);
-            doc.text(workTotal.toFixed(2) + ' €', 190, yPos + 8, { align: 'right' });
+            doc.setTextColor(80, 80, 80);
+            doc.text('Postavke dela:', 125, yPos);
+            doc.text(workTotal.toFixed(2) + ' EUR', 192, yPos, { align: 'right' });
+            yPos += 5;
             
-            doc.text('Materiali:', 125, yPos + 15);
-            doc.text(materialsTotal.toFixed(2) + ' €', 190, yPos + 15, { align: 'right' });
+            doc.text('Materiali:', 125, yPos);
+            doc.text(materialsTotal.toFixed(2) + ' EUR', 192, yPos, { align: 'right' });
+            yPos += 5;
             
-            doc.text('Osnova za DDV:', 125, yPos + 22);
-            doc.text(subtotal.toFixed(2) + ' €', 190, yPos + 22, { align: 'right' });
+            doc.text('Skupaj brez DDV:', 125, yPos);
+            doc.text(subtotal.toFixed(2) + ' EUR', 192, yPos, { align: 'right' });
+            yPos += 5;
             
-            doc.text('DDV (22%):', 125, yPos + 29);
-            doc.text(vat.toFixed(2) + ' €', 190, yPos + 29, { align: 'right' });
+            doc.text('DDV 22%:', 125, yPos);
+            doc.text(vat.toFixed(2) + ' EUR', 192, yPos, { align: 'right' });
+            yPos += 7;
 
+            // Bold total line
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.5);
+            doc.line(120, yPos - 3, 196, yPos - 3);
+            
             doc.setFontSize(11);
-            doc.setTextColor(0, 122, 255);
+            doc.setTextColor(0, 0, 0);
             doc.setFont(undefined, 'bold');
-            doc.text('SKUPAJ:', 125, yPos + 39);
-            doc.text(grandTotal.toFixed(2) + ' €', 190, yPos + 39, { align: 'right' });
-
-            // Footer
-            doc.setFontSize(8);
-            doc.setTextColor(150, 150, 150);
+            doc.text('SKUPAJ ZA PLAČILO:', 125, yPos);
+            doc.text(grandTotal.toFixed(2) + ' EUR', 192, yPos, { align: 'right' });
             doc.setFont(undefined, 'normal');
-            doc.text('Hvala za zaupanje!', 105, 280, { align: 'center' });
+
+            // --- FOOTER ---
+            yPos = 270;
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.5);
+            doc.line(14, yPos, 196, yPos);
             
-            if (companySettings.website) {
-                doc.text(companySettings.website, 105, 285, { align: 'center' });
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Predračun je informativne narave in ne predstavlja računa.', 105, yPos + 6, { align: 'center' });
+            
+            if (companySettings.bankName) {
+                doc.text('Plačilo na TRR: ' + companySettings.bankName + ' | IBAN: ' + (companySettings.bankIban || '-'), 105, yPos + 11, { align: 'center' });
             }
 
             // Save PDF
