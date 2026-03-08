@@ -320,7 +320,46 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal - Choose Option -->
+    <div class="modal-overlay" id="modal-choice">
+        <div class="modal">
+            <div class="modal-title">Dodaj novo postavko</div>
+            <p style="color: #8E8E93; margin-bottom: 20px;">Izberi način dodajanja:</p>
+            
+            <button class="btn" id="btn-choose-template" style="margin-bottom: 12px;">
+                📋 Izberi iz prednastavljenih
+            </button>
+            <button class="btn btn-outline" id="btn-create-new" style="background: transparent; border: 2px solid #007AFF; color: #007AFF;">
+                ✏️ Ustvari novo postavko
+            </button>
+            
+            <div style="margin-top: 20px; text-align: center;">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-choice" style="width: auto; padding: 10px 30px;">Prekliči</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal - Templates -->
+    <div class="modal-overlay" id="modal-templates">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-title">Izberi prednastavljeno postavko</div>
+            <p style="color: #8E8E93; margin-bottom: 16px;">Klikni na postavko za dodajanje:</p>
+            
+            <div class="template-categories" id="template-categories" style="margin-bottom: 16px;">
+                <!-- Categories will be rendered here -->
+            </div>
+            
+            <div class="templates-list" id="templates-list" style="max-height: 400px; overflow-y: auto;">
+                <!-- Templates will be rendered here -->
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center;">
+                <button type="button" class="btn btn-secondary" id="btn-back-to-choice" style="width: auto; padding: 10px 30px;">Nazaj</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal - New Item -->
     <div class="modal-overlay" id="modal">
         <div class="modal">
             <div class="modal-title" id="modal-title">Nova postavka</div>
@@ -393,21 +432,33 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('✅ Workitems page loaded');
             
-            // Force refresh - remove old data
-            localStorage.removeItem('workItems');
-            workItems = [];
-            addDefaultItems();
+            // Load from storage or start empty
+            workItems = JSON.parse(localStorage.getItem('workItems') || '[]');
             
-            // Event listeners
-            document.getElementById('btn-new-item').addEventListener('click', openModal);
+            // Event listeners - Choice modal
+            document.getElementById('btn-new-item').addEventListener('click', openChoiceModal);
+            document.getElementById('btn-choose-template').addEventListener('click', openTemplatesModal);
+            document.getElementById('btn-create-new').addEventListener('click', openNewItemModal);
+            document.getElementById('btn-cancel-choice').addEventListener('click', closeChoiceModal);
+            document.getElementById('btn-back-to-choice').addEventListener('click', backToChoice);
+            
+            // Event listeners - New item modal
             document.getElementById('btn-cancel').addEventListener('click', closeModal);
             document.getElementById('item-form').addEventListener('submit', saveItem);
+            
+            // Event listeners - Search and sort
             document.getElementById('search-input').addEventListener('input', renderItems);
             document.getElementById('sort-select').addEventListener('change', renderItems);
             
-            // Close modal on overlay click
+            // Close modals on overlay click
             document.getElementById('modal').addEventListener('click', function(e) {
                 if (e.target === this) closeModal();
+            });
+            document.getElementById('modal-choice').addEventListener('click', function(e) {
+                if (e.target === this) closeChoiceModal();
+            });
+            document.getElementById('modal-templates').addEventListener('click', function(e) {
+                if (e.target === this) closeTemplatesModal();
             });
             
             renderItems();
@@ -467,15 +518,39 @@
                 { id: Date.now() + 52, name: 'Montaža talnih letev', category: 'Mizarstvo', unit: 'm', price: 8.50 },
                 { id: Date.now() + 53, name: 'Montaža okenske police', category: 'Mizarstvo', unit: 'kos', price: 35.00 }
             ];
-            workItems = defaults;
-            saveToStorage();
         }
 
         // ============================================
-        // MODAL FUNCTIONS
+        // CHOICE MODAL FUNCTIONS
         // ============================================
-        function openModal() {
-            console.log('🔘 Opening modal for new item');
+        function openChoiceModal() {
+            console.log('🔘 Opening choice modal');
+            document.getElementById('modal-choice').classList.add('active');
+        }
+
+        function closeChoiceModal() {
+            document.getElementById('modal-choice').classList.remove('active');
+        }
+
+        function openTemplatesModal() {
+            console.log('🔘 Opening templates modal');
+            closeChoiceModal();
+            renderTemplates();
+            document.getElementById('modal-templates').classList.add('active');
+        }
+
+        function closeTemplatesModal() {
+            document.getElementById('modal-templates').classList.remove('active');
+        }
+
+        function backToChoice() {
+            closeTemplatesModal();
+            openChoiceModal();
+        }
+
+        function openNewItemModal() {
+            console.log('🔘 Opening new item modal');
+            closeChoiceModal();
             editingId = null;
             document.getElementById('modal-title').textContent = 'Nova postavka';
             document.getElementById('item-form').reset();
@@ -484,6 +559,127 @@
             document.getElementById('item-name').focus();
         }
 
+        // ============================================
+        // TEMPLATES
+        // ============================================
+        function getTemplates() {
+            return [
+                // Gradbena dela
+                { name: 'Rušenje nosilne stene', category: 'Gradbena dela', unit: 'm²', price: 45.00 },
+                { name: 'Rušenje predelne stene', category: 'Gradbena dela', unit: 'm²', price: 28.00 },
+                { name: 'Zidarsko delo (opeka)', category: 'Gradbena dela', unit: 'm²', price: 42.00 },
+                { name: 'Zidarsko delo (YTONG)', category: 'Gradbena dela', unit: 'm²', price: 38.00 },
+                { name: 'Izdelava cementnega estriha', category: 'Gradbena dela', unit: 'm²', price: 18.00 },
+                { name: 'Montaža knauf plošč', category: 'Gradbena dela', unit: 'm²', price: 22.00 },
+                
+                // Elektroinštalacije
+                { name: 'Vgradnja vtičnice', category: 'Elektroinštalacije', unit: 'kos', price: 48.00 },
+                { name: 'Vgradnja stikala', category: 'Elektroinštalacije', unit: 'kos', price: 42.00 },
+                { name: 'Montaža elektro razdelilca', category: 'Elektroinštalacije', unit: 'kos', price: 180.00 },
+                { name: 'Vgradnja LED svetilke', category: 'Elektroinštalacije', unit: 'kos', price: 35.00 },
+                { name: 'Elektroinštalacije (ura)', category: 'Elektroinštalacije', unit: 'ura', price: 55.00 },
+                
+                // Keramika
+                { name: 'Polaganje stenskih ploščic', category: 'Keramika', unit: 'm²', price: 58.00 },
+                { name: 'Polaganje talnih ploščic', category: 'Keramika', unit: 'm²', price: 52.00 },
+                { name: 'Polaganje mozaika', category: 'Keramika', unit: 'm²', price: 75.00 },
+                { name: 'Fugiranje keramičnih ploščic', category: 'Keramika', unit: 'm²', price: 12.00 },
+                { name: 'Hidroizolacija kopalnice', category: 'Keramika', unit: 'm²', price: 35.00 },
+                
+                // Vodovodne inštalacije
+                { name: 'Priklop sanitarnega umivalnika', category: 'Vodovodne inštalacije', unit: 'kos', price: 65.00 },
+                { name: 'Priklop WC školjke', category: 'Vodovodne inštalacije', unit: 'kos', price: 95.00 },
+                { name: 'Priklop tuš kabine', category: 'Vodovodne inštalacije', unit: 'kos', price: 145.00 },
+                { name: 'Montaža električnega bojlerja', category: 'Vodovodne inštalacije', unit: 'kos', price: 120.00 },
+                { name: 'Vodovodne inštalacije (ura)', category: 'Vodovodne inštalacije', unit: 'ura', price: 52.00 },
+                
+                // Pleskarska dela
+                { name: 'Pleskanje sten (dva sloja)', category: 'Pleskarska dela', unit: 'm²', price: 16.00 },
+                { name: 'Pleskanje stropa (dva sloja)', category: 'Pleskarska dela', unit: 'm²', price: 14.00 },
+                { name: 'Glajenje sten', category: 'Pleskarska dela', unit: 'm²', price: 22.00 },
+                
+                // Mizarstvo
+                { name: 'Montaža kuhinjskega bloka', category: 'Mizarstvo', unit: 'kos', price: 380.00 },
+                { name: 'Montaža notranjih vrat', category: 'Mizarstvo', unit: 'kos', price: 125.00 },
+                { name: 'Montaža talnih letev', category: 'Mizarstvo', unit: 'm', price: 8.50 }
+            ];
+        }
+
+        let templateCategory = 'all';
+
+        function renderTemplates() {
+            const templates = getTemplates();
+            const categories = [...new Set(templates.map(t => t.category))].sort();
+            
+            // Render category tabs
+            const catContainer = document.getElementById('template-categories');
+            let catHtml = `<div class="category-tab ${templateCategory === 'all' ? 'active' : ''}" data-cat="all">Vse</div>`;
+            categories.forEach(cat => {
+                catHtml += `<div class="category-tab ${templateCategory === cat ? 'active' : ''}" data-cat="${escapeHtml(cat)}">${getCategoryIcon(cat)} ${escapeHtml(cat)}</div>`;
+            });
+            catContainer.innerHTML = catHtml;
+            
+            // Attach click handlers
+            catContainer.querySelectorAll('.category-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    templateCategory = this.dataset.cat;
+                    renderTemplates();
+                });
+            });
+            
+            // Render templates list
+            const listContainer = document.getElementById('templates-list');
+            let filtered = templateCategory === 'all' ? templates : templates.filter(t => t.category === templateCategory);
+            
+            listContainer.innerHTML = filtered.map((t, index) => `
+                <div class="template-item" onclick="addFromTemplate(${index})" style="
+                    background: #F8F9FA;
+                    border-radius: 10px;
+                    padding: 16px;
+                    margin-bottom: 10px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    border: 2px solid transparent;
+                " onmouseover="this.style.borderColor='#007AFF'; this.style.background='#E3F2FD'" onmouseout="this.style.borderColor='transparent'; this.style.background='#F8F9FA'">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(t.name)}</div>
+                            <span class="item-category">${getCategoryIcon(t.category)} ${escapeHtml(t.category)}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 18px; font-weight: 700; color: #007AFF;">${t.price.toFixed(2)} €</div>
+                            <div style="font-size: 12px; color: #8E8E93;">/${t.unit}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addFromTemplate(index) {
+            const templates = getTemplates();
+            let filtered = templateCategory === 'all' ? templates : templates.filter(t => t.category === templateCategory);
+            const template = filtered[index];
+            
+            const item = {
+                id: Date.now(),
+                name: template.name,
+                category: template.category,
+                unit: template.unit,
+                price: template.price
+            };
+            
+            workItems.push(item);
+            saveToStorage();
+            renderItems();
+            renderCategories();
+            closeTemplatesModal();
+            
+            alert('✅ Postavka "' + item.name + '" je bila dodana!');
+        }
+
+        // ============================================
+        // MODAL FUNCTIONS
+        // ============================================
         function openEditModal(id) {
             console.log('🔘 Opening modal for edit:', id);
             const item = workItems.find(i => i.id === id);
@@ -670,6 +866,12 @@
         // Expose functions to window for onclick handlers
         window.openEditModal = openEditModal;
         window.deleteItem = deleteItem;
+
+        // Expose functions to window
+        window.openEditModal = openEditModal;
+        window.deleteItem = deleteItem;
+        window.addFromTemplate = addFromTemplate;
+        window.openNewItemModal = openNewItemModal;
 
         console.log('✅ All functions loaded');
     </script>
