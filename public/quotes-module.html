@@ -331,11 +331,11 @@
                     </div>
                     
                     <!-- Buttons -->
-                    <div class="btn-row" style="margin-top: 30px;">
-                        <button type="button" class="btn btn-secondary" id="btn-cancel">Prekliči</button>
-                        <button type="button" class="btn" id="btn-save-draft">Shrani osnutek</button>
-                        <button type="button" class="btn btn-success" id="btn-save-send">Shrani in pošlji</button>
-                        <button type="button" class="btn" id="btn-download-pdf" style="background: #FF3B30;">📄 Prenesi PDF</button>
+                    <div class="btn-row" style="margin-top: 30px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-secondary" id="btn-cancel" style="flex: 1; min-width: 100px;">⬅️ Prekliči</button>
+                        <button type="button" class="btn btn-success" id="btn-save" style="flex: 2; min-width: 120px;">💾 Shrani</button>
+                        <button type="button" class="btn" id="btn-preview-pdf" style="flex: 2; min-width: 120px; background: #5856D6;">👁️ Predogled PDF</button>
+                        <button type="button" class="btn" id="btn-download-pdf" style="flex: 2; min-width: 120px; background: #FF3B30;">📄 Prenesi PDF</button>
                     </div>
                 </form>
             </div>
@@ -405,8 +405,8 @@
             // Attach event listeners
             document.getElementById('btn-new-quote').addEventListener('click', createNewQuote);
             document.getElementById('btn-cancel').addEventListener('click', cancelEdit);
-            document.getElementById('btn-save-draft').addEventListener('click', () => saveQuote('draft'));
-            document.getElementById('btn-save-send').addEventListener('click', () => saveQuote('sent'));
+            document.getElementById('btn-save').addEventListener('click', () => saveQuote('draft'));
+            document.getElementById('btn-preview-pdf').addEventListener('click', previewPDF);
             document.getElementById('btn-download-pdf').addEventListener('click', downloadPDF);
             document.getElementById('btn-add-work').addEventListener('click', showWorkItemSelector);
             document.getElementById('btn-add-work-custom').addEventListener('click', addWorkItemManual);
@@ -1447,6 +1447,347 @@
         }
 
         // ============================================
+        // PREVIEW PDF - Open in new tab
+        // ============================================
+        function previewPDF() {
+            const projectName = document.getElementById('project-name').value.trim();
+            const customer = document.getElementById('customer').value.trim();
+            
+            if (!projectName || !customer) {
+                alert('Prosim izpolnite naziv projekta in stranko pred predogledom PDF.');
+                return;
+            }
+
+            // Generate PDF (reuse the same logic as downloadPDF but open in new tab)
+            let companySettings = {};
+            const saved = localStorage.getItem('companySettings');
+            if (saved) {
+                try {
+                    companySettings = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Error loading company settings:', e);
+                }
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Header line
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.5);
+            doc.line(14, 12, 196, 12);
+
+            // Company info
+            let yPos = 18;
+            
+            if (companySettings.name) {
+                doc.setFontSize(14);
+                doc.setTextColor(0, 0, 0);
+                doc.setFont(undefined, 'bold');
+                doc.text(companySettings.name, 14, yPos);
+                yPos += 7;
+            }
+            
+            doc.setFontSize(9);
+            doc.setTextColor(60, 60, 60);
+            doc.setFont(undefined, 'normal');
+            
+            let addressShown = false;
+            if (companySettings.address) {
+                const addressLines = companySettings.address.split('\n');
+                addressLines.forEach(line => {
+                    if (line.trim()) {
+                        doc.text(line.trim(), 14, yPos);
+                        yPos += 5;
+                        addressShown = true;
+                    }
+                });
+            }
+            
+            if (!addressShown) {
+                doc.setTextColor(200, 0, 0);
+                doc.text('Naslov podjetja ni nastavljen!', 14, yPos);
+                doc.setTextColor(60, 60, 60);
+                yPos += 5;
+            }
+            
+            if (companySettings.taxNumber) {
+                const vatNumber = companySettings.taxNumber.startsWith('SI')
+                    ? companySettings.taxNumber
+                    : 'SI' + companySettings.taxNumber;
+                doc.text('ID za DDV: ' + vatNumber, 14, yPos);
+                yPos += 5;
+            }
+            
+            if (companySettings.phone || companySettings.email) {
+                let contact = '';
+                if (companySettings.phone) contact += 'Tel: ' + companySettings.phone;
+                if (companySettings.phone && companySettings.email) contact += ' | ';
+                if (companySettings.email) contact += companySettings.email;
+                doc.text(contact, 14, yPos);
+                yPos += 5;
+            }
+
+            // Logo
+            if (companySettings.logo) {
+                try {
+                    let imgData = companySettings.logo;
+                    let imgFormat = 'JPEG';
+                    
+                    if (imgData.startsWith('data:image/png')) {
+                        imgFormat = 'PNG';
+                    } else if (imgData.startsWith('data:image/jpeg') || imgData.startsWith('data:image/jpg')) {
+                        imgFormat = 'JPEG';
+                    }
+                    
+                    doc.addImage(imgData, imgFormat, 160, 15, 36, 28);
+                } catch (e) {
+                    console.log('Logo could not be added to PDF:', e);
+                }
+            }
+
+            // Document title
+            yPos = 58;
+            doc.setFontSize(16);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'bold');
+            doc.text('PREDRACUN', 14, yPos);
+            doc.setFont(undefined, 'normal');
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text('st.: ' + (currentQuote ? currentQuote.id : Date.now()), 70, yPos);
+            
+            const quoteDate = document.getElementById('quote-date').value;
+            const formattedDate = quoteDate ? new Date(quoteDate).toLocaleDateString('sl-SI') : '';
+            let city = 'Kranj';
+            if (companySettings.address) {
+                const addressLines = companySettings.address.split('\n').filter(l => l.trim());
+                if (addressLines.length > 0) {
+                    const lastLine = addressLines[addressLines.length - 1];
+                    const parts = lastLine.split(' ');
+                    city = parts[parts.length - 1] || 'Kranj';
+                }
+            }
+            doc.text(city + ', ' + formattedDate, 160, yPos, { align: 'right' });
+            yPos += 12;
+            
+            const validUntil = document.getElementById('valid-until').value;
+            if (validUntil) {
+                doc.setFontSize(9);
+                doc.setTextColor(150, 0, 0);
+                doc.text('Ponudba velja do: ' + new Date(validUntil).toLocaleDateString('sl-SI'), 14, yPos);
+                doc.setTextColor(0, 0, 0);
+                yPos += 8;
+            }
+
+            // Customer info box
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.3);
+            doc.rect(14, yPos, 90, 30);
+            
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text('NAROCNIK:', 18, yPos + 6);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            const properCustomer = customer.split(' ').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            ).join(' ');
+            doc.text(properCustomer, 18, yPos + 14);
+            
+            const projectAddress = document.getElementById('address').value;
+            if (projectAddress) {
+                doc.setFontSize(9);
+                const properAddress = projectAddress.split(' ').map((word, index) => {
+                    if (index === 0 || word.length > 2) {
+                        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                    }
+                    return word.toLowerCase();
+                }).join(' ');
+                doc.text(properAddress, 18, yPos + 22);
+            }
+            yPos += 40;
+
+            // Project info
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'bold');
+            doc.text('Projekt: ' + projectName, 14, yPos);
+            doc.setFont(undefined, 'normal');
+            yPos += 8;
+
+            // Work Items Table
+            if (workItems.length > 0) {
+                if (yPos > 180) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                const workData = workItems.map(item => [
+                    item.name,
+                    item.unit,
+                    item.quantity.toString(),
+                    item.price.toFixed(2) + ' EUR',
+                    (item.quantity * item.price).toFixed(2) + ' EUR'
+                ]);
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Opis storitve', 'Enota', 'Kol.', 'Cena', 'Znesek']],
+                    body: workData,
+                    theme: 'plain',
+                    headStyles: { 
+                        fillColor: [240, 240, 240], 
+                        textColor: 0,
+                        fontStyle: 'bold',
+                        fontSize: 8
+                    },
+                    styles: { 
+                        fontSize: 8,
+                        cellPadding: 3,
+                        lineColor: [200, 200, 200],
+                        lineWidth: 0.1
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 75 },
+                        1: { cellWidth: 20, halign: 'center' },
+                        2: { cellWidth: 18, halign: 'center' },
+                        3: { cellWidth: 28, halign: 'right' },
+                        4: { cellWidth: 30, halign: 'right' }
+                    },
+                    margin: { top: 10 }
+                });
+
+                yPos = doc.lastAutoTable.finalY + 15;
+            }
+
+            // Materials Table
+            if (materials.length > 0) {
+                if (yPos > 180) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                const matData = materials.map(item => [
+                    item.name,
+                    item.unit,
+                    item.quantity.toString(),
+                    item.price.toFixed(2) + ' EUR',
+                    (item.quantity * item.price).toFixed(2) + ' EUR'
+                ]);
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Material', 'Enota', 'Kol.', 'Cena', 'Znesek']],
+                    body: matData,
+                    theme: 'plain',
+                    headStyles: { 
+                        fillColor: [240, 240, 240], 
+                        textColor: 0,
+                        fontStyle: 'bold',
+                        fontSize: 8
+                    },
+                    styles: { 
+                        fontSize: 8,
+                        cellPadding: 3,
+                        lineColor: [200, 200, 200],
+                        lineWidth: 0.1
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 75 },
+                        1: { cellWidth: 20, halign: 'center' },
+                        2: { cellWidth: 18, halign: 'center' },
+                        3: { cellWidth: 28, halign: 'right' },
+                        4: { cellWidth: 30, halign: 'right' }
+                    },
+                    margin: { top: 10 }
+                });
+
+                yPos = doc.lastAutoTable.finalY + 15;
+            }
+
+            // Totals
+            const workTotal = workItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const materialsTotal = materials.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const subtotal = workTotal + materialsTotal;
+            const vat = subtotal * 0.22;
+            const grandTotal = subtotal + vat;
+
+            if (yPos > 200) {
+                doc.addPage();
+                yPos = 30;
+            }
+
+            const totalBoxY = yPos + 15;
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.3);
+            doc.line(120, totalBoxY, 196, totalBoxY);
+            
+            let totalY = totalBoxY + 10;
+            doc.setFontSize(9);
+            doc.setTextColor(80, 80, 80);
+            doc.text('Postavke dela:', 125, totalY);
+            doc.text(workTotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
+            totalY += 8;
+
+            doc.text('Materiali:', 125, totalY);
+            doc.text(materialsTotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
+            totalY += 8;
+
+            doc.text('Skupaj brez DDV:', 125, totalY);
+            doc.text(subtotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
+            totalY += 8;
+
+            doc.text('DDV 22%:', 125, totalY);
+            doc.text(vat.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
+            totalY += 12;
+
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(1);
+            doc.line(120, totalY - 4, 196, totalY - 4);
+            
+            doc.setFontSize(11);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'bold');
+            doc.text('SKUPAJ ZA PLACILO:', 125, totalY + 4);
+            doc.text(grandTotal.toFixed(2) + ' EUR', 192, totalY + 4, { align: 'right' });
+            doc.setFont(undefined, 'normal');
+
+            let footerY = 270;
+            if (totalY + 40 > 260) {
+                doc.addPage();
+                footerY = 20;
+            }
+            
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.5);
+            doc.line(14, footerY, 196, footerY);
+            
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Predracun je informativne narave in ne predstavlja racuna.', 105, footerY + 6, { align: 'center' });
+
+            if (companySettings.bankName || companySettings.bankIban) {
+                let bankText = 'Placilo:';
+                if (companySettings.bankName) bankText += ' ' + companySettings.bankName;
+                if (companySettings.bankIban) bankText += ' | TRR: ' + companySettings.bankIban;
+                doc.text(bankText, 105, footerY + 12, { align: 'center' });
+            }
+
+            // Open PDF in new tab instead of downloading
+            const pdfData = doc.output('datauristring');
+            const newWindow = window.open();
+            if (newWindow) {
+                newWindow.document.write('<iframe width="100%" height="100%" src="' + pdfData + '"></iframe>');
+                newWindow.document.title = 'Predogled PDF - ' + projectName;
+            } else {
+                alert('Prosim dovolite odpiranje pojavnih oken za predogled PDF.');
+            }
+        }
+
+        // ============================================
         // DOWNLOAD QUOTE PDF FROM LIST
         // ============================================
         function downloadQuotePDF(quoteId) {
@@ -1487,6 +1828,7 @@
         window.filterMaterialsByCategory = filterMaterialsByCategory;
         window.addMaterialManual = addMaterialManual;
         window.downloadPDF = downloadPDF;
+        window.previewPDF = previewPDF;
         window.downloadQuotePDF = downloadQuotePDF;
 
         console.log('✅ All functions loaded');
