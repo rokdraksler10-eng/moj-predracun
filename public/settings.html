@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nastavitve - Moj Predračun</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #F2F2F7; 
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+        
+        .header { 
+            background: white; 
+            padding: 20px; 
+            border-bottom: 1px solid #E5E5EA;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 { font-size: 24px; margin-bottom: 10px; }
+        
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1C1C1E;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #8E8E93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #E5E5EA;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #007AFF;
+            box-shadow: 0 0 0 4px rgba(0,122,255,0.1);
+        }
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+        
+        /* Logo upload */
+        .logo-upload {
+            border: 3px dashed #E5E5EA;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #FAFBFC;
+        }
+        .logo-upload:hover {
+            border-color: #007AFF;
+            background: #F0F7FF;
+        }
+        .logo-upload.has-logo {
+            border-style: solid;
+            border-color: #007AFF;
+            background: white;
+        }
+        .logo-upload input {
+            display: none;
+        }
+        .logo-preview {
+            max-width: 200px;
+            max-height: 100px;
+            margin: 0 auto 16px;
+            display: none;
+        }
+        .logo-preview img {
+            max-width: 100%;
+            max-height: 100px;
+            object-fit: contain;
+        }
+        .logo-upload.has-logo .logo-preview {
+            display: block;
+        }
+        .logo-upload.has-logo .upload-text {
+            display: none;
+        }
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .upload-text h3 {
+            font-size: 16px;
+            color: #007AFF;
+            margin-bottom: 4px;
+        }
+        .upload-text p {
+            font-size: 14px;
+            color: #8E8E93;
+        }
+        .btn-remove-logo {
+            margin-top: 12px;
+            padding: 8px 20px;
+            background: #FF3B30;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+        }
+        .btn-secondary {
+            background: #8E8E93;
+        }
+        
+        .preview-section {
+            background: linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 20px;
+        }
+        .preview-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #8E8E93;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+        .preview-document {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #E5E5EA;
+        }
+        .preview-company {
+            flex: 1;
+        }
+        .preview-company-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1C1C1E;
+            margin-bottom: 8px;
+        }
+        .preview-company-info {
+            font-size: 14px;
+            color: #8E8E93;
+            line-height: 1.6;
+        }
+        .preview-logo {
+            max-width: 150px;
+            max-height: 80px;
+        }
+        .preview-logo img {
+            max-width: 100%;
+            max-height: 80px;
+            object-fit: contain;
+        }
+        .preview-label {
+            font-size: 12px;
+            color: #8E8E93;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: white; 
+            border-top: 1px solid #E5E5EA;
+            display: flex; 
+            justify-content: space-around; 
+            padding: 10px 0;
+            z-index: 100;
+        }
+        .nav a {
+            text-decoration: none;
+            color: #8E8E93;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 15px;
+        }
+        .nav a.active { color: #007AFF; }
+        .nav a span { font-size: 20px; }
+        
+        .success-message {
+            background: #34C759;
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+        .success-message.show { display: block; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>⚙️ Nastavitve</h1>
+    </div>
+
+    <!-- Success Message -->
+    <div id="success-message" class="success-message">
+        ✅ Nastavitve so bile uspešno shranjene!
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Company Info -->
+        <div class="card">
+            <div class="card-title">🏢 Podatki podjetja</div>
+            
+            <div class="form-group">
+                <label>Ime podjetja / Ime in priimek *</label>
+                <input type="text" id="company-name" placeholder="npr. Gradbeno podjetje d.o.o.">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Davčna številka</label>
+                    <input type="text" id="company-tax" placeholder="npr. 12345678">
+                </div>
+                <div class="form-group">
+                    <label>Matična številka</label>
+                    <input type="text" id="company-id" placeholder="npr. 87654321">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Naslov podjetja</label>
+                <textarea id="company-address" placeholder="Ulica in hišna številka&#10;Poštna številka in kraj&#10;Država"></textarea>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Telefon</label>
+                    <input type="text" id="company-phone" placeholder="npr. 040 123 456">
+                </div>
+                <div class="form-group">
+                    <label>E-pošta</label>
+                    <input type="email" id="company-email" placeholder="npr. info@podjetje.si">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Spletna stran</label>
+                <input type="text" id="company-website" placeholder="npr. www.podjetje.si">
+            </div>
+        </div>
+        
+        <!-- Bank Info -->
+        <div class="card">
+            <div class="card-title">🏦 Bančni podatki</div>
+            
+            <div class="form-group">
+                <label>Ime banke</label>
+                <input type="text" id="bank-name" placeholder="npr. NLB d.d.">
+            </div>
+            
+            <div class="form-group">
+                <label>IBAN / TRR</label>
+                <input type="text" id="bank-iban" placeholder="npr. SI56 0123 4567 8901 234">
+            </div>
+            
+            <div class="form-group">
+                <label>BIC/SWIFT</label>
+                <input type="text" id="bank-bic" placeholder="npr. LJBASI2X">
+            </div>
+        </div>
+        
+        <!-- Logo -->
+        <div class="card">
+            <div class="card-title">🎨 Logotip</div>
+            <p style="color: #8E8E93; margin-bottom: 16px;">Naloži svoj logotip, ki se bo prikazoval na predračunih.</p>
+            
+            <div class="logo-upload" id="logo-upload" onclick="document.getElementById('logo-input').click()">
+                <input type="file" id="logo-input" accept="image/*" onchange="handleLogoUpload(event)">
+                <div class="logo-preview" id="logo-preview">
+                    <img src="" alt="Logotip" id="logo-img">
+                </div>
+                <div class="upload-text">
+                    <div class="upload-icon">📤</div>
+                    <h3>Klikni za nalaganje logotipa</h3>
+                    <p>Podprti formati: PNG, JPG, SVG<br>Največja velikost: 2MB</p>
+                </div>
+                <button type="button" class="btn-remove-logo" id="btn-remove-logo" onclick="removeLogo(event)" style="display: none;">Odstrani logotip</button>
+            </div>
+        </div>
+        
+        <!-- Preview -->
+        <div class="preview-section">
+            <div class="preview-title">👁️ Predogled glave predračuna</div>
+            <div class="preview-document">
+                <div class="preview-header">
+                    <div class="preview-company">
+                        <div class="preview-company-name" id="preview-name">Vaše podjetje</div>
+                        <div class="preview-company-info" id="preview-info">
+                            Davčna št.: 12345678<br>
+                            Naslov podjetja<br>
+                            Telefon | Email
+                        </div>
+                    </div>
+                    <div class="preview-logo" id="preview-logo-container">
+                        <span style="color: #C7C7CC; font-size: 12px;">Brez logotipa</span>
+                    </div>
+                </div>
+                <div style="text-align: center; color: #C7C7CC; padding: 40px 0;">
+                    ... vsebina predračuna ...
+                </div>
+            </div>
+        </div>
+        
+        <!-- Save Button -->
+        <div style="margin-top: 30px;">
+            <button class="btn" onclick="saveSettings()">💾 Shrani nastavitve</button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="nav">
+        <a href="index.html"><span>📋</span>Predračuni</a>
+        <a href="workitems-module.html"><span>🔧</span>Postavke</a>
+        <a href="materials-module.html"><span>📦</span>Materiali</a>
+        <a href="settings.html" class="active"><span>⚙️</span>Nastavitve</a>
+    </nav>
+
+    <script>
+        // ============================================
+        // STATE
+        // ============================================
+        let companySettings = {
+            name: '',
+            taxNumber: '',
+            companyId: '',
+            address: '',
+            phone: '',
+            email: '',
+            website: '',
+            bankName: '',
+            bankIban: '',
+            bankBic: '',
+            logo: null
+        };
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ Settings page loaded');
+            loadSettings();
+            setupLivePreview();
+            console.log('✅ Settings initialized');
+        });
+
+        // ============================================
+        // LOAD SETTINGS
+        // ============================================
+        function loadSettings() {
+            const saved = localStorage.getItem('companySettings');
+            if (saved) {
+                try {
+                    companySettings = JSON.parse(saved);
+                    fillForm();
+                    updatePreview();
+                } catch (e) {
+                    console.error('Error loading settings:', e);
+                }
+            }
+        }
+
+        function fillForm() {
+            document.getElementById('company-name').value = companySettings.name || '';
+            document.getElementById('company-tax').value = companySettings.taxNumber || '';
+            document.getElementById('company-id').value = companySettings.companyId || '';
+            document.getElementById('company-address').value = companySettings.address || '';
+            document.getElementById('company-phone').value = companySettings.phone || '';
+            document.getElementById('company-email').value = companySettings.email || '';
+            document.getElementById('company-website').value = companySettings.website || '';
+            document.getElementById('bank-name').value = companySettings.bankName || '';
+            document.getElementById('bank-iban').value = companySettings.bankIban || '';
+            document.getElementById('bank-bic').value = companySettings.bankBic || '';
+            
+            if (companySettings.logo) {
+                showLogo(companySettings.logo);
+            }
+        }
+
+        // ============================================
+        // LOGO HANDLING
+        // ============================================
+        function handleLogoUpload(event) {
+            event.stopPropagation();
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Logotip je prevelik. Največja dovoljena velikost je 2MB.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                companySettings.logo = e.target.result;
+                showLogo(e.target.result);
+                updatePreview();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showLogo(logoData) {
+            const uploadArea = document.getElementById('logo-upload');
+            const preview = document.getElementById('logo-preview');
+            const img = document.getElementById('logo-img');
+            const removeBtn = document.getElementById('btn-remove-logo');
+            
+            img.src = logoData;
+            uploadArea.classList.add('has-logo');
+            removeBtn.style.display = 'inline-block';
+        }
+
+        function removeLogo(event) {
+            event.stopPropagation();
+            companySettings.logo = null;
+            
+            const uploadArea = document.getElementById('logo-upload');
+            const removeBtn = document.getElementById('btn-remove-logo');
+            const input = document.getElementById('logo-input');
+            
+            uploadArea.classList.remove('has-logo');
+            removeBtn.style.display = 'none';
+            input.value = '';
+            
+            updatePreview();
+        }
+
+        // ============================================
+        // LIVE PREVIEW
+        // ============================================
+        function setupLivePreview() {
+            const inputs = [
+                'company-name', 'company-tax', 'company-id', 'company-address',
+                'company-phone', 'company-email', 'company-website',
+                'bank-name', 'bank-iban', 'bank-bic'
+            ];
+            
+            inputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', updatePreview);
+            });
+        }
+
+        function updatePreview() {
+            const name = document.getElementById('company-name').value || 'Vaše podjetje';
+            const tax = document.getElementById('company-tax').value;
+            const id = document.getElementById('company-id').value;
+            const address = document.getElementById('company-address').value;
+            const phone = document.getElementById('company-phone').value;
+            const email = document.getElementById('company-email').value;
+            const website = document.getElementById('company-website').value;
+            
+            document.getElementById('preview-name').textContent = name;
+            
+            let infoHtml = '';
+            if (tax) infoHtml += `Davčna št.: ${tax}<br>`;
+            if (id) infoHtml += `Matična št.: ${id}<br>`;
+            if (address) infoHtml += `${address.replace(/\n/g, '<br>')}<br>`;
+            
+            const contacts = [];
+            if (phone) contacts.push(phone);
+            if (email) contacts.push(email);
+            if (contacts.length > 0) {
+                infoHtml += contacts.join(' | ') + '<br>';
+            }
+            if (website) infoHtml += website;
+            
+            if (!infoHtml) {
+                infoHtml = 'Davčna št.: 12345678<br>Naslov podjetja<br>Telefon | Email';
+            }
+            
+            document.getElementById('preview-info').innerHTML = infoHtml;
+            
+            // Update logo preview
+            const logoContainer = document.getElementById('preview-logo-container');
+            if (companySettings.logo) {
+                logoContainer.innerHTML = `<img src="${companySettings.logo}" alt="Logotip">`;
+            } else {
+                logoContainer.innerHTML = '<span style="color: #C7C7CC; font-size: 12px;">Brez logotipa</span>';
+            }
+        }
+
+        // ============================================
+        // SAVE SETTINGS
+        // ============================================
+        function saveSettings() {
+            const name = document.getElementById('company-name').value.trim();
+            
+            if (!name) {
+                alert('Prosim vnesite ime podjetja.');
+                document.getElementById('company-name').focus();
+                return;
+            }
+            
+            companySettings = {
+                name: name,
+                taxNumber: document.getElementById('company-tax').value.trim(),
+                companyId: document.getElementById('company-id').value.trim(),
+                address: document.getElementById('company-address').value.trim(),
+                phone: document.getElementById('company-phone').value.trim(),
+                email: document.getElementById('company-email').value.trim(),
+                website: document.getElementById('company-website').value.trim(),
+                bankName: document.getElementById('bank-name').value.trim(),
+                bankIban: document.getElementById('bank-iban').value.trim(),
+                bankBic: document.getElementById('bank-bic').value.trim(),
+                logo: companySettings.logo
+            };
+            
+            localStorage.setItem('companySettings', JSON.stringify(companySettings));
+            
+            // Show success message
+            const successMsg = document.getElementById('success-message');
+            successMsg.classList.add('show');
+            setTimeout(() => {
+                successMsg.classList.remove('show');
+            }, 3000);
+            
+            console.log('✅ Settings saved:', companySettings);
+        }
+
+        console.log('✅ All functions loaded');
+    </script>
+</body>
+</html>
