@@ -288,7 +288,8 @@
                     <!-- Materials -->
                     <h3 style="margin: 30px 0 16px;">📦 Materiali</h3>
                     <div id="materials-list"></div>
-                    <button type="button" class="btn btn-outline" id="btn-add-material" style="margin-top: 10px;">+ Dodaj material</button>
+                    <button type="button" class="btn btn-outline" id="btn-add-material" style="margin-top: 10px;">+ Dodaj material iz seznama</button>
+                    <button type="button" class="btn btn-outline" id="btn-add-material-custom" style="margin-top: 10px; background: transparent; border: 2px solid #8E8E93; color: #8E8E93;">✏️ Vnesi ročno</button>
                     
                     <!-- Totals -->
                     <div class="totals">
@@ -343,11 +344,29 @@
         </div>
     </div>
 
+    <!-- Modal - Select Material -->
+    <div class="modal-overlay" id="material-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+        <div class="modal" style="background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+            <div style="font-size: 20px; font-weight: 600; margin-bottom: 16px;">Izberi material</div>
+            <p style="color: #8E8E93; margin-bottom: 16px;">Poišči material ali izberi iz seznama:</p>
+            
+            <input type="text" id="material-search" placeholder="🔍 Išči material..." style="width: 100%; padding: 12px 16px; border: 1px solid #E5E5EA; border-radius: 10px; font-size: 16px; margin-bottom: 16px;">
+            
+            <div id="material-categories" style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap;"></div>
+            
+            <div id="material-list" style="max-height: 400px; overflow-y: auto;"></div>
+            
+            <div style="margin-top: 20px; text-align: center;">
+                <button type="button" class="btn btn-secondary" id="btn-close-material-modal" style="width: auto; padding: 10px 30px;">Prekliči</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Bottom Navigation -->
     <nav class="nav">
         <a href="index.html" class="active"><span>📋</span>Predračuni</a>
         <a href="workitems-module.html"><span>🔧</span>Postavke</a>
-        <a href="calculator-module.html"><span>🧮</span>Kalkulator</a>
+        <a href="materials-module.html"><span>📦</span>Materiali</a>
     </nav>
 
     <script>
@@ -378,13 +397,19 @@
             document.getElementById('btn-save-send').addEventListener('click', () => saveQuote('sent'));
             document.getElementById('btn-add-work').addEventListener('click', showWorkItemSelector);
             document.getElementById('btn-add-work-custom').addEventListener('click', addWorkItemManual);
-            document.getElementById('btn-add-material').addEventListener('click', addMaterial);
+            document.getElementById('btn-add-material').addEventListener('click', showMaterialSelector);
+            document.getElementById('btn-add-material-custom').addEventListener('click', addMaterialManual);
             document.getElementById('btn-close-workitem-modal').addEventListener('click', closeWorkItemModal);
+            document.getElementById('btn-close-material-modal').addEventListener('click', closeMaterialModal);
             document.getElementById('workitem-search').addEventListener('input', filterWorkItems);
+            document.getElementById('material-search').addEventListener('input', filterMaterials);
             
-            // Close modal on overlay click
+            // Close modals on overlay click
             document.getElementById('workitem-modal').addEventListener('click', function(e) {
                 if (e.target === this) closeWorkItemModal();
+            });
+            document.getElementById('material-modal').addEventListener('click', function(e) {
+                if (e.target === this) closeMaterialModal();
             });
             
             // Search and filter
@@ -688,7 +713,142 @@
             renderWorkItems();
         }
 
-        function addMaterial() {
+        // ============================================
+        // MATERIAL SELECTOR
+        // ============================================
+        let materialCategoryFilter = 'all';
+        let availableMaterials = [];
+
+        function loadAvailableMaterials() {
+            // Load from materials-module localStorage
+            const saved = localStorage.getItem('materials');
+            if (saved) {
+                try {
+                    availableMaterials = JSON.parse(saved);
+                } catch (e) {
+                    availableMaterials = [];
+                }
+            }
+            // If empty, use default templates
+            if (availableMaterials.length === 0) {
+                availableMaterials = getDefaultMaterials();
+            }
+            return availableMaterials;
+        }
+
+        function getDefaultMaterials() {
+            return [
+                { name: 'Cement (25kg)', category: 'Gradbeni material', unit: 'kos', price: 8.50 },
+                { name: 'Mavec (25kg)', category: 'Gradbeni material', unit: 'kos', price: 6.20 },
+                { name: 'Opeka (kos)', category: 'Gradbeni material', unit: 'kos', price: 0.45 },
+                { name: 'YTONG blok', category: 'Gradbeni material', unit: 'kos', price: 3.80 },
+                { name: 'Estrih (40kg)', category: 'Gradbeni material', unit: 'kos', price: 5.50 },
+                { name: 'Vtičnica', category: 'Elektro material', unit: 'kos', price: 12.00 },
+                { name: 'Stikalo', category: 'Elektro material', unit: 'kos', price: 10.50 },
+                { name: 'Kabel (na meter)', category: 'Elektro material', unit: 'm', price: 2.80 },
+                { name: 'LED svetilka', category: 'Elektro material', unit: 'kos', price: 25.00 },
+                { name: 'Ploščice (m²)', category: 'Keramika', unit: 'm²', price: 18.00 },
+                { name: 'Fugirna masa', category: 'Keramika', unit: 'kg', price: 4.50 },
+                { name: 'Hidroizolacija', category: 'Keramika', unit: 'kg', price: 8.00 },
+                { name: 'Cev (PVC)', category: 'Vodovodni material', unit: 'm', price: 3.20 },
+                { name: 'Koleno', category: 'Vodovodni material', unit: 'kos', price: 2.50 },
+                { name: 'Ventil', category: 'Vodovodni material', unit: 'kos', price: 15.00 },
+                { name: 'Notranja barva (10L)', category: 'Barve in laki', unit: 'kos', price: 35.00 },
+                { name: 'Temeljna barva (5L)', category: 'Barve in laki', unit: 'kos', price: 22.00 },
+                { name: 'Lak', category: 'Barve in laki', unit: 'l', price: 12.00 }
+            ];
+        }
+
+        function showMaterialSelector() {
+            loadAvailableMaterials();
+            materialCategoryFilter = 'all';
+            document.getElementById('material-search').value = '';
+            renderMaterialCategories();
+            renderMaterialList();
+            document.getElementById('material-modal').style.display = 'flex';
+        }
+
+        function closeMaterialModal() {
+            document.getElementById('material-modal').style.display = 'none';
+        }
+
+        function renderMaterialCategories() {
+            const categories = [...new Set(availableMaterials.map(i => i.category))].sort();
+            const container = document.getElementById('material-categories');
+            
+            let html = `<button onclick="filterMaterialsByCategory('all')" style="padding: 8px 16px; border-radius: 20px; border: none; background: ${materialCategoryFilter === 'all' ? '#007AFF' : '#E5E5EA'}; color: ${materialCategoryFilter === 'all' ? 'white' : 'black'}; cursor: pointer;">Vse</button>`;
+            
+            categories.forEach(cat => {
+                const isActive = materialCategoryFilter === cat;
+                html += `<button onclick="filterMaterialsByCategory('${cat}')" style="padding: 8px 16px; border-radius: 20px; border: none; background: ${isActive ? '#007AFF' : '#E5E5EA'}; color: ${isActive ? 'white' : 'black'}; cursor: pointer;">${getMaterialCategoryIcon(cat)} ${cat}</button>`;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function filterMaterialsByCategory(category) {
+            materialCategoryFilter = category;
+            renderMaterialCategories();
+            renderMaterialList();
+        }
+
+        function filterMaterials() {
+            renderMaterialList();
+        }
+
+        function renderMaterialList() {
+            const search = document.getElementById('material-search').value.toLowerCase();
+            const container = document.getElementById('material-list');
+            
+            let filtered = availableMaterials.filter(item => {
+                const matchesSearch = !search || item.name.toLowerCase().includes(search);
+                const matchesCategory = materialCategoryFilter === 'all' || item.category === materialCategoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p style="color: #8E8E93; text-align: center; padding: 40px;">Ni najdenih materialov</p>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map((item, index) => `
+                <div onclick="selectMaterial(${availableMaterials.indexOf(item)})" style="
+                    background: #F8F9FA;
+                    border-radius: 10px;
+                    padding: 16px;
+                    margin-bottom: 10px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    border: 2px solid transparent;
+                " onmouseover="this.style.borderColor='#007AFF'" onmouseout="this.style.borderColor='transparent'">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(item.name)}</div>
+                            <span style="display: inline-block; background: #E3F2FD; padding: 4px 12px; border-radius: 12px; font-size: 12px; color: #007AFF;">${getMaterialCategoryIcon(item.category)} ${escapeHtml(item.category)}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 18px; font-weight: 700; color: #007AFF;">${item.price.toFixed(2)} €</div>
+                            <div style="font-size: 12px; color: #8E8E93;">/${item.unit}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectMaterial(index) {
+            const item = availableMaterials[index];
+            materials.push({ 
+                name: item.name, 
+                unit: item.unit, 
+                quantity: 1, 
+                price: item.price 
+            });
+            renderMaterials();
+            updateTotals();
+            closeMaterialModal();
+        }
+
+        function addMaterialManual() {
             materials.push({ name: '', unit: 'kos', quantity: 1, price: 0 });
             renderMaterials();
         }
@@ -828,6 +988,20 @@
             return icons[category] || '📋';
         }
 
+        function getMaterialCategoryIcon(category) {
+            const icons = {
+                'Gradbeni material': '🧱',
+                'Elektro material': '⚡',
+                'Vodovodni material': '🚿',
+                'Keramika': '⬜',
+                'Barve in laki': '🎨',
+                'Pohištvo': '🪑',
+                'Orodje': '🔧',
+                'Drugo': '📦'
+            };
+            return icons[category] || '📋';
+        }
+
         function escapeHtml(text) {
             if (!text) return '';
             const div = document.createElement('div');
@@ -867,6 +1041,9 @@
         window.selectWorkItem = selectWorkItem;
         window.filterWorkItemsByCategory = filterWorkItemsByCategory;
         window.addWorkItemManual = addWorkItemManual;
+        window.selectMaterial = selectMaterial;
+        window.filterMaterialsByCategory = filterMaterialsByCategory;
+        window.addMaterialManual = addMaterialManual;
 
         console.log('✅ All functions loaded');
     </script>

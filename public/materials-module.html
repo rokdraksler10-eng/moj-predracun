@@ -1,1173 +1,591 @@
 <!DOCTYPE html>
 <html lang="sl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Materiali | Moj Predračun</title>
-  
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#007AFF">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script src="utils.js"></script>
-  
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    
-    :root {
-      --ios-blue: #007AFF;
-      --ios-green: #34C759;
-      --ios-red: #FF3B30;
-      --ios-orange: #FF9500;
-      --ios-bg: #F2F2F7;
-      --ios-card: #FFFFFF;
-      --ios-text: #000000;
-      --ios-text-secondary: #8E8E93;
-      --ios-border: #E5E5EA;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--ios-bg);
-      color: var(--ios-text);
-      min-height: 100vh;
-      padding-bottom: 90px;
-    }
-    
-    .header {
-      background: var(--ios-card);
-      padding: 20px;
-      border-bottom: 1px solid var(--ios-border);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    
-    .header-content {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    
-    h1 {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-    
-    .search-box {
-      position: relative;
-    }
-    
-    .search-input {
-      width: 100%;
-      padding: 12px 16px 12px 44px;
-      font-size: 16px;
-      background: var(--ios-bg);
-      border: none;
-      border-radius: 12px;
-      min-height: 44px;
-    }
-    
-    .search-input:focus {
-      outline: none;
-      box-shadow: 0 0 0 2px var(--ios-blue);
-    }
-    
-    .search-icon {
-      position: absolute;
-      left: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--ios-text-secondary);
-    }
-    
-    .category-filter {
-      display: flex;
-      gap: 8px;
-      padding: 12px 20px;
-      overflow-x: auto;
-      background: var(--ios-card);
-      border-bottom: 1px solid var(--ios-border);
-      -webkit-overflow-scrolling: touch;
-    }
-    
-    .category-filter::-webkit-scrollbar {
-      display: none;
-    }
-    
-    .category-chip {
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 500;
-      white-space: nowrap;
-      cursor: pointer;
-      background: var(--ios-bg);
-      color: var(--ios-text-secondary);
-      border: none;
-      transition: all 0.2s;
-    }
-    
-    .category-chip.active {
-      background: var(--ios-blue);
-      color: white;
-    }
-
-    /* Loading Overlay */
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(255,255,255,0.9);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    .loading-overlay.active { display: flex; }
-    .loading-spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid var(--ios-border);
-      border-top-color: var(--ios-blue);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Input validation error */
-    .input-error {
-      border: 2px solid var(--ios-red) !important;
-      box-shadow: 0 0 0 3px rgba(255,59,48,0.1) !important;
-    }
-    .error-message {
-      color: var(--ios-red);
-      font-size: 12px;
-      margin-top: 4px;
-      display: none;
-    }
-    .error-message.show { display: block; }
-
-    .content {
-      padding: 20px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    
-    .stats-bar {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    
-    .stat-card {
-      flex: 1;
-      background: var(--ios-card);
-      padding: 16px;
-      border-radius: 16px;
-      text-align: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    }
-    
-    .stat-value {
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--ios-blue);
-    }
-    
-    .stat-label {
-      font-size: 12px;
-      color: var(--ios-text-secondary);
-      margin-top: 4px;
-    }
-    
-    .fab {
-      position: fixed;
-      bottom: 100px;
-      right: 20px;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: var(--ios-blue);
-      color: white;
-      border: none;
-      font-size: 28px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,122,255,0.4);
-      transition: transform 0.2s;
-      z-index: 999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .fab:active {
-      transform: scale(0.95);
-    }
-    
-    .materials-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    
-    .material-card {
-      background: var(--ios-card);
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-      cursor: pointer;
-      transition: transform 0.2s;
-      position: relative;
-    }
-    
-    .material-card:active {
-      transform: scale(0.99);
-    }
-    
-    .material-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 8px;
-    }
-    
-    .material-name {
-      font-weight: 600;
-      font-size: 16px;
-      flex: 1;
-    }
-    
-    .material-category {
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 12px;
-      background: #E3F2FF;
-      color: var(--ios-blue);
-      font-weight: 500;
-    }
-    
-    .material-details {
-      display: flex;
-      gap: 16px;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid var(--ios-border);
-    }
-    
-    .material-detail {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    
-    .detail-label {
-      font-size: 12px;
-      color: var(--ios-text-secondary);
-    }
-    
-    .detail-value {
-      font-size: 14px;
-      font-weight: 600;
-    }
-    
-    .material-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid var(--ios-border);
-    }
-    
-    .btn-small {
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      border: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-    
-    .btn-edit {
-      background: var(--ios-bg);
-      color: var(--ios-blue);
-    }
-    
-    .btn-delete {
-      background: #FFE5E5;
-      color: var(--ios-red);
-    }
-    
-    .btn-link {
-      background: #E8F5E9;
-      color: var(--ios-green);
-    }
-    
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-      z-index: 2000;
-      backdrop-filter: blur(4px);
-    }
-    
-    .modal-overlay.active {
-      display: flex;
-    }
-    
-    .modal {
-      background: var(--ios-card);
-      width: 100%;
-      max-width: 600px;
-      max-height: 90vh;
-      border-radius: 24px 24px 0 0;
-      overflow: hidden;
-      animation: slideUp 0.3s ease;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
-    
-    .modal-header {
-      padding: 20px;
-      border-bottom: 1px solid var(--ios-border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .modal-title {
-      font-size: 20px;
-      font-weight: 700;
-    }
-    
-    .modal-close {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: none;
-      background: var(--ios-bg);
-      color: var(--ios-text-secondary);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-    }
-    
-    .modal-body {
-      padding: 20px;
-      overflow-y: auto;
-      flex: 1;
-    }
-    
-    .modal-footer {
-      padding: 16px 20px;
-      border-top: 1px solid var(--ios-border);
-      display: flex;
-      gap: 12px;
-    }
-    
-    .form-group {
-      margin-bottom: 16px;
-    }
-    
-    .form-label {
-      display: block;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--ios-text-secondary);
-      margin-bottom: 6px;
-    }
-    
-    .form-input, .form-select {
-      width: 100%;
-      padding: 12px 16px;
-      font-size: 16px;
-      background: var(--ios-bg);
-      border: 1px solid transparent;
-      border-radius: 12px;
-      min-height: 48px;
-      transition: all 0.2s;
-    }
-    
-    .form-input:focus, .form-select:focus {
-      outline: none;
-      border-color: var(--ios-blue);
-      background: var(--ios-card);
-    }
-    
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    
-    .btn {
-      flex: 1;
-      padding: 14px 24px;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: all 0.2s;
-      min-height: 48px;
-    }
-    
-    .btn-primary {
-      background: var(--ios-blue);
-      color: white;
-    }
-    
-    .btn-secondary {
-      background: var(--ios-bg);
-      color: var(--ios-text);
-    }
-    
-    .btn-danger {
-      background: var(--ios-red);
-      color: white;
-    }
-    
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--ios-text-secondary);
-    }
-    
-    .empty-state-icon {
-      font-size: 64px;
-      margin-bottom: 16px;
-    }
-    
-    .empty-state h3 {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: var(--ios-text);
-    }
-    
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: var(--ios-text-secondary);
-    }
-    
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--ios-border);
-      border-top-color: var(--ios-blue);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 16px;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .toast {
-      position: fixed;
-      bottom: 100px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: #333;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-size: 14px;
-      z-index: 3000;
-      opacity: 0;
-      transition: all 0.3s ease;
-    }
-    
-    .toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
-    
-    .work-items-list {
-      max-height: 400px;
-      overflow-y: auto;
-    }
-    
-    .work-item-option {
-      padding: 16px;
-      border-bottom: 1px solid var(--ios-border);
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    
-    .work-item-option:hover {
-      background: var(--ios-bg);
-    }
-    
-    .work-item-option.selected {
-      background: #E3F2FF;
-    }
-    
-    .work-item-name {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    
-    .work-item-price {
-      font-size: 14px;
-      color: var(--ios-text-secondary);
-    }
-    
-    .delete-confirm {
-      text-align: center;
-      padding: 20px;
-    }
-    
-    .delete-confirm-icon {
-      font-size: 48px;
-      color: var(--ios-red);
-      margin-bottom: 16px;
-    }
-    
-    .delete-confirm p {
-      margin-bottom: 20px;
-      color: var(--ios-text-secondary);
-    }
-    
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--ios-blue);
-      text-decoration: none;
-      font-weight: 500;
-      margin-bottom: 12px;
-    }
-    
-    .selected-work-item {
-      background: #E8F5E9;
-      padding: 12px 16px;
-      border-radius: 12px;
-      margin-top: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .selected-work-item-text {
-      color: var(--ios-green);
-      font-weight: 500;
-    }
-    
-    .remove-selection {
-      background: none;
-      border: none;
-      color: var(--ios-red);
-      cursor: pointer;
-      font-size: 18px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materiali - Moj Predračun</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #F2F2F7; 
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+        
+        .header { 
+            background: white; 
+            padding: 20px; 
+            border-bottom: 1px solid #E5E5EA;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 { font-size: 24px; margin-bottom: 10px; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        .btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-secondary { background: #8E8E93; }
+        .btn-danger { background: #FF3B30; }
+        .btn-sm { padding: 8px 16px; font-size: 14px; }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .controls input, .controls select {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
+            border: 1px solid #E5E5EA;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        
+        .category-tabs {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 4px;
+        }
+        .category-tab {
+            padding: 12px 20px;
+            background: white;
+            border: 2px solid #E5E5EA;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .category-tab:hover {
+            border-color: #007AFF;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .category-tab.active {
+            background: #007AFF;
+            color: white;
+            border-color: #007AFF;
+            box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+        }
+        .category-icon { font-size: 18px; }
+        
+        .items-table {
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .items-table-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 16px;
+            padding: 16px 20px;
+            background: #F8F9FA;
+            border-bottom: 2px solid #E5E5EA;
+            font-size: 12px;
+            font-weight: 700;
+            color: #8E8E93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .item-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 16px;
+            padding: 20px;
+            border-bottom: 1px solid #F2F2F7;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        .item-row:hover { background: #FAFBFC; }
+        .item-row:last-child { border-bottom: none; }
+        .item-info { display: flex; flex-direction: column; gap: 6px; }
+        .item-name { font-weight: 600; font-size: 16px; color: #1C1C1E; }
+        .item-category { 
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #F2F2F7 0%, #E5E5EA 100%);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #007AFF;
+            width: fit-content;
+        }
+        .item-price { font-size: 20px; font-weight: 700; color: #007AFF; }
+        .item-unit { font-size: 13px; color: #8E8E93; font-weight: 500; }
+        .item-actions { display: flex; gap: 8px; }
+        .item-col { display: flex; flex-direction: column; justify-content: center; }
+        .col-label {
+            font-size: 11px;
+            color: #8E8E93;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .items-table-header { display: none; }
+            .item-row {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                padding: 20px;
+            }
+            .col-label { display: block; }
+            .item-actions { justify-content: flex-end; }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8E8E93;
+        }
+        .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #8E8E93;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #E5E5EA;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 24px;
+        }
+        .modal-buttons .btn { flex: 1; }
+        
+        .nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: white; 
+            border-top: 1px solid #E5E5EA;
+            display: flex; 
+            justify-content: space-around; 
+            padding: 10px 0;
+            z-index: 100;
+        }
+        .nav a {
+            text-decoration: none;
+            color: #8E8E93;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 15px;
+        }
+        .nav a.active { color: #007AFF; }
+        .nav a span { font-size: 20px; }
+    </style>
 </head>
 <body>
-  <header class="header">
-    <div class="header-content">
-      <a href="/" class="back-link">← Nazaj</a>
-      <h1>Materiali</h1>
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" id="searchInput" placeholder="Išči materiale...">
-      </div>
+    <!-- Header -->
+    <div class="header">
+        <h1>📦 Materiali</h1>
     </div>
-  </header>
-  
-  <div class="category-filter" id="categoryFilter">
-    <button class="category-chip active" data-category="all">Vsi</button>
-  </div>
-  
-  <div class="content">
-    <div class="stats-bar">
-      <div class="stat-card">
-        <div class="stat-value" id="totalMaterials">0</div>
-        <div class="stat-label">Skupaj materialov</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="totalCategories">0</div>
-        <div class="stat-label">Kategorij</div>
-      </div>
-    </div>
-    
-    <div class="materials-list" id="materialsList">
-      <div class="loading">
-        <div class="spinner"></div>
-        <p>Nalagam materiale...</p>
-      </div>
-    </div>
-  </div>
-  
-  <button class="fab" onclick="openAddModal()">+</button>
-  
-  <div class="modal-overlay" id="materialModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 class="modal-title" id="modalTitle">Nov material</h2>
-        <button class="modal-close" onclick="closeModal()">×</button>
-      </div>
-      <div class="modal-body">
-        <form id="materialForm">
-          <input type="hidden" id="materialId">
-          
-          <div class="form-group">
-            <label class="form-label">Naziv materiala *</label>
-            <input type="text" class="form-input" id="materialName" required placeholder="npr. Cementsko lepilo">
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">Kategorija *</label>
-            <select class="form-select" id="materialCategory" required>
-              <option value="">Izberi kategorijo</option>
-            </select>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Enota *</label>
-              <select class="form-select" id="materialUnit" required>
-                <option value="">Izberi</option>
-                <option value="kos">kos</option>
-                <option value="m">m</option>
-                <option value="m2">m²</option>
-                <option value="m3">m³</option>
-                <option value="kg">kg</option>
-                <option value="ton">ton</option>
-                <option value="l">l</option>
-                <option value="set">set</option>
-                <option value="ura">ura</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Cena na enoto (€) *</label>
-              <input type="number" class="form-input" id="materialPrice" required step="0.01" min="0" placeholder="0.00">
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">Dobavitelj</label>
-            <input type="text" class="form-input" id="materialSupplier" placeholder="npr. Merkator gradbeništvo">
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">Opis</label>
-            <input type="text" class="form-input" id="materialDescription" placeholder="Dodatni opis materiala">
-          </div>
-          
-          <div id="selectedWorkItemContainer" style="display: none;">
-            <label class="form-label">Povezana postavka dela</label>
-            <div class="selected-work-item">
-              <span class="selected-work-item-text" id="selectedWorkItemText"></span>
-              <button type="button" class="remove-selection" onclick="clearWorkItemSelection()">×</button>
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Prekliči</button>
-        <button type="button" class="btn btn-primary" onclick="saveMaterial()">Shrani</button>
-      </div>
-    </div>
-  </div>
-  
-  <div class="modal-overlay" id="linkModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 class="modal-title">Poveži s postavko dela</h2>
-        <button class="modal-close" onclick="closeLinkModal()">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="search-box" style="margin-bottom: 16px;">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="workItemSearch" placeholder="Išči postavke...">
-        </div>
-        <div class="work-items-list" id="workItemsList">
-          <div class="loading">Nalagam postavke...</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <div class="modal-overlay" id="deleteModal">
-    <div class="modal" style="max-height: 300px;">
-      <div class="modal-header">
-        <h2 class="modal-title">Potrdi brisanje</h2>
-        <button class="modal-close" onclick="closeDeleteModal()">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="delete-confirm">
-          <div class="delete-confirm-icon">🗑️</div>
-          <p>Ali ste prepričani, da želite izbrisati ta material?<br>Tega dejanja ni mogoče razveljaviti.</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Prekliči</button>
-        <button type="button" class="btn btn-danger" onclick="confirmDelete()">Izbriši</button>
-      </div>
-    </div>
-  </div>
-  
-  <div class="toast" id="toast"></div>
-  
-  <script>
-    let materials = [];
-    let categories = [];
-    let workItems = [];
-    let currentMaterial = null;
-    let materialToDelete = null;
-    let selectedCategory = 'all';
-    let searchQuery = '';
-    let selectedWorkItemId = null;
-    let linkingMaterialId = null;
-    
-    const defaultCategories = [
-      'Gradbeni material',
-      'Elektrika',
-      'Vodovod',
-      'Ogrevanje',
-      'Pokrivanje',
-      'Talne obloge',
-      'Barve in laki',
-      'Pohištvo',
-      'Okna in vrata',
-      'Orodje',
-      'Ostalo'
-    ];
-    
-    document.addEventListener('DOMContentLoaded', function() {
-      loadMaterials();
-      loadWorkItems();
-      setupEventListeners();
-      populateCategorySelect();
-    });
-    
-    function setupEventListeners() {
-      // Debounced search for better performance with large datasets
-      const debouncedSearch = debounce(function(value) {
-        searchQuery = value.toLowerCase();
-        renderMaterials();
-      }, 300);
 
-      document.getElementById('searchInput').addEventListener('input', function(e) {
-        debouncedSearch(e.target.value);
-      });
-      
-      document.getElementById('workItemSearch').addEventListener('input', function(e) {
-        renderWorkItemsList(e.target.value.toLowerCase());
-      });
-      
-      document.getElementById('materialModal').addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-      });
-      document.getElementById('linkModal').addEventListener('click', function(e) {
-        if (e.target === this) closeLinkModal();
-      });
-      document.getElementById('deleteModal').addEventListener('click', function(e) {
-        if (e.target === this) closeDeleteModal();
-      });
-    }
-    
-    async function loadMaterials() {
-      try {
-        const response = await fetch('/api/materials');
-        if (!response.ok) throw new Error('Failed to load materials');
-        materials = await response.json();
-        extractCategories();
-        renderMaterials();
-        updateStats();
-      } catch (error) {
-        console.error('Error loading materials:', error);
-        showToast('Napaka pri nalaganju materialov', 'error');
-        document.getElementById('materialsList').innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">⚠️</div>
-            <h3>Napaka pri nalaganju</h3>
-            <p>Poskusite znova kasneje</p>
-          </div>
-        `;
-      }
-    }
-    
-    async function loadWorkItems() {
-      try {
-        const response = await fetch('/api/work-items');
-        if (!response.ok) throw new Error('Failed to load work items');
-        workItems = await response.json();
-      } catch (error) {
-        console.error('Error loading work items:', error);
-        workItems = [];
-      }
-    }
-    
-    function extractCategories() {
-      const materialCategories = [...new Set(materials.map(m => m.category).filter(Boolean))];
-      categories = [...new Set([...defaultCategories, ...materialCategories])];
-      renderCategoryFilter();
-    }
-    
-    function populateCategorySelect() {
-      const select = document.getElementById('materialCategory');
-      select.innerHTML = '<option value="">Izberi kategorijo</option>';
-      defaultCategories.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat;
-        option.textContent = cat;
-        select.appendChild(option);
-      });
-    }
-    
-    function renderCategoryFilter() {
-      const container = document.getElementById('categoryFilter');
-      container.innerHTML = '<button class="category-chip ' + (selectedCategory === 'all' ? 'active' : '') + '" data-category="all" onclick="filterByCategory(\'all\')">Vsi</button>';
-      
-      categories.forEach(category => {
-        const btn = document.createElement('button');
-        btn.className = 'category-chip ' + (selectedCategory === category ? 'active' : '');
-        btn.dataset.category = category;
-        btn.textContent = category;
-        btn.onclick = function() { filterByCategory(category); };
-        container.appendChild(btn);
-      });
-    }
-    
-    function filterByCategory(category) {
-      selectedCategory = category;
-      renderCategoryFilter();
-      renderMaterials();
-    }
-    
-    function renderMaterials() {
-      const container = document.getElementById('materialsList');
-      
-      let filtered = materials.filter(m => {
-        const matchesCategory = selectedCategory === 'all' || m.category === selectedCategory;
-        const matchesSearch = !searchQuery || 
-          (m.name && m.name.toLowerCase().includes(searchQuery)) ||
-          (m.supplier && m.supplier.toLowerCase().includes(searchQuery)) ||
-          (m.description && m.description.toLowerCase().includes(searchQuery));
-        return matchesCategory && matchesSearch;
-      });
-      
-      if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">📦</div>
-            <h3>Ni najdenih materialov</h3>
-            <p>${searchQuery ? 'Poskusite z drugačnim iskalnim nizom' : 'Dodajte prvi material s klikom na +'}</p>
-          </div>
-        `;
-        return;
-      }
-      
-      let html = '';
-      filtered.forEach(material => {
-        const workItemLink = material.work_item_id ? 
-          '<div class="material-detail" style="margin-top: 8px; padding: 8px 0 0 0; border-top: 1px dashed var(--ios-border);">' +
-            '<span class="detail-label">🔗 Povezana postavka</span>' +
-            '<span class="detail-value" style="color: var(--ios-green);">' + escapeHtml(getWorkItemName(material.work_item_id)) + '</span>' +
-          '</div>' : '';
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Controls -->
+        <div class="card">
+            <div class="controls">
+                <input type="text" id="search-input" placeholder="🔍 Išči material...">
+                <select id="sort-select">
+                    <option value="name">Naziv (A-Z)</option>
+                    <option value="price-asc">Cena (nizka→visoka)</option>
+                    <option value="price-desc">Cena (visoka→nizka)</option>
+                </select>
+            </div>
+            
+            <button class="btn" id="btn-new-item">+ Nov material</button>
+            
+            <!-- Category Tabs -->
+            <div class="category-tabs" id="category-tabs">
+                <div class="category-tab active" data-category="all">📋 Vse kategorije</div>
+            </div>
+        </div>
         
-        html += '<div class="material-card">' +
-          '<div class="material-header">' +
-            '<div class="material-name">' + escapeHtml(material.name) + '</div>' +
-            '<span class="material-category">' + escapeHtml(material.category || 'Brez kategorije') + '</span>' +
-          '</div>' +
-          '<div class="material-details">' +
-            '<div class="material-detail">' +
-              '<span class="detail-label">Enota</span>' +
-              '<span class="detail-value">' + (material.unit || '-') + '</span>' +
-            '</div>' +
-            '<div class="material-detail">' +
-              '<span class="detail-label">Cena</span>' +
-              '<span class="detail-value">' + formatPrice(material.unit_price) + ' €/' + (material.unit || 'kos') + '</span>' +
-            '</div>' +
-            '<div class="material-detail">' +
-              '<span class="detail-label">Dobavitelj</span>' +
-              '<span class="detail-value">' + escapeHtml(material.supplier || '-') + '</span>' +
-            '</div>' +
-          '</div>' +
-          workItemLink +
-          '<div class="material-actions">' +
-            '<button class="btn-small btn-edit" onclick="editMaterial(' + material.id + ')">' +
-              '✏️ Uredi' +
-            '</button>' +
-            '<button class="btn-small btn-link" onclick="openLinkModal(' + material.id + ')">' +
-              '🔗 Poveži' +
-            '</button>' +
-            '<button class="btn-small btn-delete" onclick="deleteMaterial(' + material.id + ')">' +
-              '🗑️ Izbriši' +
-            '</button>' +
-          '</div>' +
-        '</div>';
-      });
-      
-      container.innerHTML = html;
-    }
-    
-    function getWorkItemName(id) {
-      const item = workItems.find(w => w.id === id);
-      return item ? item.name : 'Neznana postavka';
-    }
-    
-    function updateStats() {
-      document.getElementById('totalMaterials').textContent = materials.length;
-      document.getElementById('totalCategories').textContent = categories.length;
-    }
-    
-    function openAddModal() {
-      currentMaterial = null;
-      selectedWorkItemId = null;
-      document.getElementById('modalTitle').textContent = 'Nov material';
-      document.getElementById('materialForm').reset();
-      document.getElementById('materialId').value = '';
-      document.getElementById('selectedWorkItemContainer').style.display = 'none';
-      document.getElementById('materialModal').classList.add('active');
-    }
-    
-    function editMaterial(id) {
-      const material = materials.find(m => m.id === id);
-      if (!material) return;
-      
-      currentMaterial = material;
-      selectedWorkItemId = material.work_item_id || null;
-      
-      document.getElementById('modalTitle').textContent = 'Uredi material';
-      document.getElementById('materialId').value = material.id;
-      document.getElementById('materialName').value = material.name || '';
-      document.getElementById('materialCategory').value = material.category || '';
-      document.getElementById('materialUnit').value = material.unit || '';
-      document.getElementById('materialPrice').value = material.unit_price || '';
-      document.getElementById('materialSupplier').value = material.supplier || '';
-      document.getElementById('materialDescription').value = material.description || '';
-      
-      if (selectedWorkItemId) {
-        document.getElementById('selectedWorkItemText').textContent = getWorkItemName(selectedWorkItemId);
-        document.getElementById('selectedWorkItemContainer').style.display = 'block';
-      } else {
-        document.getElementById('selectedWorkItemContainer').style.display = 'none';
-      }
-      
-      document.getElementById('materialModal').classList.add('active');
-    }
-    
-    function closeModal() {
-      document.getElementById('materialModal').classList.remove('active');
-    }
-    
-    async function saveMaterial() {
-      const name = document.getElementById('materialName').value.trim();
-      const category = document.getElementById('materialCategory').value;
-      const unit = document.getElementById('materialUnit').value;
-      const unitPrice = parseFloat(document.getElementById('materialPrice').value);
-      const supplier = document.getElementById('materialSupplier').value.trim();
-      const description = document.getElementById('materialDescription').value.trim();
-      const id = document.getElementById('materialId').value;
-      
-      // Clear previous errors
-      document.getElementById('materialPrice').classList.remove('input-error');
-      
-      if (!name || !category || !unit || isNaN(unitPrice)) {
-        showToast('Prosimo izpolnite vsa obvezna polja', 'error');
-        return;
-      }
+        <!-- Items List -->
+        <div class="items-list" id="items-list">
+            <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <h3>Ni materialov</h3>
+                <p>Klikni "Nov material" za začetek</p>
+            </div>
+        </div>
+    </div>
 
-      // Validate price - must be non-negative
-      if (unitPrice < 0) {
-        document.getElementById('materialPrice').classList.add('input-error');
-        showToast('Cena ne sme biti negativna', 'error');
-        return;
-      }
-      
-      const materialData = {
-        name: name,
-        category: category,
-        unit: unit,
-        unit_price: unitPrice,
-        supplier: supplier || null,
-        description: description || null,
-        work_item_id: selectedWorkItemId
-      };
-      
-      showLoading();
-      try {
-        let response;
-        if (id) {
-          response = await fetch('/api/materials/' + id, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(materialData)
-          });
-        } else {
-          response = await fetch('/api/materials', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(materialData)
-          });
-        }
-        
-        if (!response.ok) throw new Error('Failed to save material');
-        
-        closeModal();
-        showToast(id ? 'Material posodobljen' : 'Material dodan', 'success');
-        await loadMaterials();
-      } catch (error) {
-        console.error('Error saving material:', error);
-        showToast('Napaka pri shranjevanju', 'error');
-      } finally {
-        hideLoading();
-      }
-    }
-    
-    function deleteMaterial(id) {
-      materialToDelete = id;
-      document.getElementById('deleteModal').classList.add('active');
-    }
-    
-    function closeDeleteModal() {
-      document.getElementById('deleteModal').classList.remove('active');
-      materialToDelete = null;
-    }
-    
-    async function confirmDelete() {
-      if (!materialToDelete) return;
-      
-      showLoading();
-      try {
-        const response = await fetch('/api/materials/' + materialToDelete, {
-          method: 'DELETE'
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <div class="modal-title" id="modal-title">Nov material</div>
+            <form id="item-form">
+                <input type="hidden" id="item-id">
+                
+                <div class="form-group">
+                    <label>Naziv materiala *</label>
+                    <input type="text" id="item-name" placeholder="npr. Cement" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Kategorija *</label>
+                    <select id="item-category" required>
+                        <option value="">Izberi kategorijo...</option>
+                        <option value="Gradbeni material">Gradbeni material</option>
+                        <option value="Elektro material">Elektro material</option>
+                        <option value="Vodovodni material">Vodovodni material</option>
+                        <option value="Keramika">Keramika</option>
+                        <option value="Barve in laki">Barve in laki</option>
+                        <option value="Pohištvo">Pohištvo</option>
+                        <option value="Orodje">Orodje</option>
+                        <option value="Drugo">Drugo</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 16px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Enota *</label>
+                        <select id="item-unit" required>
+                            <option value="kos">kos</option>
+                            <option value="m">m</option>
+                            <option value="m2">m²</option>
+                            <option value="m3">m³</option>
+                            <option value="kg">kg</option>
+                            <option value="ton">ton</option>
+                            <option value="l">l</option>
+                            <option value="komplet">komplet</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label>Cena na enoto (€) *</label>
+                        <input type="number" id="item-price" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                </div>
+                
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel">Prekliči</button>
+                    <button type="submit" class="btn">Shrani material</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="nav">
+        <a href="index.html"><span>📋</span>Predračuni</a>
+        <a href="workitems-module.html"><span>🔧</span>Postavke</a>
+        <a href="materials-module.html" class="active"><span>📦</span>Materiali</a>
+    </nav>
+
+    <script>
+        // ============================================
+        // STATE
+        // ============================================
+        let materials = JSON.parse(localStorage.getItem('materials') || '[]');
+        let currentCategory = 'all';
+        let editingId = null;
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ Materials page loaded');
+            
+            // Start empty
+            materials = [];
+            localStorage.setItem('materials', '[]');
+            
+            // Event listeners
+            document.getElementById('btn-new-item').addEventListener('click', openModal);
+            document.getElementById('btn-cancel').addEventListener('click', closeModal);
+            document.getElementById('item-form').addEventListener('submit', saveItem);
+            document.getElementById('search-input').addEventListener('input', renderItems);
+            document.getElementById('sort-select').addEventListener('change', renderItems);
+            
+            // Close modal on overlay click
+            document.getElementById('modal').addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+            
+            renderItems();
+            renderCategories();
+            
+            console.log('✅ Event listeners attached');
         });
-        
-        if (!response.ok) throw new Error('Failed to delete material');
-        
-        closeDeleteModal();
-        showToast('Material izbrisan', 'success');
-        await loadMaterials();
-      } catch (error) {
-        console.error('Error deleting material:', error);
-        showToast('Napaka pri brisanju', 'error');
-      } finally {
-        hideLoading();
-      }
-    }
-    
-    function openLinkModal(materialId) {
-      linkingMaterialId = materialId;
-      const material = materials.find(m => m.id === materialId);
-      if (material && material.work_item_id) {
-        selectedWorkItemId = material.work_item_id;
-      } else {
-        selectedWorkItemId = null;
-      }
-      document.getElementById('workItemSearch').value = '';
-      renderWorkItemsList('');
-      document.getElementById('linkModal').classList.add('active');
-    }
-    
-    function closeLinkModal() {
-      document.getElementById('linkModal').classList.remove('active');
-      linkingMaterialId = null;
-    }
-    
-    function renderWorkItemsList(search) {
-      const container = document.getElementById('workItemsList');
-      
-      let filtered = workItems;
-      if (search) {
-        filtered = workItems.filter(w => 
-          (w.name && w.name.toLowerCase().includes(search)) ||
-          (w.code && w.code.toLowerCase().includes(search))
-        );
-      }
-      
-      if (filtered.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><h3>Ni postavk</h3></div>';
-        return;
-      }
-      
-      let html = '';
-      filtered.forEach(item => {
-        const isSelected = selectedWorkItemId === item.id;
-        html += '<div class="work-item-option ' + (isSelected ? 'selected' : '') + '" onclick="selectWorkItem(' + item.id + ')">' +
-          '<div class="work-item-name">' + escapeHtml(item.name) + '</div>' +
-          '<div class="work-item-price">' + (item.code || '') + ' • ' + formatPrice(item.base_price) + ' €/' + (item.unit || 'kos') + '</div>' +
-        '</div>';
-      });
-      
-      container.innerHTML = html;
-    }
-    
-    async function selectWorkItem(workItemId) {
-      selectedWorkItemId = workItemId;
-      
-      if (linkingMaterialId) {
-        showLoading();
-        try {
-          // Fetch fresh material data to avoid race condition
-          const freshResponse = await fetch('/api/materials/' + linkingMaterialId);
-          if (!freshResponse.ok) throw new Error('Failed to fetch material');
-          const freshMaterial = await freshResponse.json();
-          
-          // Update with fresh data + new work_item_id
-          const response = await fetch('/api/materials/' + linkingMaterialId, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: freshMaterial.name,
-              category: freshMaterial.category,
-              unit: freshMaterial.unit,
-              unit_price: freshMaterial.unit_price,
-              supplier: freshMaterial.supplier,
-              description: freshMaterial.description,
-              work_item_id: workItemId
-            })
-          });
-          
-          if (!response.ok) throw new Error('Failed to link material');
-          
-          closeLinkModal();
-          showToast('Material povezan s postavko', 'success');
-          await loadMaterials();
-        } catch (error) {
-          console.error('Error linking material:', error);
-          showToast('Napaka pri povezovanju', 'error');
-        } finally {
-          hideLoading();
-        }
-      }
-    }
-    
-    function clearWorkItemSelection() {
-      selectedWorkItemId = null;
-      document.getElementById('selectedWorkItemContainer').style.display = 'none';
-    }
-    
-  </script>
 
-  <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="loading-overlay">
-    <div class="loading-spinner"></div>
-  </div>
+        // ============================================
+        // MODAL FUNCTIONS
+        // ============================================
+        function openModal() {
+            console.log('🔘 Opening modal for new material');
+            editingId = null;
+            document.getElementById('modal-title').textContent = 'Nov material';
+            document.getElementById('item-form').reset();
+            document.getElementById('item-id').value = '';
+            document.getElementById('modal').classList.add('active');
+            document.getElementById('item-name').focus();
+        }
+
+        function openEditModal(id) {
+            console.log('🔘 Opening modal for edit:', id);
+            const item = materials.find(i => i.id === id);
+            if (!item) return;
+            
+            editingId = id;
+            document.getElementById('modal-title').textContent = 'Uredi material';
+            document.getElementById('item-id').value = item.id;
+            document.getElementById('item-name').value = item.name;
+            document.getElementById('item-category').value = item.category;
+            document.getElementById('item-unit').value = item.unit;
+            document.getElementById('item-price').value = item.price;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            editingId = null;
+        }
+
+        // ============================================
+        // SAVE / DELETE
+        // ============================================
+        function saveItem(e) {
+            e.preventDefault();
+            console.log('🔘 Saving material...');
+            
+            const item = {
+                id: editingId || Date.now(),
+                name: document.getElementById('item-name').value.trim(),
+                category: document.getElementById('item-category').value,
+                unit: document.getElementById('item-unit').value,
+                price: parseFloat(document.getElementById('item-price').value)
+            };
+            
+            if (editingId) {
+                const index = materials.findIndex(i => i.id === editingId);
+                if (index >= 0) materials[index] = item;
+            } else {
+                materials.push(item);
+            }
+            
+            saveToStorage();
+            renderItems();
+            renderCategories();
+            closeModal();
+            
+            alert('✅ Material "' + item.name + '" je bil shranjen!');
+        }
+
+        function deleteItem(id) {
+            if (!confirm('Ali ste prepričani, da želite izbrisati ta material?')) return;
+            
+            materials = materials.filter(i => i.id !== id);
+            saveToStorage();
+            renderItems();
+            renderCategories();
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('materials', JSON.stringify(materials));
+        }
+
+        // ============================================
+        // RENDERING
+        // ============================================
+        function renderItems() {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const sort = document.getElementById('sort-select').value;
+            
+            let filtered = materials.filter(item => {
+                const matchesSearch = !search || 
+                    item.name.toLowerCase().includes(search) ||
+                    item.category.toLowerCase().includes(search);
+                const matchesCategory = currentCategory === 'all' || item.category === currentCategory;
+                return matchesSearch && matchesCategory;
+            });
+            
+            // Sort
+            filtered.sort((a, b) => {
+                if (sort === 'name') return a.name.localeCompare(b.name);
+                if (sort === 'price-asc') return a.price - b.price;
+                if (sort === 'price-desc') return b.price - a.price;
+                return 0;
+            });
+            
+            const container = document.getElementById('items-list');
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>Ni najdenih materialov</h3>
+                        <p>${materials.length === 0 ? 'Klikni "Nov material" za začetek' : 'Poskusite drugo iskanje'}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="items-table">
+                    <div class="items-table-header">
+                        <div>Material</div>
+                        <div>Cena</div>
+                        <div>Enota</div>
+                        <div>Znesek</div>
+                        <div></div>
+                    </div>
+                    ${filtered.map(item => `
+                        <div class="item-row">
+                            <div class="item-info">
+                                <span class="col-label">Material</span>
+                                <div class="item-name">${escapeHtml(item.name)}</div>
+                                <span class="item-category">${getCategoryIcon(item.category)} ${escapeHtml(item.category)}</span>
+                            </div>
+                            <div class="item-col">
+                                <span class="col-label">Cena</span>
+                                <div class="item-price">${item.price.toFixed(2)} €</div>
+                            </div>
+                            <div class="item-col">
+                                <span class="col-label">Enota</span>
+                                <div class="item-unit">${item.unit}</div>
+                            </div>
+                            <div class="item-col">
+                                <span class="col-label">Na enoto</span>
+                                <div style="font-size: 13px; color: #8E8E93;">na ${item.unit}</div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-sm btn-secondary" onclick="openEditModal(${item.id})" title="Uredi">✏️</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})" title="Izbriši">🗑️</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderCategories() {
+            const categories = [...new Set(materials.map(i => i.category))].sort();
+            const container = document.getElementById('category-tabs');
+            
+            let html = `<div class="category-tab ${currentCategory === 'all' ? 'active' : ''}" data-category="all"><span class="category-icon">📋</span> Vse kategorije</div>`;
+            
+            categories.forEach(cat => {
+                const icon = getCategoryIcon(cat);
+                html += `<div class="category-tab ${currentCategory === cat ? 'active' : ''}" data-category="${escapeHtml(cat)}"><span class="category-icon">${icon}</span> ${escapeHtml(cat)}</div>`;
+            });
+            
+            container.innerHTML = html;
+            
+            // Attach click handlers
+            container.querySelectorAll('.category-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    currentCategory = this.dataset.category;
+                    renderCategories();
+                    renderItems();
+                });
+            });
+        }
+        
+        function getCategoryIcon(category) {
+            const icons = {
+                'Gradbeni material': '🧱',
+                'Elektro material': '⚡',
+                'Vodovodni material': '🚿',
+                'Keramika': '⬜',
+                'Barve in laki': '🎨',
+                'Pohištvo': '🪑',
+                'Orodje': '🔧',
+                'Drugo': '📦'
+            };
+            return icons[category] || '📋';
+        }
+
+        // ============================================
+        // UTILS
+        // ============================================
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Expose functions to window
+        window.openEditModal = openEditModal;
+        window.deleteItem = deleteItem;
+
+        console.log('✅ All functions loaded');
+    </script>
 </body>
 </html>
