@@ -462,9 +462,19 @@
                 if (e.target === this) closeTemplatesModal();
             });
             
-            // Force clear - start completely empty (templates are only in getTemplates, not in workItems)
-            workItems = [];
-            localStorage.setItem('workItems', '[]');
+            // Load saved work items from localStorage
+            const saved = localStorage.getItem('workItems');
+            if (saved) {
+                try {
+                    workItems = JSON.parse(saved);
+                    console.log('✅ Loaded', workItems.length, 'work items from storage');
+                } catch (e) {
+                    console.error('Error loading work items:', e);
+                    workItems = [];
+                }
+            } else {
+                workItems = [];
+            }
             
             renderItems();
             renderCategories();
