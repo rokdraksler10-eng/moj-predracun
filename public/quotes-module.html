@@ -1463,46 +1463,46 @@
             }
 
             // Draw totals box - na desni strani
-            const totalBoxY = yPos + 15;
+            const totalBoxY = yPos + 20;
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(0.3);
             doc.line(120, totalBoxY, 196, totalBoxY);
             
-            let totalY = totalBoxY + 10;
+            let totalY = totalBoxY + 12;
             doc.setFontSize(9);
             doc.setTextColor(80, 80, 80);
             doc.text('Postavke dela:', 125, totalY);
             doc.text(workTotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 8;
+            totalY += 10;
 
             doc.text('Materiali:', 125, totalY);
             doc.text(materialsTotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 8;
+            totalY += 10;
 
             doc.text('Skupaj brez DDV:', 125, totalY);
             doc.text(subtotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 8;
+            totalY += 10;
 
             doc.text('DDV 22%:', 125, totalY);
             doc.text(vat.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 12;
+            totalY += 14;
 
             // Bold total line - debela crta
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(1);
-            doc.line(120, totalY - 4, 196, totalY - 4);
+            doc.line(120, totalY - 5, 196, totalY - 5);
 
             // SKUPAJ - vecji font in dovolj prostora
             doc.setFontSize(11);
             doc.setTextColor(0, 0, 0);
             doc.setFont(undefined, 'bold');
-            doc.text('SKUPAJ ZA PLAČILO:', 125, totalY + 4);
-            doc.text(grandTotal.toFixed(2) + ' EUR', 192, totalY + 4, { align: 'right' });
+            doc.text('SKUPAJ ZA PLAČILO:', 125, totalY + 6);
+            doc.text(grandTotal.toFixed(2) + ' EUR', 192, totalY + 6, { align: 'right' });
             doc.setFont(undefined, 'normal');
 
             // --- FOOTER ---
             let footerY = 270;
-            if (totalY + 40 > 260) {
+            if (totalY + 50 > 260) {
                 doc.addPage();
                 footerY = 20;
             }
@@ -1804,43 +1804,43 @@
                 yPos = 30;
             }
 
-            const totalBoxY = yPos + 15;
+            const totalBoxY = yPos + 20;
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(0.3);
             doc.line(120, totalBoxY, 196, totalBoxY);
             
-            let totalY = totalBoxY + 10;
+            let totalY = totalBoxY + 12;
             doc.setFontSize(9);
             doc.setTextColor(80, 80, 80);
             doc.text('Postavke dela:', 125, totalY);
             doc.text(workTotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 8;
+            totalY += 10;
 
             doc.text('Materiali:', 125, totalY);
             doc.text(materialsTotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 8;
+            totalY += 10;
 
             doc.text('Skupaj brez DDV:', 125, totalY);
             doc.text(subtotal.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 8;
+            totalY += 10;
 
             doc.text('DDV 22%:', 125, totalY);
             doc.text(vat.toFixed(2) + ' EUR', 192, totalY, { align: 'right' });
-            totalY += 12;
+            totalY += 14;
 
             doc.setDrawColor(0, 0, 0);
             doc.setLineWidth(1);
-            doc.line(120, totalY - 4, 196, totalY - 4);
+            doc.line(120, totalY - 5, 196, totalY - 5);
             
             doc.setFontSize(11);
             doc.setTextColor(0, 0, 0);
             doc.setFont(undefined, 'bold');
-            doc.text('SKUPAJ ZA PLACILO:', 125, totalY + 4);
-            doc.text(grandTotal.toFixed(2) + ' EUR', 192, totalY + 4, { align: 'right' });
+            doc.text('SKUPAJ ZA PLACILO:', 125, totalY + 6);
+            doc.text(grandTotal.toFixed(2) + ' EUR', 192, totalY + 6, { align: 'right' });
             doc.setFont(undefined, 'normal');
 
             let footerY = 270;
-            if (totalY + 40 > 260) {
+            if (totalY + 50 > 260) {
                 doc.addPage();
                 footerY = 20;
             }
