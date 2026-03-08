@@ -237,25 +237,6 @@
       margin-bottom: 12px;
     }
     
-    /* Navigation Back */
-    .nav-back {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--ios-blue);
-      color: white;
-      padding: 16px 32px;
-      border-radius: 24px;
-      text-decoration: none;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(0,122,255,0.4);
-      z-index: 1000;
-    }
-    .nav-back:hover {
-      transform: translateX(-50%) translateY(-2px);
-    }
-    
     /* Progress Bar */
     .progress-bar {
       background: var(--ios-bg);
@@ -637,9 +618,6 @@
     </div>
   </div>
   
-  <!-- Back to App -->
-  <a href="index.html" class="nav-back">← Nazaj na aplikacijo</a>
-  
   <script>
     // Show specific help section
     function showHelp(module) {
@@ -691,7 +669,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 24px; height: 24px; stroke-width: 2;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
       Predračuni
     </a>
-    <a href="workitems-module.html" style="text-decoration: none; color: #8E8E93; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 5px 10px; flex: 1;">
+    <a href="index.html?page=items" style="text-decoration: none; color: #8E8E93; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 5px 10px; flex: 1;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 24px; height: 24px; stroke-width: 2;"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line></svg>
       Postavke
     </a>
