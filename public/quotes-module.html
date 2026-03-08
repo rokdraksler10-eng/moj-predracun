@@ -331,6 +331,7 @@
                         <button type="button" class="btn btn-secondary" id="btn-cancel">Prekliči</button>
                         <button type="button" class="btn" id="btn-save-draft">Shrani osnutek</button>
                         <button type="button" class="btn btn-success" id="btn-save-send">Shrani in pošlji</button>
+                        <button type="button" class="btn" id="btn-download-pdf" style="background: #FF3B30;">📄 Prenesi PDF</button>
                     </div>
                 </form>
             </div>
@@ -402,6 +403,7 @@
             document.getElementById('btn-cancel').addEventListener('click', cancelEdit);
             document.getElementById('btn-save-draft').addEventListener('click', () => saveQuote('draft'));
             document.getElementById('btn-save-send').addEventListener('click', () => saveQuote('sent'));
+            document.getElementById('btn-download-pdf').addEventListener('click', downloadPDF);
             document.getElementById('btn-add-work').addEventListener('click', showWorkItemSelector);
             document.getElementById('btn-add-work-custom').addEventListener('click', addWorkItemManual);
             document.getElementById('btn-add-material').addEventListener('click', showMaterialSelector);
@@ -1080,6 +1082,198 @@
 
         // Expose functions to window
         window.editQuote = editQuote;
+        // ============================================
+        // PDF DOWNLOAD
+        // ============================================
+        function downloadPDF() {
+            const projectName = document.getElementById('project-name').value.trim();
+            const customer = document.getElementById('customer').value.trim();
+            
+            if (!projectName || !customer) {
+                alert('Prosim izpolnite naziv projekta in stranko pred prenosom PDF.');
+                return;
+            }
+
+            // Get company settings
+            let companySettings = {};
+            const saved = localStorage.getItem('companySettings');
+            if (saved) {
+                try {
+                    companySettings = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Error loading company settings:', e);
+                }
+            }
+
+            // Create PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Header with company info
+            doc.setFontSize(24);
+            doc.setTextColor(0, 122, 255);
+            doc.text('PREDRAČUN', 105, 20, { align: 'center' });
+
+            // Company info
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            let yPos = 35;
+            
+            if (companySettings.name) {
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                doc.text(companySettings.name, 14, yPos);
+                yPos += 6;
+            }
+            
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            if (companySettings.address) {
+                const addressLines = companySettings.address.split('\n');
+                addressLines.forEach(line => {
+                    doc.text(line, 14, yPos);
+                    yPos += 4;
+                });
+            }
+            if (companySettings.phone) {
+                doc.text('Tel: ' + companySettings.phone, 14, yPos);
+                yPos += 4;
+            }
+            if (companySettings.email) {
+                doc.text('Email: ' + companySettings.email, 14, yPos);
+                yPos += 4;
+            }
+
+            // Quote info box
+            yPos += 5;
+            doc.setDrawColor(200, 200, 200);
+            doc.setFillColor(248, 249, 250);
+            doc.roundedRect(14, yPos, 182, 35, 3, 3, 'FD');
+            
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.text('Stranka: ' + customer, 18, yPos + 8);
+            doc.text('Projekt: ' + projectName, 18, yPos + 16);
+            doc.text('Datum: ' + document.getElementById('quote-date').value, 18, yPos + 24);
+
+            // Work Items Table
+            yPos += 45;
+            if (workItems.length > 0) {
+                doc.setFontSize(12);
+                doc.setTextColor(0, 122, 255);
+                doc.text('POSTAVKE DELA', 14, yPos);
+                yPos += 8;
+
+                const workData = workItems.map(item => [
+                    item.name,
+                    item.unit,
+                    item.quantity.toString(),
+                    item.price.toFixed(2) + ' €',
+                    (item.quantity * item.price).toFixed(2) + ' €'
+                ]);
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Naziv', 'Enota', 'Kol.', 'Cena', 'Znesek']],
+                    body: workData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [0, 122, 255], textColor: 255 },
+                    styles: { fontSize: 9 },
+                    columnStyles: {
+                        0: { cellWidth: 70 },
+                        1: { cellWidth: 25 },
+                        2: { cellWidth: 20 },
+                        3: { cellWidth: 30, halign: 'right' },
+                        4: { cellWidth: 35, halign: 'right' }
+                    }
+                });
+
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+
+            // Materials Table
+            if (materials.length > 0) {
+                doc.setFontSize(12);
+                doc.setTextColor(0, 122, 255);
+                doc.text('MATERIALI', 14, yPos);
+                yPos += 8;
+
+                const matData = materials.map(item => [
+                    item.name,
+                    item.unit,
+                    item.quantity.toString(),
+                    item.price.toFixed(2) + ' €',
+                    (item.quantity * item.price).toFixed(2) + ' €'
+                ]);
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Naziv', 'Enota', 'Kol.', 'Cena', 'Znesek']],
+                    body: matData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [52, 199, 89], textColor: 255 },
+                    styles: { fontSize: 9 },
+                    columnStyles: {
+                        0: { cellWidth: 70 },
+                        1: { cellWidth: 25 },
+                        2: { cellWidth: 20 },
+                        3: { cellWidth: 30, halign: 'right' },
+                        4: { cellWidth: 35, halign: 'right' }
+                    }
+                });
+
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+
+            // Totals
+            const workTotal = workItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const materialsTotal = materials.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const subtotal = workTotal + materialsTotal;
+            const vat = subtotal * 0.22;
+            const grandTotal = subtotal + vat;
+
+            yPos += 5;
+            doc.setDrawColor(0, 122, 255);
+            doc.setFillColor(240, 247, 255);
+            doc.roundedRect(120, yPos, 76, 45, 3, 3, 'FD');
+
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Postavke dela:', 125, yPos + 8);
+            doc.text(workTotal.toFixed(2) + ' €', 190, yPos + 8, { align: 'right' });
+            
+            doc.text('Materiali:', 125, yPos + 15);
+            doc.text(materialsTotal.toFixed(2) + ' €', 190, yPos + 15, { align: 'right' });
+            
+            doc.text('Osnova za DDV:', 125, yPos + 22);
+            doc.text(subtotal.toFixed(2) + ' €', 190, yPos + 22, { align: 'right' });
+            
+            doc.text('DDV (22%):', 125, yPos + 29);
+            doc.text(vat.toFixed(2) + ' €', 190, yPos + 29, { align: 'right' });
+
+            doc.setFontSize(11);
+            doc.setTextColor(0, 122, 255);
+            doc.setFont(undefined, 'bold');
+            doc.text('SKUPAJ:', 125, yPos + 39);
+            doc.text(grandTotal.toFixed(2) + ' €', 190, yPos + 39, { align: 'right' });
+
+            // Footer
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.setFont(undefined, 'normal');
+            doc.text('Hvala za zaupanje!', 105, 280, { align: 'center' });
+            
+            if (companySettings.website) {
+                doc.text(companySettings.website, 105, 285, { align: 'center' });
+            }
+
+            // Save PDF
+            const filename = 'Predracun_' + projectName.replace(/\s+/g, '_') + '_' + new Date().toISOString().split('T')[0] + '.pdf';
+            doc.save(filename);
+            
+            alert('✅ PDF predračun je bil uspešno prenesen!');
+        }
+
         window.updateWorkItem = updateWorkItem;
         window.updateMaterial = updateMaterial;
         window.removeWorkItem = removeWorkItem;
@@ -1090,6 +1284,7 @@
         window.selectMaterial = selectMaterial;
         window.filterMaterialsByCategory = filterMaterialsByCategory;
         window.addMaterialManual = addMaterialManual;
+        window.downloadPDF = downloadPDF;
 
         console.log('✅ All functions loaded');
     </script>
