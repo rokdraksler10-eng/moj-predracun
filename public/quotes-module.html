@@ -611,7 +611,7 @@
             }
             
             container.innerHTML = filtered.map(quote => `
-                <div class="quote-item" onclick="editQuote(${quote.id})">
+                <div class="quote-item">
                     <div class="quote-header">
                         <div>
                             <div class="quote-title">${escapeHtml(quote.projectName)}</div>
@@ -621,6 +621,10 @@
                     </div>
                     <div class="quote-amount">${formatPrice(quote.totalAmount)}</div>
                     <div class="quote-date">${formatDate(quote.date)}</div>
+                    <div style="margin-top: 12px; display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); editQuote(${quote.id})" style="padding: 8px 16px; font-size: 14px; flex: 1;">✏️ Uredi</button>
+                        <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); downloadQuotePDF(${quote.id})" style="padding: 8px 16px; font-size: 14px; background: #FF3B30; flex: 1;">📄 PDF</button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -1274,6 +1278,36 @@
             alert('✅ PDF predračun je bil uspešno prenesen!');
         }
 
+        // ============================================
+        // DOWNLOAD QUOTE PDF FROM LIST
+        // ============================================
+        function downloadQuotePDF(quoteId) {
+            const quote = quotes.find(q => q.id === quoteId);
+            if (!quote) {
+                alert('Predračun ni bil najden.');
+                return;
+            }
+
+            // Load work items and materials
+            workItems = quote.workItems || [];
+            materials = quote.materials || [];
+
+            // Set form values temporarily
+            document.getElementById('project-name').value = quote.projectName;
+            document.getElementById('customer').value = quote.customer;
+            document.getElementById('address').value = quote.address || '';
+            document.getElementById('quote-date').value = quote.date || '';
+            document.getElementById('valid-until').value = quote.validUntil || '';
+
+            // Generate PDF
+            downloadPDF();
+
+            // Clear temporary values
+            document.getElementById('project-name').value = '';
+            document.getElementById('customer').value = '';
+            document.getElementById('address').value = '';
+        }
+
         window.updateWorkItem = updateWorkItem;
         window.updateMaterial = updateMaterial;
         window.removeWorkItem = removeWorkItem;
@@ -1285,6 +1319,7 @@
         window.filterMaterialsByCategory = filterMaterialsByCategory;
         window.addMaterialManual = addMaterialManual;
         window.downloadPDF = downloadPDF;
+        window.downloadQuotePDF = downloadQuotePDF;
 
         console.log('✅ All functions loaded');
     </script>
