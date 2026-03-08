@@ -342,8 +342,8 @@
     <!-- Modal - Templates -->
     <div class="modal-overlay" id="modal-templates">
         <div class="modal" style="max-width: 700px;">
-            <div class="modal-title">Izberi prednastavljeno postavko</div>
-            <p style="color: #8E8E93; margin-bottom: 16px;">Klikni na postavko za dodajanje:</p>
+            <div class="modal-title">Izberi prednastavljene postavke</div>
+            <p style="color: #8E8E93; margin-bottom: 16px;">Označi postavke, ki jih želiš dodati:</p>
             
             <div class="template-categories" id="template-categories" style="margin-bottom: 16px;">
                 <!-- Categories will be rendered here -->
@@ -353,8 +353,10 @@
                 <!-- Templates will be rendered here -->
             </div>
             
-            <div style="margin-top: 20px; text-align: center;">
-                <button type="button" class="btn btn-secondary" id="btn-back-to-choice" style="width: auto; padding: 10px 30px;">Nazaj</button>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary" id="btn-back-to-choice">Nazaj</button>
+                <button type="button" class="btn" id="btn-add-selected" style="display: none;">Dodaj izbrane</button>
+                <button type="button" class="btn btn-outline" id="btn-add-all-visible" style="background: transparent; border: 2px solid #007AFF; color: #007AFF;">Dodaj vse vidne</button>
             </div>
         </div>
     </div>
@@ -441,6 +443,8 @@
             document.getElementById('btn-create-new').addEventListener('click', openNewItemModal);
             document.getElementById('btn-cancel-choice').addEventListener('click', closeChoiceModal);
             document.getElementById('btn-back-to-choice').addEventListener('click', backToChoice);
+            document.getElementById('btn-add-selected').addEventListener('click', addSelectedTemplates);
+            document.getElementById('btn-add-all-visible').addEventListener('click', addAllVisibleTemplates);
             
             // Event listeners - New item modal
             document.getElementById('btn-cancel').addEventListener('click', closeModal);
@@ -607,6 +611,8 @@
 
         let templateCategory = 'all';
 
+        let selectedTemplates = new Set();
+
         function renderTemplates() {
             const templates = getTemplates();
             const categories = [...new Set(templates.map(t => t.category))].sort();
@@ -631,20 +637,38 @@
             const listContainer = document.getElementById('templates-list');
             let filtered = templateCategory === 'all' ? templates : templates.filter(t => t.category === templateCategory);
             
-            listContainer.innerHTML = filtered.map((t, index) => `
-                <div class="template-item" onclick="addFromTemplate(${index})" style="
-                    background: #F8F9FA;
+            listContainer.innerHTML = filtered.map((t, index) => {
+                const globalIndex = templates.indexOf(t);
+                const isSelected = selectedTemplates.has(globalIndex);
+                return `
+                <div class="template-item" data-index="${globalIndex}" onclick="toggleTemplateSelection(${globalIndex})" style="
+                    background: ${isSelected ? '#E3F2FD' : '#F8F9FA'};
                     border-radius: 10px;
                     padding: 16px;
                     margin-bottom: 10px;
                     cursor: pointer;
                     transition: all 0.2s;
-                    border: 2px solid transparent;
-                " onmouseover="this.style.borderColor='#007AFF'; this.style.background='#E3F2FD'" onmouseout="this.style.borderColor='transparent'; this.style.background='#F8F9FA'">
+                    border: 2px solid ${isSelected ? '#007AFF' : 'transparent'};
+                ">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(t.name)}</div>
-                            <span class="item-category">${getCategoryIcon(t.category)} ${escapeHtml(t.category)}</span>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="
+                                width: 24px;
+                                height: 24px;
+                                border: 2px solid ${isSelected ? '#007AFF' : '#C7C7CC'};
+                                border-radius: 6px;
+                                background: ${isSelected ? '#007AFF' : 'white'};
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                color: white;
+                                font-weight: bold;
+                                font-size: 14px;
+                            ">${isSelected ? '✓' : ''}</div>
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 4px;">${escapeHtml(t.name)}</div>
+                                <span class="item-category">${getCategoryIcon(t.category)} ${escapeHtml(t.category)}</span>
+                            </div>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 18px; font-weight: 700; color: #007AFF;">${t.price.toFixed(2)} €</div>
@@ -652,29 +676,77 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
+            
+            // Update button visibility
+            const addSelectedBtn = document.getElementById('btn-add-selected');
+            if (selectedTemplates.size > 0) {
+                addSelectedBtn.style.display = 'inline-block';
+                addSelectedBtn.textContent = `Dodaj izbrane (${selectedTemplates.size})`;
+            } else {
+                addSelectedBtn.style.display = 'none';
+            }
         }
 
-        function addFromTemplate(index) {
+        function toggleTemplateSelection(index) {
+            if (selectedTemplates.has(index)) {
+                selectedTemplates.delete(index);
+            } else {
+                selectedTemplates.add(index);
+            }
+            renderTemplates();
+        }
+
+        function addSelectedTemplates() {
             const templates = getTemplates();
-            let filtered = templateCategory === 'all' ? templates : templates.filter(t => t.category === templateCategory);
-            const template = filtered[index];
+            let addedCount = 0;
             
-            const item = {
-                id: Date.now(),
-                name: template.name,
-                category: template.category,
-                unit: template.unit,
-                price: template.price
-            };
+            selectedTemplates.forEach(index => {
+                const template = templates[index];
+                const item = {
+                    id: Date.now() + Math.random(),
+                    name: template.name,
+                    category: template.category,
+                    unit: template.unit,
+                    price: template.price
+                };
+                workItems.push(item);
+                addedCount++;
+            });
             
-            workItems.push(item);
+            selectedTemplates.clear();
             saveToStorage();
             renderItems();
             renderCategories();
             closeTemplatesModal();
             
-            alert('✅ Postavka "' + item.name + '" je bila dodana!');
+            alert(`✅ ${addedCount} postavk je bilo dodanih!`);
+        }
+
+        function addAllVisibleTemplates() {
+            const templates = getTemplates();
+            let filtered = templateCategory === 'all' ? templates : templates.filter(t => t.category === templateCategory);
+            let addedCount = 0;
+            
+            filtered.forEach(t => {
+                const item = {
+                    id: Date.now() + Math.random(),
+                    name: t.name,
+                    category: t.category,
+                    unit: t.unit,
+                    price: t.price
+                };
+                workItems.push(item);
+                addedCount++;
+            });
+            
+            selectedTemplates.clear();
+            saveToStorage();
+            renderItems();
+            renderCategories();
+            closeTemplatesModal();
+            
+            alert(`✅ ${addedCount} postavk je bilo dodanih!`);
         }
 
         // ============================================
@@ -870,8 +942,9 @@
         // Expose functions to window
         window.openEditModal = openEditModal;
         window.deleteItem = deleteItem;
-        window.addFromTemplate = addFromTemplate;
-        window.openNewItemModal = openNewItemModal;
+        window.toggleTemplateSelection = toggleTemplateSelection;
+        window.addSelectedTemplates = addSelectedTemplates;
+        window.addAllVisibleTemplates = addAllVisibleTemplates;
 
         console.log('✅ All functions loaded');
     </script>
