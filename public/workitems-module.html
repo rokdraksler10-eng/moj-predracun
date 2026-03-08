@@ -62,57 +62,138 @@
             font-size: 16px;
         }
         
-        /* Category tabs */
+        /* Category tabs - Professional */
         .category-tabs {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
             margin-bottom: 20px;
+            padding: 4px;
         }
         .category-tab {
-            padding: 8px 16px;
+            padding: 12px 20px;
             background: white;
-            border: 1px solid #E5E5EA;
-            border-radius: 20px;
+            border: 2px solid #E5E5EA;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .category-tab:hover {
+            border-color: #007AFF;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         .category-tab.active {
             background: #007AFF;
             color: white;
             border-color: #007AFF;
+            box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+        }
+        .category-icon {
+            font-size: 18px;
         }
         
-        /* Items list */
-        .items-list { margin-top: 20px; }
-        .item {
+        /* Items list - Professional Table */
+        .items-table {
+            width: 100%;
             background: white;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
-        .item-info { flex: 1; }
-        .item-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
-        .item-category { 
-            display: inline-block;
-            background: #F2F2F7;
-            padding: 4px 12px;
-            border-radius: 12px;
+        .items-table-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 16px;
+            padding: 16px 20px;
+            background: #F8F9FA;
+            border-bottom: 2px solid #E5E5EA;
             font-size: 12px;
+            font-weight: 700;
             color: #8E8E93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .item-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 16px;
+            padding: 20px;
+            border-bottom: 1px solid #F2F2F7;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        .item-row:hover {
+            background: #FAFBFC;
+        }
+        .item-row:last-child {
+            border-bottom: none;
+        }
+        .item-info { 
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .item-name { 
+            font-weight: 600; 
+            font-size: 16px; 
+            color: #1C1C1E;
+        }
+        .item-category { 
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #F2F2F7 0%, #E5E5EA 100%);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #007AFF;
+            width: fit-content;
         }
         .item-price { 
-            font-size: 18px; 
+            font-size: 20px; 
             font-weight: 700; 
             color: #007AFF;
-            margin-right: 16px;
         }
-        .item-unit { font-size: 12px; color: #8E8E93; }
-        .item-actions { display: flex; gap: 8px; }
+        .item-unit { 
+            font-size: 13px; 
+            color: #8E8E93;
+            font-weight: 500;
+        }
+        .item-actions { 
+            display: flex; 
+            gap: 8px; 
+        }
+        .item-col {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .col-label {
+            font-size: 11px;
+            color: #8E8E93;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .items-table-header { display: none; }
+            .item-row {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                padding: 20px;
+            }
+            .col-label { display: block; }
+            .item-actions { justify-content: flex-end; }
+        }
         
         /* Empty state */
         .empty-state {
@@ -341,14 +422,52 @@
         // ============================================
         function addDefaultItems() {
             const defaults = [
-                { id: Date.now() + 1, name: 'Rušenje stene', category: 'Gradbeno', unit: 'm2', price: 25.00 },
-                { id: Date.now() + 2, name: 'Zidarsko delo', category: 'Gradbeno', unit: 'm2', price: 35.00 },
-                { id: Date.now() + 3, name: 'Montaža vtičnic', category: 'Električno', unit: 'kos', price: 45.00 },
-                { id: Date.now() + 4, name: 'Polaganje ploščic', category: 'Keramika', unit: 'm2', price: 55.00 },
-                { id: Date.now() + 5, name: 'Montaža radiatorja', category: 'Ogrevanje', unit: 'kos', price: 120.00 },
-                { id: Date.now() + 6, name: 'Barvanje sten', category: 'Barvanje', unit: 'm2', price: 15.00 },
-                { id: Date.now() + 7, name: 'Montaža omare', category: 'Pohištvo', unit: 'kos', price: 80.00 },
-                { id: Date.now() + 8, name: 'Priklop umivalnika', category: 'Vodovod', unit: 'kos', price: 60.00 }
+                // Gradbeno
+                { id: Date.now() + 1, name: 'Rušenje nosilne stene', category: 'Gradbeno', unit: 'm²', price: 45.00 },
+                { id: Date.now() + 2, name: 'Rušenje predelne stene', category: 'Gradbeno', unit: 'm²', price: 28.00 },
+                { id: Date.now() + 3, name: 'Zidarsko delo (opeka)', category: 'Gradbeno', unit: 'm²', price: 42.00 },
+                { id: Date.now() + 4, name: 'Zidarsko delo (YTONG)', category: 'Gradbeno', unit: 'm²', price: 38.00 },
+                { id: Date.now() + 5, name: 'Izdelava estriha', category: 'Gradbeno', unit: 'm²', price: 18.00 },
+                { id: Date.now() + 6, name: 'Sanaacija vlage', category: 'Gradbeno', unit: 'm²', price: 85.00 },
+                
+                // Električno
+                { id: Date.now() + 10, name: 'Montaža vtičnice', category: 'Električno', unit: 'kos', price: 48.00 },
+                { id: Date.now() + 11, name: 'Montaža stikala', category: 'Električno', unit: 'kos', price: 42.00 },
+                { id: Date.now() + 12, name: 'Montaža razdelilca', category: 'Električno', unit: 'kos', price: 180.00 },
+                { id: Date.now() + 13, name: 'Vgradnja LED svetil', category: 'Električno', unit: 'kos', price: 35.00 },
+                { id: Date.now() + 14, name: 'Elektroinštalacije (na mestu)', category: 'Električno', unit: 'ura', price: 55.00 },
+                
+                // Keramika
+                { id: Date.now() + 20, name: 'Polaganje keramičnih ploščic', category: 'Keramika', unit: 'm²', price: 58.00 },
+                { id: Date.now() + 21, name: 'Polaganje talnih ploščic', category: 'Keramika', unit: 'm²', price: 52.00 },
+                { id: Date.now() + 22, name: 'Polaganje mozaika', category: 'Keramika', unit: 'm²', price: 75.00 },
+                { id: Date.now() + 23, name: 'Fugiranje ploščic', category: 'Keramika', unit: 'm²', price: 12.00 },
+                { id: Date.now() + 24, name: 'Hidroizolacija (kopalnica)', category: 'Keramika', unit: 'm²', price: 35.00 },
+                
+                // Vodovod
+                { id: Date.now() + 30, name: 'Priklop umivalnika', category: 'Vodovod', unit: 'kos', price: 65.00 },
+                { id: Date.now() + 31, name: 'Priklop WC školjke', category: 'Vodovod', unit: 'kos', price: 95.00 },
+                { id: Date.now() + 32, name: 'Priklop kadji/p Tuš kabine', category: 'Vodovod', unit: 'kos', price: 145.00 },
+                { id: Date.now() + 33, name: 'Montaža boilerja', category: 'Vodovod', unit: 'kos', price: 120.00 },
+                { id: Date.now() + 34, name: 'Vodovodne inštalacije', category: 'Vodovod', unit: 'ura', price: 52.00 },
+                
+                // Ogrevanje
+                { id: Date.now() + 40, name: 'Montaža radiatorja', category: 'Ogrevanje', unit: 'kos', price: 135.00 },
+                { id: Date.now() + 41, name: 'Menjava radiatorja', category: 'Ogrevanje', unit: 'kos', price: 95.00 },
+                { id: Date.now() + 42, name: 'Ogrevanje talno (montaža)', category: 'Ogrevanje', unit: 'm²', price: 48.00 },
+                { id: Date.now() + 43, name: 'Priklop toplotne črpalke', category: 'Ogrevanje', unit: 'kos', price: 450.00 },
+                
+                // Pohištvo
+                { id: Date.now() + 50, name: 'Montaža kuhinje', category: 'Pohištvo', unit: 'kos', price: 380.00 },
+                { id: Date.now() + 51, name: 'Montaža omare', category: 'Pohištvo', unit: 'kos', price: 85.00 },
+                { id: Date.now() + 52, name: 'Montaža notranjih vrat', category: 'Pohištvo', unit: 'kos', price: 125.00 },
+                { id: Date.now() + 53, name: 'Montaža talnih letev', category: 'Pohištvo', unit: 'm', price: 8.50 },
+                
+                // Barvanje
+                { id: Date.now() + 60, name: 'Barvanje sten (2x)', category: 'Barvanje', unit: 'm²', price: 16.00 },
+                { id: Date.now() + 61, name: 'Barvanje stropa (2x)', category: 'Barvanje', unit: 'm²', price: 14.00 },
+                { id: Date.now() + 62, name: 'Klasični omet (priprava)', category: 'Barvanje', unit: 'm²', price: 12.00 },
+                { id: Date.now() + 63, name: 'Nanašanje strukturirane barve', category: 'Barvanje', unit: 'm²', price: 22.00 }
             ];
             workItems = defaults;
             saveToStorage();
@@ -466,32 +585,53 @@
                 return;
             }
             
-            container.innerHTML = filtered.map(item => `
-                <div class="item">
-                    <div class="item-info">
-                        <div class="item-name">${escapeHtml(item.name)}</div>
-                        <span class="item-category">${escapeHtml(item.category)}</span>
+            container.innerHTML = `
+                <div class="items-table">
+                    <div class="items-table-header">
+                        <div>Postavka</div>
+                        <div>Cena</div>
+                        <div>Enota</div>
+                        <div>Znesek</div>
+                        <div></div>
                     </div>
-                    <div>
-                        <div class="item-price">${item.price.toFixed(2)} €</div>
-                        <div class="item-unit">/${item.unit}</div>
-                    </div>
-                    <div class="item-actions">
-                        <button class="btn btn-sm btn-secondary" onclick="openEditModal(${item.id})">✏️</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">🗑️</button>
-                    </div>
+                    ${filtered.map(item => `
+                        <div class="item-row">
+                            <div class="item-info">
+                                <span class="col-label">Postavka</span>
+                                <div class="item-name">${escapeHtml(item.name)}</div>
+                                <span class="item-category">${getCategoryIcon(item.category)} ${escapeHtml(item.category)}</span>
+                            </div>
+                            <div class="item-col">
+                                <span class="col-label">Cena</span>
+                                <div class="item-price">${item.price.toFixed(2)} €</div>
+                            </div>
+                            <div class="item-col">
+                                <span class="col-label">Enota</span>
+                                <div class="item-unit">${item.unit}</div>
+                            </div>
+                            <div class="item-col">
+                                <span class="col-label">Na enoto</span>
+                                <div style="font-size: 13px; color: #8E8E93;">na ${item.unit}</div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-sm btn-secondary" onclick="openEditModal(${item.id})" title="Uredi">✏️</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})" title="Izbriši">🗑️</button>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
-            `).join('');
+            `;
         }
 
         function renderCategories() {
             const categories = [...new Set(workItems.map(i => i.category))].sort();
             const container = document.getElementById('category-tabs');
             
-            let html = `<div class="category-tab ${currentCategory === 'all' ? 'active' : ''}" data-category="all">Vse</div>`;
+            let html = `<div class="category-tab ${currentCategory === 'all' ? 'active' : ''}" data-category="all"><span class="category-icon">📋</span> Vse kategorije</div>`;
             
             categories.forEach(cat => {
-                html += `<div class="category-tab ${currentCategory === cat ? 'active' : ''}" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</div>`;
+                const icon = getCategoryIcon(cat);
+                html += `<div class="category-tab ${currentCategory === cat ? 'active' : ''}" data-category="${escapeHtml(cat)}"><span class="category-icon">${icon}</span> ${escapeHtml(cat)}</div>`;
             });
             
             container.innerHTML = html;
@@ -504,6 +644,20 @@
                     renderItems();
                 });
             });
+        }
+        
+        function getCategoryIcon(category) {
+            const icons = {
+                'Gradbeno': '🏗️',
+                'Električno': '⚡',
+                'Vodovod': '🚿',
+                'Ogrevanje': '🔥',
+                'Pohištvo': '🪑',
+                'Keramika': '🏺',
+                'Barvanje': '🎨',
+                'Drugo': '📦'
+            };
+            return icons[category] || '📋';
         }
 
         // ============================================
