@@ -1915,6 +1915,27 @@
         window.previewPDF = previewPDF;
         window.downloadQuotePDF = downloadQuotePDF;
 
+        // Auto-resize inputs on mobile
+        document.addEventListener('focus', function(e) {
+            if (e.target.tagName === 'INPUT' && e.target.type === 'text') {
+                const td = e.target.closest('td');
+                if (td && td.cellIndex === 0) {
+                    e.target.style.minWidth = '200px';
+                    e.target.style.zIndex = '100';
+                }
+            }
+        }, true);
+        
+        document.addEventListener('blur', function(e) {
+            if (e.target.tagName === 'INPUT' && e.target.type === 'text') {
+                const td = e.target.closest('td');
+                if (td && td.cellIndex === 0) {
+                    e.target.style.minWidth = '';
+                    e.target.style.zIndex = '';
+                }
+            }
+        }, true);
+
         console.log('✅ All functions loaded');
     </script>
 </body>
