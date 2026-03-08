@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pomoč | Moj Predračun</title>
-  <script src="utils.js"></script>
   <style>
     :root {
       --ios-blue: #007AFF;
       --ios-green: #34C759;
       --ios-orange: #FF9500;
+      --ios-red: #FF3B30;
       --ios-bg: #F2F2F7;
       --ios-card: #FFFFFF;
       --ios-text: #000000;
@@ -22,648 +22,328 @@
       background: var(--ios-bg);
       color: var(--ios-text);
       min-height: 100vh;
-      padding: 20px 20px 100px 20px;
+      padding: 20px 20px 120px 20px;
     }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
+    .container { max-width: 900px; margin: 0 auto; }
     .header {
-      background: var(--ios-card);
-      padding: 24px;
-      border-radius: 16px;
-      margin-bottom: 20px;
-      text-align: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .header h1 {
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    .header p {
-      color: var(--ios-text-secondary);
-      font-size: 18px;
-    }
-    
-    /* Quick Start Card */
-    .quick-start {
       background: linear-gradient(135deg, var(--ios-blue) 0%, #5856D6 100%);
+      padding: 32px 24px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+      text-align: center;
       color: white;
+      box-shadow: 0 4px 20px rgba(0,122,255,0.3);
+    }
+    .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+    .header p { font-size: 16px; opacity: 0.9; }
+    .quick-start {
+      background: var(--ios-card);
       padding: 24px;
       border-radius: 16px;
-      margin-bottom: 20px;
-      text-align: center;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border-left: 4px solid var(--ios-green);
     }
-    .quick-start h2 {
-      font-size: 24px;
-      margin-bottom: 12px;
-    }
-    .quick-start p {
-      font-size: 16px;
-      opacity: 0.9;
-      margin-bottom: 16px;
-    }
-    .btn-primary {
-      background: white;
-      color: var(--ios-blue);
-      border: none;
-      padding: 16px 32px;
-      border-radius: 12px;
-      font-size: 18px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .quick-start h2 { font-size: 20px; margin-bottom: 12px; color: var(--ios-green); }
+    .quick-start p { color: var(--ios-text-secondary); line-height: 1.6; }
+    .section-title { font-size: 22px; font-weight: 700; margin: 32px 0 16px; display: flex; align-items: center; gap: 10px; }
+    .module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .module-card { background: var(--ios-card); border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .module-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); border-color: var(--ios-blue); }
+    .module-card.active { border-color: var(--ios-blue); background: #F0F8FF; }
+    .module-icon { font-size: 40px; margin-bottom: 12px; }
+    .module-card h3 { font-size: 18px; margin-bottom: 8px; font-weight: 600; }
+    .module-card p { color: var(--ios-text-secondary); font-size: 14px; line-height: 1.5; }
+    .help-content { background: var(--ios-card); border-radius: 16px; padding: 28px; margin-bottom: 20px; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .help-content.active { display: block; animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .help-content h2 { font-size: 24px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid var(--ios-border); display: flex; align-items: center; gap: 12px; }
+    .step { background: var(--ios-bg); border-radius: 12px; padding: 20px; margin-bottom: 16px; border-left: 4px solid var(--ios-blue); }
+    .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .step-number { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: var(--ios-blue); color: white; border-radius: 50%; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+    .step h4 { font-size: 17px; font-weight: 600; }
+    .step p, .step li { color: var(--ios-text-secondary); line-height: 1.7; font-size: 15px; }
+    .step ol, .step ul { margin-left: 20px; margin-top: 8px; }
+    .step li { margin-bottom: 6px; }
+    .tip { background: #E8F5E9; border-radius: 12px; padding: 16px 20px; margin: 20px 0; border-left: 4px solid var(--ios-green); }
+    .tip::before { content: "💡 "; font-size: 20px; }
+    .tip strong { color: #2E7D32; }
+    .warning { background: #FFF3E0; border-radius: 12px; padding: 16px 20px; margin: 20px 0; border-left: 4px solid var(--ios-orange); }
+    .warning::before { content: "⚠️ "; font-size: 20px; }
+    .warning strong { color: #E65100; }
+    .feature-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+    .feature-item { background: var(--ios-bg); padding: 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; }
+    .feature-item .icon { font-size: 24px; }
+    .feature-item span { font-size: 14px; font-weight: 500; }
+    .faq-item { background: var(--ios-bg); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+    .faq-question { padding: 18px 20px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+    .faq-question:hover { background: var(--ios-border); }
+    .faq-answer { padding: 0 20px 18px; color: var(--ios-text-secondary); line-height: 1.7; display: none; font-size: 14px; }
+    .faq-item.active .faq-answer { display: block; }
+    .faq-item.active .faq-question::after { content: "▲"; }
+    .faq-question::after { content: "▼"; color: var(--ios-text-secondary); font-size: 12px; }
+    .btn-primary { background: var(--ios-blue); color: white; border: none; padding: 14px 28px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-primary:hover { background: #0051D5; }
     .btn-primary:active { transform: scale(0.98); }
-    
-    /* Module Selector */
-    .module-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-    .module-card {
-      background: var(--ios-card);
-      border-radius: 16px;
-      padding: 20px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      border: 2px solid transparent;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .module-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .module-card.active {
-      border-color: var(--ios-blue);
-    }
-    .module-icon {
-      font-size: 40px;
-      margin-bottom: 12px;
-    }
-    .module-card h3 {
-      font-size: 20px;
-      margin-bottom: 8px;
-    }
-    .module-card p {
-      color: var(--ios-text-secondary);
-      font-size: 14px;
-    }
-    
-    /* Help Content */
-    .help-content {
-      background: var(--ios-card);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 20px;
-      display: none;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .help-content.active {
-      display: block;
-      animation: fadeIn 0.3s ease;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .help-content h2 {
-      font-size: 24px;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid var(--ios-border);
-    }
-    
-    /* Step Cards */
-    .step {
-      background: var(--ios-bg);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
-      border-left: 4px solid var(--ios-blue);
-    }
-    .step-number {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      background: var(--ios-blue);
-      color: white;
-      border-radius: 50%;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-    .step h4 {
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
-    .step p {
-      color: var(--ios-text-secondary);
-      line-height: 1.6;
-    }
-    .step img {
-      max-width: 100%;
-      border-radius: 8px;
-      margin-top: 12px;
-      border: 1px solid var(--ios-border);
-    }
-    
-    /* Tips */
-    .tip {
-      background: #E3F2FF;
-      border-radius: 12px;
-      padding: 16px;
-      margin: 16px 0;
-      border-left: 4px solid var(--ios-blue);
-    }
-    .tip::before {
-      content: "💡 ";
-      font-size: 20px;
-    }
-    .tip strong {
-      color: var(--ios-blue);
-    }
-    
-    /* FAQ */
-    .faq-item {
-      background: var(--ios-bg);
-      border-radius: 12px;
-      margin-bottom: 12px;
-      overflow: hidden;
-    }
-    .faq-question {
-      padding: 16px 20px;
-      cursor: pointer;
-      font-weight: 600;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .faq-question:hover {
-      background: var(--ios-border);
-    }
-    .faq-answer {
-      padding: 0 20px 16px;
-      color: var(--ios-text-secondary);
-      display: none;
-    }
-    .faq-item.active .faq-answer {
-      display: block;
-    }
-    .faq-item.active .faq-question::after {
-      content: "▲";
-    }
-    .faq-question::after {
-      content: "▼";
-      color: var(--ios-text-secondary);
-    }
-    
-    /* Video Placeholder */
-    .video-placeholder {
-      background: var(--ios-bg);
-      border-radius: 12px;
-      padding: 40px;
-      text-align: center;
-      margin: 16px 0;
-    }
-    .video-placeholder .icon {
-      font-size: 48px;
-      margin-bottom: 12px;
-    }
-    
-    /* Progress Bar */
-    .progress-bar {
-      background: var(--ios-bg);
-      border-radius: 10px;
-      height: 8px;
-      margin: 20px 0;
-      overflow: hidden;
-    }
-    .progress-fill {
-      background: var(--ios-blue);
-      height: 100%;
-      width: 0%;
-      transition: width 0.5s ease;
-    }
-    
-    /* Big Buttons for Seniors */
-    .big-button {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      background: var(--ios-card);
-      border: 2px solid var(--ios-border);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: left;
-      width: 100%;
-    }
-    .big-button:hover {
-      border-color: var(--ios-blue);
-      background: #F0F8FF;
-    }
-    .big-button .icon {
-      font-size: 32px;
-    }
-    .big-button .text h4 {
-      font-size: 20px;
-      margin-bottom: 4px;
-    }
-    .big-button .text p {
-      font-size: 14px;
-      color: var(--ios-text-secondary);
-    }
+    .contact-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 28px; border-radius: 16px; text-align: center; margin-top: 32px; }
+    .contact-box h2 { font-size: 22px; margin-bottom: 12px; }
+    .contact-box p { opacity: 0.9; margin-bottom: 16px; }
+    .contact-info { background: rgba(255,255,255,0.15); padding: 16px; border-radius: 12px; margin-top: 16px; }
+    .contact-info p { margin: 4px 0; font-size: 15px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Header -->
     <div class="header">
       <h1>📚 Pomoč & Navodila</h1>
-      <p>Naučite se uporabljati Moj Predračun v 2 urah</p>
+      <p>Naučite se uporabljati Moj Predračun v 10 minutah</p>
     </div>
     
-    <!-- Quick Start -->
     <div class="quick-start">
-      <h2>🎯 Začnite tukaj!</h2>
-      <p>Nov uporabnik? Sledite tem preprostim korakom in se naučite osnov v samo 30 minutah.</p>
-      <button class="btn-primary" onclick="startTutorial()">▶️ Začni voden uvod</button>
-    </div>
-    
-    <!-- Progress -->
-    <div id="progress-section" style="display: none;">
-      <p style="text-align: center; color: var(--ios-text-secondary); margin-bottom: 8px;">
-        Napredek: <span id="progress-text">0%</span>
-      </p>
-      <div class="progress-bar">
-        <div class="progress-fill" id="progress-fill"></div>
+      <h2>🎯 Hitri začetek</h2>
+      <p><strong>Moj Predračun</strong> je profesionalna aplikacija za ustvarjanje predračunov v gradbeništvu. Deluje na telefonu in računalniku, tudi brez povezave.</p>
+      <div class="feature-list" style="margin-top: 16px;">
+        <div class="feature-item"><span class="icon">📱</span><span>PWA - Deluje brez interneta</span></div>
+        <div class="feature-item"><span class="icon">📄</span><span>PDF izvoz z vašim logotipom</span></div>
+        <div class="feature-item"><span class="icon">⚡</span><span>Hitro in enostavno</span></div>
+        <div class="feature-item"><span class="icon">🔒</span><span>Varno shranjevanje podatkov</span></div>
       </div>
     </div>
     
-    <!-- Module Selection -->
-    <h2 style="margin: 24px 0 16px; font-size: 22px;">Izberite modul za pomoč:</h2>
+    <h2 class="section-title">📖 Izberite temo:</h2>
     <div class="module-grid">
-      <div class="module-card" onclick="showHelp('calculator')">
-        <div class="module-icon">🧮</div>
-        <h3>Kalkulator</h3>
-        <p>Izračun površin, prostornin in pretvorba enot</p>
+      <div class="module-card" onclick="showHelp('quotes')">
+        <div class="module-icon">📄</div>
+        <h3>Predračuni</h3>
+        <p>Ustvarjanje profesionalnih predračunov za stranke s PDF izvozom</p>
       </div>
       <div class="module-card" onclick="showHelp('items')">
         <div class="module-icon">🔨</div>
-        <h3>Postavke</h3>
-        <p>Upravljanje s seznamom postavk dela</p>
+        <h3>Postavke dela</h3>
+        <p>Seznam storitev s predlogami in kategorijami</p>
       </div>
       <div class="module-card" onclick="showHelp('materials')">
         <div class="module-icon">📦</div>
         <h3>Materiali</h3>
-        <p>Seznam materialov in povezovanje s postavkami</p>
+        <p>Seznam materialov s cenami in predlogami</p>
       </div>
-      <div class="module-card" onclick="showHelp('quotes')">
-        <div class="module-icon">📄</div>
-        <h3>Predračuni</h3>
-        <p>Ustvarjanje in urejanje predračunov za stranke</p>
+      <div class="module-card" onclick="showHelp('settings')">
+        <div class="module-icon">⚙️</div>
+        <h3>Nastavitve</h3>
+        <p>Podatki o podjetju, logotip in bančni podatki</p>
       </div>
-    </div>
-    
-    <!-- Calculator Help -->
-    <div id="help-calculator" class="help-content">
-      <h2>🧮 Kalkulator - Navodila za uporabo</h2>
-      
-      <div class="tip">
-        <strong>Namig:</strong> Kalkulator je vaš najboljši prijatelj na terenu! Hitro izračunajte, koliko materiala potrebujete.
+      <div class="module-card" onclick="showHelp('pdf')">
+        <div class="module-icon">🖨️</div>
+        <h3>PDF predračun</h3>
+        <p>Kako deluje PDF in kaj vsebuje</p>
       </div>
-      
-      <div class="step">
-        <div class="step-number">1</div>
-        <h4>Izračun površine (najpogostejše)</h4>
-        <p>Primerno za: tla, stene, strehe, ploščice...</p>
-        <p><strong>Kako:</strong></p>
-        <ol style="margin-left: 20px; line-height: 2;">
-          <li>Kliknite na zavihek <strong>"Kalkulator"</strong> spodaj</li>
-          <li>Izberite <strong>"Površina"</strong></li>
-          <li>Vnesite <strong>dolžino</strong> prostora (v metrih)</li>
-          <li>Vnesite <strong>širino</strong> prostora (v metrih)</li>
-          <li>Kliknite gumb <strong>"Izračunaj"</strong></li>
-          <li>Preberite rezultat v m² (kvadratnih metrih)</li>
-        </ol>
-      </div>
-      
-      <div class="step">
-        <div class="step-number">2</div>
-        <h4>Shranjevanje meritev</h4>
-        <p>Da ne pozabite izračunov, jih shranite:</p>
-        <ol style="margin-left: 20px; line-height: 2;">
-          <li>Po izračunu vnesite <strong>ime meritve</strong> (npr. "Kopalnica pritličje")</li>
-          <li>Kliknite <strong>"Shrani meritev"</strong></li>
-          <li>Meritev bo vidna v seznamu spodaj</li>
-        </ol>
-      </div>
-      
-      <div class="step">
-        <div class="step-number">3</div>
-        <h4>Prenos v predračun</h4>
-        <p>Shranjene meritve lahko prenesete v predračun:</p>
-        <ol style="margin-left: 20px; line-height: 2;">
-          <li>Ko imate vse meritve, kliknite <strong>"Dodaj v predračun"</strong></li>
-          <li>Sistem vas preusmeri na predračune</li>
-          <li>Meritve se samodejno dodajo kot postavke</li>
-        </ol>
-      </div>
-      
-      <div class="video-placeholder">
-        <div class="icon">🎥</div>
-        <p>Video vodnik bo na voljo kmalu!</p>
+      <div class="module-card" onclick="showHelp('tips')">
+        <div class="module-icon">💡</div>
+        <h3>Nasveti za uspeh</h3>
+        <p>Profesionalni nasveti za boljše predračune</p>
       </div>
     </div>
     
-    <!-- Items Help -->
-    <div id="help-items" class="help-content">
-      <h2>🔨 Postavke dela - Navodila za uporabo</h2>
-      
-      <div class="tip">
-        <strong>Namig:</strong> Preden začnete s predračuni, vnesite vse postavke, ki jih pogosto uporabljate. To vam bo prihranilo veliko časa!
-      </div>
-      
-      <div class="step">
-        <div class="step-number">1</div>
-        <h4>Kaj so postavke?</h4>
-        <p>Postavke so <strong>vrste dela</strong>, ki jih opravljate:</p>
-        <ul style="margin-left: 20px; line-height: 2;">
-          <li>Demontaža starih oken</li>
-          <li>Montaža novih oken</li>
-          <li>Tinkanje in kitiranje</li>
-          <li>Barvanje</li>
-          <li>čiščenje...</li>
-        </ul>
-      </div>
-      
-      <div class="step">
-        <div class="step-number">2</div>
-        <h4>Dodajanje nove postavke</h4>
-        <ol style="margin-left: 20px; line-height: 2;">
-          <li>Kliknite na zavihek <strong>"Postavke"</strong></li>
-          <li>Kliknite gumb <strong>"Dodaj novo"</strong> (zeleni gumb z plusom)</li>
-          <li>Izpolnite polja:
-            <ul style="margin-left: 20px;">
-              <li><strong>Naziv:</strong> Kratek in jasen opis (npr. "Montaža PVC oken")</li>
-              <li><strong>Kategorija:</strong> Izberite iz seznama (Okna, Vrata, Tesarstvo...)</li>
-              <li><strong>Enota:</strong> m², kos, ura, m...</li>
-              <li><strong>Cena:</strong> Vaša cena za enoto (npr. 45 €/m²)</li>
-            </ul>
-          </li>
-          <li>Kliknite <strong>"Shrani"</strong></li>
-        </ol>
-      </div>
-      
-      <div class="step">
-        <div class="step-number">3</div>
-        <h4>Iskanje postavk</h4>
-        <p>Ko imate veliko postavk, jih hitro poiščite:</p>
-        <ul style="margin-left: 20px; line-height: 2;">
-          <li>Vpišite ime v <strong>iskalno polje</strong> na vrhu</li>
-          <li>Ali kliknite na <strong>kategorijo</strong> za filtriranje</li>
-        </ul>
-      </div>
-    </div>
-    
-    <!-- Materials Help -->
-    <div id="help-materials" class="help-content">
-      <h2>📦 Materiali - Navodila za uporabo</h2>
-      
-      <div class="tip">
-        <strong>Namig:</strong> Vnesite materiale, ki jih pogosto kupujete. Sistem bo sam izračunal ceno materialov v predračunu.
-      </div>
-      
-      <div class="step">
-        <div class="step-number">1</div>
-        <h4>Dodajanje materiala</h4>
-        <ol style="margin-left: 20px; line-height: 2;">
-          <li>Kliknite na zavihek <strong>"Materiali"</strong></li>
-          <li>Kliknite gumb <strong>"Dodaj nov material"</strong></li>
-          <li>Izpolnite:
-            <ul style="margin-left: 20px;">
-              <li><strong>Naziv:</strong> Npr. "PVC okno 100x100 cm"</li>
-              <li><strong>Dobavitelj:</strong> Ime trgovine ali proizvajalca</li>
-              <li><strong>Cena:</strong> Cena na enoto</li>
-            </ul>
-          </li>
-          <li>Po želji povežite s <strong>postavko dela</strong></li>
-          <li>Kliknite <strong>"Shrani"</strong></li>
-        </ol>
-      </div>
-    </div>
-    
-    <!-- Quotes Help -->
     <div id="help-quotes" class="help-content">
       <h2>📄 Predračuni - Navodila za uporabo</h2>
-      
-      <div class="tip">
-        <strong>Namig:</strong> Predračun je dokument za vaše stranke. Sistem sam izračuna ceno z DDV-jem (22%).
-      </div>
-      
+      <div class="tip"><strong>Namig:</strong> Predračuni se shranjujejo samodejno. Nikoli ne izgubite svojega dela!</div>
       <div class="step">
-        <div class="step-number">1</div>
-        <h4>Ustvarjanje novega predračuna</h4>
-        <ol style="margin-left: 20px; line-height: 2;">
-          <li>Kliknite na zavihek <strong>"Predračuni"</strong></li>
-          <li>Kliknite gumb <strong>"Nov predračun"</strong></li>
-          <li>Vnesite podatke o projektu:
-            <ul style="margin-left: 20px;">
+        <div class="step-header"><div class="step-number">1</div><h4>Ustvarjanje novega predračuna</h4></div>
+        <ol>
+          <li>Kliknite na zavihek <strong>Predračuni</strong> v spodnji navigaciji</li>
+          <li>Kliknite gumb <strong>+ Nov predračun</strong></li>
+          <li>Izpolnite osnovne podatke:
+            <ul>
               <li><strong>Naziv projekta:</strong> Npr. "Prenova kopalnice Novak"</li>
-              <li><strong>Stranka:</strong> Ime in priimek naročnika</li>
-              <li><strong>Naslov:</strong> Kjer se delo izvaja</li>
+              <li><strong>Naročnik:</strong> Ime in priimek stranke</li>
+              <li><strong>Naslov:</strong> Lokacija projekta</li>
+              <li><strong>Datum:</strong> Datum izdaje predračuna</li>
+              <li><strong>Veljavnost:</strong> Do kdaj velja ponudba</li>
             </ul>
           </li>
-          <li>Kliknite <strong>"Shrani"</strong></li>
+          <li>Kliknite <strong>Naprej</strong> za dodajanje postavk</li>
         </ol>
       </div>
-      
       <div class="step">
-        <div class="step-number">2</div>
-        <h4>Dodajanje postavk in materialov</h4>
-        <p>V odprtem predračunu:</p>
-        <ol style="margin-left: 20px; line-height: 2;">
-          <li>Kliknite <strong>"Dodaj postavko"</strong></li>
-          <li>Izberite postavko iz seznama</li>
-          <li>Vnesite <strong>količino</strong></li>
-          <li>Sistem sam izračuna ceno</li>
-          <li>Ponovite za vse postavke</li>
+        <div class="step-header"><div class="step-number">2</div><h4>Dodajanje postavk dela</h4></div>
+        <ol>
+          <li>Kliknite gumb <strong>+ Dodaj postavko</strong></li>
+          <li>Izberite način:
+            <ul>
+              <li><strong>Iz predlog:</strong> Hitro izberite iz obstoječih postavk</li>
+              <li><strong>Ročno:</strong> Vnesite novo postavko</li>
+            </ul>
+          </li>
+          <li>Označite postavke s kljukico in kliknite <strong>Dodaj izbrane</strong></li>
+          <li>Vnesite <strong>količino</strong> za vsako postavko</li>
+          <li>Cena se izračuna samodejno</li>
         </ol>
       </div>
-      
       <div class="step">
-        <div class="step-number">3</div>
-        <h4>Izvoz v PDF</h4>
-        <p>Ko je predračun končan:</p>
-        <ol style="margin-left: 20px; line-height: 2;">
-          <li>Kliknite gumb <strong>"Generiraj PDF"</strong></li>
-          <li>PDF se samodejno prenese</li>
-          <li>PDF lahko pošljete stranki po emailu ali natisnete</li>
+        <div class="step-header"><div class="step-number">3</div><h4>Prenos v PDF</h4></div>
+        <ol>
+          <li>Kliknite <strong>📄 Prenesi PDF</strong></li>
+          <li>PDF se prenese na vašo napravo</li>
+          <li>Pošljite stranki po emailu ali natisnite</li>
+        </ol>
+      </div>
+      <div class="warning"><strong>Pomembno:</strong> Pred prvim PDF-jem obvezno nastavite podatke o podjetju v zavihku <strong>Nastavitve</strong>!</div>
+    </div>
+    
+    <div id="help-items" class="help-content">
+      <h2>🔨 Postavke dela - Navodila</h2>
+      <div class="tip"><strong>Nasvet:</strong> Predloge vam prihranijo ogromno časa! Enkrat shranite, potem samo izbirajte.</div>
+      <div class="step">
+        <div class="step-header"><div class="step-number">1</div><h4>Dodajanje postavke</h4></div>
+        <ol>
+          <li>Pojdite na zavihek <strong>Postavke</strong></li>
+          <li>Kliknite <strong>+ Nova postavka</strong></li>
+          <li>Izpolnite:
+            <ul>
+              <li><strong>Naziv:</strong> Npr. "Polaganje ploščic"</li>
+              <li><strong>Kategorija:</strong> Gradbena dela, Keramika...</li>
+              <li><strong>Enota:</strong> m², kos, ura...</li>
+              <li><strong>Cena:</strong> Cena brez DDV</li>
+            </ul>
+          </li>
+          <li>Kliknite <strong>Shrani</strong></li>
+        </ol>
+      </div>
+      <div class="step">
+        <div class="step-header"><div class="step-number">2</div><h4>Kategorije</h4></div>
+        <div class="feature-list">
+          <div class="feature-item"><span class="icon">🏗️</span><span>Gradbena dela</span></div>
+          <div class="feature-item"><span class="icon">⚡</span><span>Elektroinštalacije</span></div>
+          <div class="feature-item"><span class="icon">⬜</span><span>Keramika</span></div>
+          <div class="feature-item"><span class="icon">🚿</span><span>Vodovod</span></div>
+          <div class="feature-item"><span class="icon">🎨</span><span>Pleskarska dela</span></div>
+          <div class="feature-item"><span class="icon">🪚</span><span>Mizarstvo</span></div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="help-materials" class="help-content">
+      <h2>📦 Materiali - Navodila</h2>
+      <div class="tip"><strong>Nasvet:</strong> Redno posodabljajte cene materialov, saj se pogosto spreminjajo!</div>
+      <div class="step">
+        <div class="step-header"><div class="step-number">1</div><h4>Dodajanje materiala</h4></div>
+        <ol>
+          <li>Pojdite na zavihek <strong>Materiali</strong></li>
+          <li>Kliknite <strong>+ Nov material</strong></li>
+          <li>Izberite med 35+ predlogami ali vnesite ročno</li>
+          <li>Nastavite količino in cena se preračuna</li>
         </ol>
       </div>
     </div>
     
-    <!-- FAQ Section -->
+    <div id="help-settings" class="help-content">
+      <h2>⚙️ Nastavitve - Podatki o podjetju</h2>
+      <div class="warning"><strong>Obvezno:</strong> Pred prvim PDF-jem nastavite vse podatke o podjetju!</div>
+      <div class="step">
+        <div class="step-header"><div class="step-number">1</div><h4>Osnovni podatki</h4></div>
+        <ul>
+          <li><strong>Naziv podjetja:</strong> Polno ime (npr. "Rok Draksler s.p.")</li>
+          <li><strong>Davčna številka:</strong> Vaša davčna številka</li>
+          <li><strong>Naslov:</strong> Ulica, hišna številka, pošta in kraj</li>
+        </ul>
+      </div>
+      <div class="step">
+        <div class="step-header"><div class="step-number">2</div><h4>Banka in TRR</h4></div>
+        <ul>
+          <li><strong>Ime banke:</strong> Npr. "NLB", "SKB"</li>
+          <li><strong>IBAN / TRR:</strong> Vaš transakcijski račun</li>
+        </ul>
+      </div>
+      <div class="step">
+        <div class="step-header"><div class="step-number">3</div><h4>Logotip</h4></div>
+        <ol>
+          <li>Kliknite na okvir za nalaganje</li>
+          <li>Izberite sliko (JPG, PNG)</li>
+          <li>Logotip se prikaže v PDF-ju</li>
+        </ol>
+      </div>
+    </div>
+    
+    <div id="help-pdf" class="help-content">
+      <h2>🖨️ PDF Predračun</h2>
+      <div class="tip"><strong>Informacija:</strong> PDF je generiran v vaši napravi. Nobeni podatki se ne pošiljajo na strežnik!</div>
+      <div class="step">
+        <div class="step-header"><div class="step-number">1</div><h4>Vsebina PDF-ja</h4></div>
+        <ul>
+          <li>Podatki o vašem podjetju (ime, naslov, davčna)</li>
+          <li>Številka in datum predračuna</li>
+          <li>Podatki o naročniku</li>
+          <li>Seznam postavk dela z cenami</li>
+          <li>Seznam materialov</li>
+          <li>Izračun DDV (22%)</li>
+          <li>Skupni znesek</li>
+          <li>TRR za plačilo</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div id="help-tips" class="help-content">
+      <h2>💡 Profesionalni nasveti</h2>
+      <div class="step">
+        <div class="step-header"><div class="step-number">1</div><h4>Veljavnost ponudbe</h4></div>
+        <p>Vedno nastavite datum veljavnosti (npr. 14 dni). Cene materialov se hitro spreminjajo.</p>
+      </div>
+      <div class="step">
+        <div class="step-header"><div class="step-number">2</div><h4>Opis dela</h4></div>
+        <p>Bodite čim bolj specifični. Namesto "Delo v kopalnici" napišite "Polaganje keramičnih ploščic 30x60 cm, vključno s pripravo in fugiranjem".</p>
+      </div>
+      <div class="step">
+        <div class="step-header"><div class="step-number">3</div><h4>DDV stopnja</h4></div>
+        <p>Standardna stopnja je 22%. Za nekatere storitve v stanovanjskih objektih lahko velja znižana 9,5%.</p>
+      </div>
+    </div>
+    
     <div class="help-content" style="display: block;">
-      <h2>❓ Pogosta vprašanja (FAQ)</h2>
-      
+      <h2>❓ Pogosta vprašanja</h2>
       <div class="faq-item" onclick="toggleFaq(this)">
-        <div class="faq-question">
-          Kaj se zgodi, če izgubim telefon? So moji podatki izgubljeni?
-        </div>
-        <div class="faq-answer">
-          Ne skrbite! Podatki so shranjeni na strežniku. Ko se ponovno prijavite z istim računom, so vsi vaši predračuni, postavke in materiali na voljo. Priporočamo, da si zapomnite vaše uporabniško ime in geslo.
-        </div>
+        <div class="faq-question">Ali aplikacija dela brez interneta?</div>
+        <div class="faq-answer">Da! Ko enkrat naložite aplikacijo, deluje tudi brez povezave. Vsi podatki se shranjujejo lokalno v vašem brskalniku.</div>
       </div>
-      
       <div class="faq-item" onclick="toggleFaq(this)">
-        <div class="faq-question">
-          Ali lahko uporabljam aplikacijo brez interneta?
-        </div>
-        <div class="faq-answer">
-          Da, deloma. Ko enkrat naložite aplikacijo, lahko pregledujete in ustvarjate predračune brez povezave. Ko se povežete nazaj na internet, se podatki samodejno sinhronizirajo.
-        </div>
+        <div class="faq-question">Se bodo moji podatki izgubili, če zbrišem zgodovino brskalnika?</div>
+        <div class="faq-answer">Žal ja. Podatki so shranjeni v brskalniku. Priporočamo, da redno izvozite pomembne predračune v PDF.</div>
       </div>
-      
       <div class="faq-item" onclick="toggleFaq(this)">
-        <div class="faq-question">
-          Kako spremenim ceno postavke?
-        </div>
-        <div class="faq-answer">
-          Pojdite na zavihek "Postavke", poiščite postavko, ki jo želite spremeniti, kliknite nanjo, spremenite ceno in kliknite "Shrani". Sprememba bo veljala za vse nove predračune. Stari predračuni ostanejo nespremenjeni.
-        </div>
+        <div class="faq-question">Ali lahko uredim že ustvarjen predračun?</div>
+        <div class="faq-answer">Seveda! Pojdite na seznam predračunov, kliknite na predračun in izberite "Uredi".</div>
       </div>
-      
       <div class="faq-item" onclick="toggleFaq(this)">
-        <div class="faq-question">
-          Ali lahko natisnem predračun?
-        </div>
-        <div class="faq-answer">
-          Seveda! Odprite predračun, kliknite gumb "Generiraj PDF" in nato "Natisni". Lahko ga tudi shranite na telefon in pošljete po emailu.
-        </div>
-      </div>
-      
-      <div class="faq-item" onclick="toggleFaq(this)">
-        <div class="faq-question">
-          Kaj pomeni status predračuna (Osnutek, Poslano, Sprejeto)?
-        </div>
-        <div class="faq-answer">
-          <ul style="margin-left: 20px; line-height: 1.8;">
-            <li><strong>Osnutek:</strong> Še delate na predračunu, ni končan</li>
-            <li><strong>Poslano:</strong> Poslali ste ga stranki, čakate na odgovor</li>
-            <li><strong>Sprejeto:</strong> Stranka je potrdila, lahko začnete z delom</li>
-            <li><strong>Zavrnjeno:</strong> Stranka ni sprejela ponudbe</li>
-          </ul>
-        </div>
+        <div class="faq-question">Kako spremenim ceno postavke?</div>
+        <div class="faq-answer">Pojdite na zavihek "Postavke", poiščite postavko, kliknite "Uredi" in spremenite ceno.</div>
       </div>
     </div>
     
-    <!-- Quick Links -->
-    <div class="help-content" style="display: block; margin-top: 20px;">
-      <h2>🔗 Hitre povezave</h2>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px;">
-        <button class="big-button" onclick="showHelp('calculator')">
-          <span class="icon">🧮</span>
-          <div class="text">
-            <h4>Kalkulator</h4>
-            <p>Izračun površin</p>
-          </div>
-        </button>
-        <button class="big-button" onclick="showHelp('items')">
-          <span class="icon">🔨</span>
-          <div class="text">
-            <h4>Postavke</h4>
-            <p>Seznam del</p>
-          </div>
-        </button>
-        <button class="big-button" onclick="showHelp('materials')">
-          <span class="icon">📦</span>
-          <div class="text">
-            <h4>Materiali</h4>
-            <p>Seznam materialov</p>
-          </div>
-        </button>
-        <button class="big-button" onclick="showHelp('quotes')">
-          <span class="icon">📄</span>
-          <div class="text">
-            <h4>Predračuni</h4>
-            <p>Ustvari ponudbo</p>
-          </div>
-        </button>
+    <div class="contact-box">
+      <h2>📞 Pomoč in podpora</h2>
+      <p>Če potrebujete dodatno pomoč, smo vam na voljo!</p>
+      <div class="contact-info">
+        <p>📱 Tel: 040 123 456</p>
+        <p>✉️ Email: pomoc@moj-predracun.si</p>
       </div>
-    </div>
-    
-    <!-- Contact -->
-    <div class="help-content" style="display: block; margin-top: 20px; text-align: center;">
-      <h2>📞 Še vedno potrebujete pomoč?</h2>
-      <p style="color: var(--ios-text-secondary); margin: 16px 0; font-size: 16px;">
-        Če vam karkoli ni jasno, nas pokličite ali pišite. Radi vam pomagamo!
-      </p>
-      <div style="background: var(--ios-bg); padding: 20px; border-radius: 12px; margin-top: 16px;">
-        <p style="font-size: 18px; margin-bottom: 8px;">📱 Telefon: <strong>040 123 456</strong></p>
-        <p style="font-size: 18px;">✉️ Email: <strong>pomoc@moj-predracun.si</strong></p>
-      </div>
-      <p style="color: var(--ios-text-secondary); margin-top: 16px; font-size: 14px;">
-        Delovni čas: Pon-Pet, 8:00-16:00
-      </p>
     </div>
   </div>
   
   <script>
-    // Show specific help section
     function showHelp(module) {
-      // Hide all help contents
-      document.querySelectorAll('.help-content').forEach(el => {
-        el.classList.remove('active');
-      });
-      
-      // Remove active from all cards
-      document.querySelectorAll('.module-card').forEach(el => {
-        el.classList.remove('active');
-      });
-      
-      // Show selected help
+      document.querySelectorAll('.help-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.module-card').forEach(el => el.classList.remove('active'));
       const helpEl = document.getElementById('help-' + module);
       if (helpEl) {
         helpEl.classList.add('active');
         helpEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-      
-      // Mark card as active
       event.currentTarget.classList.add('active');
     }
-    
-    // Toggle FAQ
     function toggleFaq(element) {
       element.classList.toggle('active');
     }
-    
-    // Start tutorial
-    function startTutorial() {
-      showToast('Voden uvod se pripravlja...', 'info');
-      // TODO: Implement guided tour
-    }
-    
-    // Track progress (example)
-    let progress = 0;
-    function updateProgress(percent) {
-      progress = percent;
-      document.getElementById('progress-fill').style.width = percent + '%';
-      document.getElementById('progress-text').textContent = percent + '%';
-      document.getElementById('progress-section').style.display = 'block';
-    }
   </script>
-
-  <!-- Bottom Navigation -->
+  
   <nav class="nav" style="position: fixed; bottom: 0; left: 0; right: 0; width: 100%; background: white; border-top: 1px solid #E5E5EA; display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); z-index: 9999; transform: translateZ(0); -webkit-transform: translateZ(0); will-change: transform;">
     <a href="index.html" style="text-decoration: none; color: #8E8E93; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 5px 10px; flex: 1; border-radius: 12px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 24px; height: 24px; stroke-width: 2;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
