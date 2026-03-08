@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Nov predračun</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .btn { 
+            background: #007AFF; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #result { 
+            margin-top: 20px; 
+            padding: 20px; 
+            background: #f0f0f0; 
+            border-radius: 8px;
+            display: none;
+        }
+        #result.visible { display: block; }
+    </style>
+</head>
+<body>
+    <h1>Test: Nov predračun</h1>
+    <button class="btn" onclick="createNewQuote()">+ Nov predračun</button>
+    
+    <div id="result">
+        <h2>Obrazec za nov predračun</h2>
+        <p>✅ Funkcija deluje!</p>
+        <form>
+            <label>Naziv projekta:</label><br>
+            <input type="text" placeholder="Vnesite naziv"><br><br>
+            <label>Stranka:</label><br>
+            <input type="text" placeholder="Vnesite stranko"><br><br>
+            <button type="button">Shrani</button>
+        </form>
+    </div>
+
+    <script>
+        function createNewQuote() {
+            console.log('🔘 createNewQuote() clicked');
+            document.getElementById('result').classList.add('visible');
+            alert('✅ Gumb deluje! Obrazec se je odprl.');
+        }
+        
+        // Export to window for iframe compatibility
+        window.createNewQuote = createNewQuote;
+        
+        console.log('✅ Test page loaded, createNewQuote ready');
+    </script>
+</body>
+</html>
